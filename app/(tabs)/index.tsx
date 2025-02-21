@@ -2,22 +2,30 @@ import "react-native-get-random-values";
 import React, { useState, useEffect, useRef } from "react";
 import {
   View,
+  Text,
+  TextInput,
   StyleSheet,
   Button,
   SafeAreaView,
   KeyboardAvoidingView,
   Platform,
   TouchableOpacity,
+  FlatList,
+  Alert,
 } from "react-native";
 import { io } from "socket.io-client";
+const socket = io("http://127.0.0.1:3000");
+
 import * as ImagePicker from "expo-image-picker";
 import { GiftedChat, IMessage } from "react-native-gifted-chat";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
 import Constants from "expo-constants";
+import { NavigationContainer } from "@react-navigation/native";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
-// Configure the notification handler so that notifications are displayed when received.
+// Configure the notification handler.
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -26,18 +34,18 @@ Notifications.setNotificationHandler({
   }),
 });
 
-// Establish Socket.IO connection.
-const socket = io("http://127.0.0.1:3000");
-
 // Helper function to register for push notifications.
 async function registerForPushNotificationsAsync() {
+  if (Platform.OS === 'web') {
+    console.log("Push notifications are not supported on web. Skipping registration.");
+    return;
+  }
+  
   let token;
   if (Device.isDevice) {
-    // Check current permissions.
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
     if (existingStatus !== "granted") {
-      // Request permissions if not already granted.
       const { status } = await Notifications.requestPermissionsAsync();
       finalStatus = status;
     }
@@ -45,14 +53,11 @@ async function registerForPushNotificationsAsync() {
       alert("Failed to get push token for push notifications!");
       return;
     }
-    // Get the token.
     token = (await Notifications.getExpoPushTokenAsync()).data;
     console.log("Expo Push Token:", token);
   } else {
     alert("Must use a physical device for Push Notifications");
   }
-
-  // Configure the Android notification channel.
   if (Platform.OS === "android") {
     await Notifications.setNotificationChannelAsync("default", {
       name: "default",
@@ -64,16 +69,21 @@ async function registerForPushNotificationsAsync() {
   return token;
 }
 
-const ChatScreen: React.FC = () => {
+
+// ------------------ ChatScreen ------------------
+const ChatScreen: React.FC<any> = ({ route, navigation }) => {
+  const { chatroomId, chatroomName, userId } = route.params;
   const [messages, setMessages] = useState<IMessage[]>([]);
-  // Generate a random user ID for demonstration purposes.
-  const [userId] = useState<string>(Math.random().toString(36).substring(7));
+ 
 
   // Refs for notification listeners.
   const notificationListener = useRef<Notifications.Subscription>();
   const responseListener = useRef<Notifications.Subscription>();
 
-  // Register for push notifications and set up notification listeners.
+  useEffect(() => {
+    console.log("Entered ChatRoom:", chatroomName, "ID:", chatroomId);
+  }, [chatroomId, chatroomName]);
+
   useEffect(() => {
     async function initPushNotifications() {
       const token = await registerForPushNotificationsAsync();
@@ -91,14 +101,12 @@ const ChatScreen: React.FC = () => {
     }
     initPushNotifications();
 
-    // Listener triggered when a notification is received while the app is foregrounded.
     notificationListener.current = Notifications.addNotificationReceivedListener(
       (notification) => {
         console.log("Notification received:", notification);
       }
     );
 
-    // Listener triggered when the user interacts with a notification.
     responseListener.current = Notifications.addNotificationResponseReceivedListener(
       (response) => {
         console.log("Notification response received:", response);
@@ -115,7 +123,6 @@ const ChatScreen: React.FC = () => {
     };
   }, [userId]);
 
-  // Listen for incoming messages via Socket.IO.
   useEffect(() => {
     socket.on("receiveMessage", (incomingMessage: IMessage) => {
       setMessages((prev) => GiftedChat.append(prev, incomingMessage));
@@ -125,7 +132,6 @@ const ChatScreen: React.FC = () => {
     };
   }, []);
 
-  // Send a message using Socket.IO.
   const onSend = (newMessages: IMessage[] = []) => {
     setMessages((prev) => GiftedChat.append(prev, newMessages));
     if (newMessages[0]) {
@@ -133,7 +139,6 @@ const ChatScreen: React.FC = () => {
     }
   };
 
-  // Allow the user to pick an image from the gallery and send it.
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -151,7 +156,6 @@ const ChatScreen: React.FC = () => {
     }
   };
 
-  // Render a custom button for sending images.
   const renderCustomActions = () => (
     <TouchableOpacity onPress={pickImage} style={styles.actionButton}>
       <Icon name="image" size={28} color="#555" />
@@ -160,12 +164,6 @@ const ChatScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Button title="Chat Room" onPress={() => {}} />
-      </View>
-
-      {/* Chat interface wrapped in KeyboardAvoidingView */}
       <KeyboardAvoidingView
         style={{ flex: 1, marginBottom: 50 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -186,18 +184,163 @@ const ChatScreen: React.FC = () => {
   );
 };
 
-export default ChatScreen;
+// ------------------ ChatroomListScreen ------------------
+const ChatroomListScreen: React.FC<any> = ({ navigation, route }) => {
+  const { userId } = route.params;
+  const [chatrooms, setChatrooms] = useState<{ id: string; name: string }[]>([]);
 
+  // Sample implementation to fetch chatrooms.
+  const fetchChatrooms = async () => {
+    // Replace with your API call.
+    const sampleChatrooms = [
+      { id: "1", name: "Survey Chatroom 1" },
+      { id: "2", name: "Survey Chatroom 2" },
+      { id: "3", name: "Survey Chatroom 3" },
+    ];
+    setChatrooms(sampleChatrooms);
+  };
+
+  useEffect(() => {
+    fetchChatrooms();
+  }, []);
+
+  const renderItem = ({ item }: { item: { id: string; name: string } }) => (
+    <TouchableOpacity
+      style={styles.chatroomItem}
+      onPress={() =>
+        navigation.navigate("Chat", {
+          chatroomId: item.id,
+          chatroomName: item.name,
+          userId,
+        })
+      }
+    >
+      <Text style={styles.chatroomName}>{item.name}</Text>
+    </TouchableOpacity>
+  );
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <Text style={styles.title}>Available Chatrooms</Text>
+      <FlatList
+        data={chatrooms}
+        keyExtractor={(item) => item.id}
+        renderItem={renderItem}
+        contentContainerStyle={styles.chatroomList}
+      />
+    </SafeAreaView>
+  );
+};
+
+// ------------------ LoginScreen ------------------
+const LoginScreen: React.FC<any> = ({ navigation }) => {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+
+  // Sample login function.
+  const handleLogin = async () => {
+    if (username.trim() === "" || password.trim() === "") {
+      Alert.alert("Error", "Please enter both username and password");
+      return;
+    }
+    else if (username.trim() === "guest" && password.trim() === "111111") {
+      
+      
+    }
+    else {
+      Alert.alert("Error", "Please enter correct username and password");
+      return;
+    }
+    
+
+    // Simulate a successful login by generating a userId.
+    const userId = Math.random().toString(36).substring(7);
+    // Navigate to the ChatroomList screen and pass the userId.
+    navigation.navigate("ChatroomList", { userId });
+  };
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <View style={styles.loginContainer}>
+        <Text style={styles.title}>Login</Text>
+        <TextInput
+          placeholder="Username"
+          value={username}
+          onChangeText={setUsername}
+          style={styles.input}
+          autoCapitalize="none"
+        />
+        <TextInput
+          placeholder="Password"
+          value={password}
+          onChangeText={setPassword}
+          style={styles.input}
+          secureTextEntry
+        />
+        <Button title="Login" onPress={handleLogin} />
+      </View>
+    </SafeAreaView>
+  );
+};
+
+// ------------------ Navigation Setup ------------------
+const Stack = createNativeStackNavigator();
+
+const App: React.FC = () => {
+  return (
+   
+      <Stack.Navigator initialRouteName="Login">
+        <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen
+          name="ChatroomList"
+          component={ChatroomListScreen}
+          options={{ title: "Chat Rooms" }}
+        />
+        <Stack.Screen
+          name="Chat"
+          component={ChatScreen}
+          options={({ route }) => ({ title: route.params.chatroomName })}
+        />
+      </Stack.Navigator>
+   
+  );
+};
+
+export default App;
+
+// ------------------ Styles ------------------
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#fff",
   },
-  header: {
-    paddingVertical: 12,
-    backgroundColor: "#A1CEDC",
-    alignItems: "center",
+  loginContainer: {
+    flex: 1,
     justifyContent: "center",
+    paddingHorizontal: 20,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    padding: 10,
+    marginBottom: 10,
+    borderRadius: 5,
+  },
+  title: {
+    fontSize: 24,
+    textAlign: "center",
+    marginVertical: 20,
+  },
+  chatroomList: {
+    padding: 20,
+  },
+  chatroomItem: {
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+  },
+  chatroomName: {
+    fontSize: 18,
   },
   actionButton: {
     padding: 8,
