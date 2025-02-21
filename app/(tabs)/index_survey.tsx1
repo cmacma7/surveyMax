@@ -1,0 +1,102 @@
+const express = require('express');
+const http = require('http');
+const cors = require('cors');
+const { Server } = require('socket.io');
+const { v4: uuidv4 } = require('uuid');
+
+const app = express();
+
+// Enable JSON body parsing
+app.use(express.json());
+
+// Enable CORS
+app.use(cors());
+
+// Create HTTP server
+const server = http.createServer(app);
+
+// Create Socket.IO server
+const io = new Server(server, { cors: { origin: '*' },
+  maxHttpBufferSize: 1e8, // 100 MB in bytes
+});
+
+// Socket.IO event handlers
+io.on('connection', (socket) => {
+  console.log('User connected:', socket.id);
+
+  // Broadcast message to all OTHER connected clients (excluding the sender)
+  socket.on('sendMessage', (message) => {
+    //console.log(message);
+    socket.broadcast.emit('receiveMessage', message);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('User disconnected');
+  });
+});
+
+/**
+ * POST /api/send-message
+ * Accepts "message" object in the request body, which can be partial:
+ *  message : {
+ *    text?: string,
+ *    user?: { _id?: string }, //optional
+ *    createdAt?: string, //optional
+ *    _id?: string //optional
+ *  }
+ * or just 
+ *  {message : "hello world"}
+ * Fills in missing fields, then broadcasts the final message object
+ * to all connected Socket.IO clients.
+ */
+app.post('/api/send-message', (req, res) => {
+    // The client can send { message: {...} } or just { text: "hello" }
+    let { message } = req.body;
+    
+    // If the request didn't wrap their data in { message: ... }
+    // e.g. "hello", fallback to entire req.body as message
+    // If there's still no "text" field, handle missing data
+    if (!message.text) {
+
+        if (typeof message == 'string'){
+            message = {text:message};
+        }
+        else {
+            return res.status(400).json({ error: 'Missing "text" field in the message.' });
+        }     
+    }
+  
+    // Extract partial data from user
+    const {
+      text,
+      user,
+      createdAt,
+      _id
+    } = message;
+  
+    // Fill in defaults if missing
+    const finalMessage = {
+      text: text, 
+      user: {
+        _id: user && user._id ? user._id : `user_${Math.random().toString(36).substring(7)}`
+      },
+      createdAt: createdAt || new Date().toISOString(),
+      _id: _id || uuidv4(), // use uuid if missing
+    };
+  
+    console.log('Received message from API:', finalMessage);
+  
+    // Broadcast to ALL connected clients (including sender)
+    io.emit('receiveMessage', finalMessage);
+  
+    // Respond to the API caller
+    return res.status(200).json({
+      success: true,
+      broadcasted: finalMessage
+    });
+  });
+
+// Start server
+server.listen(3000, () => {
+  console.log('Server running on http://localhost:3000');
+});
