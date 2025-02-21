@@ -20,6 +20,9 @@ const io = new Server(server, {
 // In-memory storage for push tokens (userId => token).
 const pushTokens = {};
 
+// In-memory storage for messages (channelId => [message, ...])
+const messagesStore = {};
+
 // Initialize Expo SDK client.
 let expo = new Expo();
 
@@ -34,17 +37,43 @@ app.post("/api/register-push-token", (req, res) => {
   return res.status(200).json({ success: true });
 });
 
+// API endpoint to retrieve stored messages for a channel.
+app.get("/api/messages/:channelId", (req, res) => {
+  const channelId = req.params.channelId;
+  const messages = messagesStore[channelId] || [];
+  res.status(200).json({ messages });
+});
+
 // Socket.IO event handlers.
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
 
+  // Listen for joinRoom event
+  socket.on("joinRoom", (channelId) => {
+    socket.join(channelId);
+    console.log(`Socket ${socket.id} joined room ${channelId}`);
+  });
+
   // When a message is sent from a client.
   socket.on("sendMessage", async (message) => {
-    // Broadcast the message to all other connected clients.
-    socket.broadcast.emit("receiveMessage", message);
-    console.log("Received message from socket:", message);
+    const { channelId } = message;
+    if (!channelId) {
+      console.error("Message does not contain channelId", message);
+      return;
+    }
 
-    // Prepare remote push notifications for all registered devices except the sender.
+    // Save message in memory (or in your database)
+    if (!messagesStore[channelId]) {
+      messagesStore[channelId] = [];
+    }
+    messagesStore[channelId].push(message);
+    console.log(`Stored message in channel ${channelId}:`, message);
+
+    // Broadcast the message only to the room (excluding sender)
+    socket.to(channelId).emit("receiveMessage", message);
+    console.log(`Broadcast message to room ${channelId}`);
+
+    // Prepare remote push notifications for registered devices (if needed)
     const messagesToSend = [];
     for (const [userId, token] of Object.entries(pushTokens)) {
       // Skip sending a push notification to the sender.
@@ -61,8 +90,6 @@ io.on("connection", (socket) => {
         data: { message },
       });
     }
-
-    // Chunk the notifications and send them.
     const chunks = expo.chunkPushNotifications(messagesToSend);
     for (const chunk of chunks) {
       try {
@@ -75,19 +102,17 @@ io.on("connection", (socket) => {
   });
 
   socket.on("disconnect", () => {
-    console.log("User disconnected");
+    console.log("User disconnected", socket.id);
   });
 });
 
 /**
  * POST /api/send-message endpoint.
  * Accepts a message payload, fills missing fields,
- * then broadcasts the message to all connected clients
- * and sends push notifications to registered devices.
+ * then broadcasts the message to the corresponding room and sends push notifications.
  */
 app.post("/api/send-message", async (req, res) => {
   let { message } = req.body;
-
   if (!message.text) {
     if (typeof message === "string") {
       message = { text: message };
@@ -98,6 +123,7 @@ app.post("/api/send-message", async (req, res) => {
     }
   }
 
+  // Ensure message contains channelId. You might want to validate this.
   const finalMessage = {
     text: message.text,
     user: {
@@ -106,17 +132,26 @@ app.post("/api/send-message", async (req, res) => {
           ? message.user._id
           : `user_${Math.random().toString(36).substring(7)}`,
     },
+    channelId: message.channelId, // make sure the channelId is passed
     createdAt: message.createdAt || new Date().toISOString(),
     _id: message._id || uuidv4(),
   };
 
+  // Save the message.
+  if (finalMessage.channelId) {
+    if (!messagesStore[finalMessage.channelId]) {
+      messagesStore[finalMessage.channelId] = [];
+    }
+    messagesStore[finalMessage.channelId].push(finalMessage);
+  }
   console.log("Received message from API:", finalMessage);
-  io.emit("receiveMessage", finalMessage);
 
-  // Prepare remote push notifications for all registered devices except the sender.
+  // Broadcast the message to the specific room.
+  io.to(finalMessage.channelId).emit("receiveMessage", finalMessage);
+
+  // Prepare remote push notifications for registered devices.
   const messagesToSend = [];
   for (const [userId, token] of Object.entries(pushTokens)) {
-    // Skip sending a push notification to the sender.
     if (userId === finalMessage.user._id) continue;
     if (!Expo.isExpoPushToken(token)) {
       console.error(`Push token ${token} is not a valid Expo push token`);
@@ -130,8 +165,6 @@ app.post("/api/send-message", async (req, res) => {
       data: { message: finalMessage },
     });
   }
-
-  // Chunk the notifications and send them.
   const chunks = expo.chunkPushNotifications(messagesToSend);
   for (const chunk of chunks) {
     try {
@@ -141,7 +174,6 @@ app.post("/api/send-message", async (req, res) => {
       console.error(error);
     }
   }
-
   return res.status(200).json({
     success: true,
     broadcasted: finalMessage,

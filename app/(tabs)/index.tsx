@@ -75,13 +75,25 @@ const ChatScreen: React.FC<any> = ({ route, navigation }) => {
   const { chatroomId, chatroomName, userId } = route.params;
   const [messages, setMessages] = useState<IMessage[]>([]);
  
-
   // Refs for notification listeners.
   const notificationListener = useRef<Notifications.Subscription>();
   const responseListener = useRef<Notifications.Subscription>();
 
   useEffect(() => {
     console.log("Entered ChatRoom:", chatroomName, "ID:", chatroomId);
+    // Even though the client joins all rooms in the list, we can call join here as well.
+    // This ensures that if the ChatScreen is opened directly, the user is in this room.
+    socket.emit("joinRoom", chatroomId);
+    // Fetch saved/offline messages for this channel.
+    fetch(`http://127.0.0.1:3000/api/messages/${chatroomId}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.messages) {
+          console.log("Fetched messages:", data.messages);
+          setMessages(data.messages.reverse());
+        }
+      })
+      .catch((err) => console.error(err));
   }, [chatroomId, chatroomName]);
 
   useEffect(() => {
@@ -124,19 +136,23 @@ const ChatScreen: React.FC<any> = ({ route, navigation }) => {
   }, [userId]);
 
   useEffect(() => {
-    socket.on("receiveMessage", (incomingMessage: IMessage) => {
-      setMessages((prev) => GiftedChat.append(prev, incomingMessage));
-    });
-    return () => {
-      socket.off("receiveMessage");
+    const handleReceiveMessage = (incomingMessage: IMessage) => {
+      // Only update the chat if the message belongs to the current room.
+      if (incomingMessage.channelId === chatroomId) {
+        setMessages((prev) => GiftedChat.append(prev, incomingMessage));
+      }
     };
-  }, []);
+    socket.on("receiveMessage", handleReceiveMessage);
+    return () => {
+      socket.off("receiveMessage", handleReceiveMessage);
+    };
+  }, [chatroomId]);
 
   const onSend = (newMessages: IMessage[] = []) => {
-    setMessages((prev) => GiftedChat.append(prev, newMessages));
-    if (newMessages[0]) {
-      socket.emit("sendMessage", newMessages[0]);
-    }
+    // Attach channelId (chatroomId) to the message.
+    const messageWithChannel = { ...newMessages[0], channelId: chatroomId };
+    setMessages((prev) => GiftedChat.append(prev, messageWithChannel));
+    socket.emit("sendMessage", messageWithChannel);
   };
 
   const pickImage = async () => {
@@ -151,6 +167,7 @@ const ChatScreen: React.FC<any> = ({ route, navigation }) => {
         createdAt: new Date(),
         user: { _id: userId, name: "User" },
         image: `data:image/jpeg;base64,${result.assets[0].base64}`,
+        channelId: chatroomId, // include channelId for image messages too
       };
       onSend([imageMessage]);
     }
@@ -204,6 +221,13 @@ const ChatroomListScreen: React.FC<any> = ({ navigation, route }) => {
     fetchChatrooms();
   }, []);
 
+  // Once chatrooms are fetched, join all rooms.
+  useEffect(() => {
+    chatrooms.forEach((room) => {
+      socket.emit("joinRoom", room.id);
+    });
+  }, [chatrooms]);
+
   const renderItem = ({ item }: { item: { id: string; name: string } }) => (
     <TouchableOpacity
       style={styles.chatroomItem}
@@ -242,17 +266,13 @@ const LoginScreen: React.FC<any> = ({ navigation }) => {
     if (username.trim() === "" || password.trim() === "") {
       Alert.alert("Error", "Please enter both username and password");
       return;
-    }
-    else if (username.trim() === "guest" && password.trim() === "111111") {
-      
-      
-    }
-    else {
+    } else if (username.trim() === "guest" && password.trim() === "111111") {
+      // Authentication logic can go here.
+    } else {
       Alert.alert("Error", "Please enter correct username and password");
       return;
     }
     
-
     // Simulate a successful login by generating a userId.
     const userId = Math.random().toString(36).substring(7);
     // Navigate to the ChatroomList screen and pass the userId.
@@ -302,7 +322,7 @@ const App: React.FC = () => {
           options={({ route }) => ({ title: route.params.chatroomName })}
         />
       </Stack.Navigator>
-   
+    
   );
 };
 

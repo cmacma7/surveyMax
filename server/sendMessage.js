@@ -13,9 +13,10 @@ const { v4: uuidv4 } = require('uuid');
 // Grab command-line arguments
 const text = process.argv[2];
 let userId = process.argv[3] || 'system';
+let channelId = process.argv[4] || 'default';
 
 if (!text) {
-  console.error('Error: Please provide a text argument.\nExample usage: node sendMessage.js "Hello world"');
+  console.error('Error: Please provide a text argument.\nExample usage: node sendMessage.js "Hello world" "system" "5672345"' );
   process.exit(1);
 }
 
@@ -31,12 +32,10 @@ async function postMessage(textMsg, uid) {
   let messageObj = {
     text: textMsg,
     user: { _id: uid },
+    channelId: channelId,
 //    createdAt: new Date().toISOString(),
 //    _id: uuidv4(),
   };
-
-messageObj = textMsg;
-
 
   try {
     const response = await fetch(SERVER_URL, {
