@@ -25,5 +25,9 @@ If PC/Mac of your development server are using LAN, and not on the same subnet, 
 
 
 #####################
-For the chat-app, you need to run the server.js under server directory. This server serve as the sockjs server, to dispatch messages.
+For the survey-max, you need to run the server.js under server directory. This server serve as the sockjs server, to dispatch messages.
 You can use node sendMessage.js <message> <user>  to send a system message that broadcast to all the clients (devices) of sockjs.               
+1. cd server    node server.js
+2. cd /Users/chenma/mongodb-macos-aarch64-8.0.4/bin   ./mongod --dbpath ~/data/db
+3. under the root survey-max, npx expo start -c  to run already build expo, to rebuild   npx expo run:ios
+

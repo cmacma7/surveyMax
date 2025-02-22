@@ -4,6 +4,23 @@ const cors = require("cors");
 const { Server } = require("socket.io");
 const { v4: uuidv4 } = require("uuid");
 const { Expo } = require("expo-server-sdk");
+const mongoose = require("mongoose");
+
+// Connect to MongoDB
+mongoose.connect("mongodb://localhost:27017/chatdb", {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+});
+
+// Define a Mongoose schema and model for messages.
+const messageSchema = new mongoose.Schema({
+  channelId: { type: String, required: true, index: true },
+  text: { type: String },
+  user: { type: Object, required: true },
+  createdAt: { type: Date, default: Date.now },
+  _id: { type: String, default: () => uuidv4() },
+});
+const Message = mongoose.model("Message", messageSchema);
 
 // Initialize Express and HTTP server.
 const app = express();
@@ -20,9 +37,6 @@ const io = new Server(server, {
 // In-memory storage for push tokens (userId => token).
 const pushTokens = {};
 
-// In-memory storage for messages (channelId => [message, ...])
-const messagesStore = {};
-
 // Initialize Expo SDK client.
 let expo = new Expo();
 
@@ -38,10 +52,16 @@ app.post("/api/register-push-token", (req, res) => {
 });
 
 // API endpoint to retrieve stored messages for a channel.
-app.get("/api/messages/:channelId", (req, res) => {
+app.get("/api/messages/:channelId", async (req, res) => {
   const channelId = req.params.channelId;
-  const messages = messagesStore[channelId] || [];
-  res.status(200).json({ messages });
+  try {
+    // Retrieve messages sorted in ascending order (oldest first)
+    const messages = await Message.find({ channelId }).sort({ createdAt: 1 });
+    res.status(200).json({ messages });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch messages" });
+  }
 });
 
 // Socket.IO event handlers.
@@ -62,12 +82,14 @@ io.on("connection", (socket) => {
       return;
     }
 
-    // Save message in memory (or in your database)
-    if (!messagesStore[channelId]) {
-      messagesStore[channelId] = [];
+    // Save the message to MongoDB
+    try {
+      await Message.create(message)
+
+      console.log(`Stored message in channel ${channelId}:`, message);
+    } catch (err) {
+      console.error("Error saving message:", err);
     }
-    messagesStore[channelId].push(message);
-    console.log(`Stored message in channel ${channelId}:`, message);
 
     // Broadcast the message only to the room (excluding sender)
     socket.to(channelId).emit("receiveMessage", message);
@@ -137,14 +159,13 @@ app.post("/api/send-message", async (req, res) => {
     _id: message._id || uuidv4(),
   };
 
-  // Save the message.
-  if (finalMessage.channelId) {
-    if (!messagesStore[finalMessage.channelId]) {
-      messagesStore[finalMessage.channelId] = [];
-    }
-    messagesStore[finalMessage.channelId].push(finalMessage);
+  // Save the message to MongoDB
+  try {
+    await Message.create(finalMessage)
+    console.log("Received message from API:", finalMessage);
+  } catch (err) {
+    console.error("Error saving message:", err);
   }
-  console.log("Received message from API:", finalMessage);
 
   // Broadcast the message to the specific room.
   io.to(finalMessage.channelId).emit("receiveMessage", finalMessage);
