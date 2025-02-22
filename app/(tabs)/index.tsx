@@ -22,8 +22,9 @@ import Icon from "react-native-vector-icons/MaterialIcons";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
 import Constants from "expo-constants";
-import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+// NEW: Import AsyncStorage for token persistence.
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Configure the notification handler.
 Notifications.setNotificationHandler({
@@ -203,7 +204,19 @@ const ChatScreen: React.FC<any> = ({ route, navigation }) => {
 
 // ------------------ ChatroomListScreen ------------------
 const ChatroomListScreen: React.FC<any> = ({ navigation, route }) => {
-  const { userId } = route.params;
+  // Modified: If route.params is undefined, try to load userId from AsyncStorage.
+  const [storedUserId, setStoredUserId] = useState<string | null>(null);
+  useEffect(() => {
+    if (route.params && route.params.userId) {
+      setStoredUserId(route.params.userId);
+    } else {
+      AsyncStorage.getItem("userId").then((id) => {
+        if (id) setStoredUserId(id);
+      });
+    }
+  }, [route.params]);
+
+  const userId = storedUserId;
   const [chatrooms, setChatrooms] = useState<{ id: string; name: string }[]>([]);
 
   // Sample implementation to fetch chatrooms.
@@ -252,6 +265,15 @@ const ChatroomListScreen: React.FC<any> = ({ navigation, route }) => {
         renderItem={renderItem}
         contentContainerStyle={styles.chatroomList}
       />
+      {/* Optional: A Logout button to clear stored token */}
+      <Button
+        title="Logout"
+        onPress={async () => {
+          await AsyncStorage.removeItem("userToken");
+          await AsyncStorage.removeItem("userId");
+          navigation.navigate("Login");
+        }}
+      />
     </SafeAreaView>
   );
 };
@@ -263,6 +285,7 @@ const LoginScreen: React.FC<any> = ({ navigation }) => {
   const [password, setPassword] = useState("");
 
   // Modified: Actual login using the /api/login endpoint.
+  // On success, store the token and userId so that the user remains logged in.
   const handleLogin = async () => {
     if (email.trim() === "" || password.trim() === "") {
       Alert.alert("Error", "Please enter both email and password");
@@ -279,6 +302,9 @@ const LoginScreen: React.FC<any> = ({ navigation }) => {
         Alert.alert("Error", data.error || "Login failed");
         return;
       }
+      // Store token and userId so user doesn't need to login next time.
+      await AsyncStorage.setItem("userToken", data.token);
+      await AsyncStorage.setItem("userId", data.userId);
       // Navigate to the ChatroomList screen and pass the userId.
       navigation.navigate("ChatroomList", { userId: data.userId });
     } catch (err) {
@@ -519,14 +545,41 @@ const ForgotPasswordScreen: React.FC<any> = ({ navigation }) => {
 const Stack = createNativeStackNavigator();
 
 const App: React.FC = () => {
+  // NEW: Check AsyncStorage to determine initial route so user stays logged in.
+  const [initialRoute, setInitialRoute] = useState<string | null>(null);
+  const [storedUserId, setStoredUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const checkLogin = async () => {
+      const token = await AsyncStorage.getItem("userToken");
+      const userId = await AsyncStorage.getItem("userId");
+      if (token && userId) {
+        setStoredUserId(userId);
+        setInitialRoute("ChatroomList");
+      } else {
+        setInitialRoute("Login");
+      }
+    };
+    checkLogin();
+  }, []);
+
+  if (!initialRoute) {
+    return (
+      <View style={styles.container}>
+        <Text style={{ textAlign: "center", marginTop: 50 }}>Loading...</Text>
+      </View>
+    );
+  }
+
   return (
-   
-      <Stack.Navigator initialRouteName="Login">
+      <Stack.Navigator initialRouteName={initialRoute}>
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen
           name="ChatroomList"
           component={ChatroomListScreen}
           options={{ title: "Chat Rooms" }}
+          // NEW: Pass stored userId as initialParams if available.
+          initialParams={{ userId: storedUserId }}
         />
         <Stack.Screen
           name="Chat"
@@ -537,7 +590,6 @@ const App: React.FC = () => {
         <Stack.Screen name="Register" component={RegisterScreen} options={{ title: "Register" }} />
         <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} options={{ title: "Forgot Password" }} />
       </Stack.Navigator>
-    
   );
 };
 

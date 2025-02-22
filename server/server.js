@@ -12,6 +12,8 @@ const bcrypt = require("bcrypt");
 const crypto = require("crypto");
 // NEW: Use AWS SDK v3 for SES.
 const { SESClient, SendRawEmailCommand } = require("@aws-sdk/client-ses");
+// NEW: Require JSON Web Token package.
+const jwt = require("jsonwebtoken");
 
 // load the environment variables from the .env file
 require('dotenv').config();
@@ -55,11 +57,12 @@ const sesClient = new SESClient({
   },
 });
 console.log("SES client created:", {
-  region: process.env.AWS_SES_REGION, // e.g., 'us-east-1'
+  region: process.env.AWS_SES_REGION,
   credentials: {
     accessKeyId: process.env.AWS_SES_ACCESS_KEY,
     secretAccessKey: process.env.AWS_SES_SECRET_KEY,
-  }});
+  }
+});
 const transporter = nodemailer.createTransport({
   SES: { ses: sesClient, aws: { SendRawEmailCommand } },
 });
@@ -182,8 +185,15 @@ app.post("/api/login", async (req, res) => {
     if (!isMatch) {
       return res.status(400).json({ error: "Invalid email or password." });
     }
+    // NEW: Generate JWT token so that the user stays logged in.
+    const token = jwt.sign(
+      { userId: user._id, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
     console.log(`User ${email} logged in successfully.`);
-    return res.status(200).json({ userId: user._id });
+    // Return both token and userId for client usage.
+    return res.status(200).json({ token, userId: user._id });
   } catch (err) {
     console.error("Error during login:", err);
     return res.status(500).json({ error: "Internal server error." });
