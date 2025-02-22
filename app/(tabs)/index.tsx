@@ -258,25 +258,33 @@ const ChatroomListScreen: React.FC<any> = ({ navigation, route }) => {
 
 // ------------------ LoginScreen ------------------
 const LoginScreen: React.FC<any> = ({ navigation }) => {
-  const [username, setUsername] = useState("");
+  // Modified: Using email instead of username.
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  // Sample login function.
+  // Modified: Actual login using the /api/login endpoint.
   const handleLogin = async () => {
-    if (username.trim() === "" || password.trim() === "") {
-      Alert.alert("Error", "Please enter both username and password");
-      return;
-    } else if (username.trim() === "guest" && password.trim() === "111111") {
-      // Authentication logic can go here.
-    } else {
-      Alert.alert("Error", "Please enter correct username and password");
+    if (email.trim() === "" || password.trim() === "") {
+      Alert.alert("Error", "Please enter both email and password");
       return;
     }
-    
-    // Simulate a successful login by generating a userId.
-    const userId = Math.random().toString(36).substring(7);
-    // Navigate to the ChatroomList screen and pass the userId.
-    navigation.navigate("ChatroomList", { userId });
+    try {
+      const response = await fetch("http://127.0.0.1:3000/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        Alert.alert("Error", data.error || "Login failed");
+        return;
+      }
+      // Navigate to the ChatroomList screen and pass the userId.
+      navigation.navigate("ChatroomList", { userId: data.userId });
+    } catch (err) {
+      console.error(err);
+      Alert.alert("Error", "An error occurred during login.");
+    }
   };
 
   return (
@@ -284,11 +292,12 @@ const LoginScreen: React.FC<any> = ({ navigation }) => {
       <View style={styles.loginContainer}>
         <Text style={styles.title}>Login</Text>
         <TextInput
-          placeholder="Username"
-          value={username}
-          onChangeText={setUsername}
+          placeholder="Email"
+          value={email}
+          onChangeText={setEmail}
           style={styles.input}
           autoCapitalize="none"
+          keyboardType="email-address"
         />
         <TextInput
           placeholder="Password"
@@ -298,6 +307,209 @@ const LoginScreen: React.FC<any> = ({ navigation }) => {
           secureTextEntry
         />
         <Button title="Login" onPress={handleLogin} />
+        {/* New: Buttons to navigate to Register and Forgot Password screens */}
+        <View style={{ marginTop: 10 }}>
+          <Button
+            title="Create Account"
+            onPress={() => navigation.navigate("Register")}
+          />
+          <Button
+            title="Forgot Password"
+            onPress={() => navigation.navigate("ForgotPassword")}
+          />
+        </View>
+      </View>
+    </SafeAreaView>
+  );
+};
+
+// ------------------ RegisterScreen ------------------
+const RegisterScreen: React.FC<any> = ({ navigation }) => {
+  const [email, setEmail] = useState("");
+  const [token, setToken] = useState("");
+  const [password, setPassword] = useState("");
+  const [step, setStep] = useState(1); // step 1: register, step 2: verify
+
+  const handleRegister = async () => {
+    if (email.trim() === "") {
+      Alert.alert("Error", "Please enter email");
+      return;
+    }
+    try {
+      const response = await fetch("http://127.0.0.1:3000/api/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        Alert.alert("Error", data.error || "Registration failed");
+        return;
+      }
+      Alert.alert("Success", "Verification email sent. Please check your email.");
+      setStep(2);
+    } catch (err) {
+      console.error(err);
+      Alert.alert("Error", "An error occurred during registration.");
+    }
+  };
+
+  const handleVerify = async () => {
+    if (token.trim() === "" || password.trim() === "") {
+      Alert.alert("Error", "Please enter token and password");
+      return;
+    }
+    try {
+      const response = await fetch("http://127.0.0.1:3000/api/verify-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, password }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        Alert.alert("Error", data.error || "Verification failed");
+        return;
+      }
+      Alert.alert("Success", "Email verified and password set. Please login.");
+      navigation.navigate("Login");
+    } catch (err) {
+      console.error(err);
+      Alert.alert("Error", "An error occurred during email verification.");
+    }
+  };
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <View style={styles.loginContainer}>
+        <Text style={styles.title}>Register</Text>
+        {step === 1 && (
+          <>
+            <TextInput
+              placeholder="Email"
+              value={email}
+              onChangeText={setEmail}
+              style={styles.input}
+              autoCapitalize="none"
+              keyboardType="email-address"
+            />
+            <Button title="Register" onPress={handleRegister} />
+          </>
+        )}
+        {step === 2 && (
+          <>
+            <TextInput
+              placeholder="Verification Token"
+              value={token}
+              onChangeText={setToken}
+              style={styles.input}
+              autoCapitalize="none"
+            />
+            <TextInput
+              placeholder="Password"
+              value={password}
+              onChangeText={setPassword}
+              style={styles.input}
+              secureTextEntry
+            />
+            <Button title="Verify Email" onPress={handleVerify} />
+          </>
+        )}
+      </View>
+    </SafeAreaView>
+  );
+};
+
+// ------------------ ForgotPasswordScreen ------------------
+const ForgotPasswordScreen: React.FC<any> = ({ navigation }) => {
+  const [email, setEmail] = useState("");
+  const [token, setToken] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [step, setStep] = useState(1); // step 1: request reset, step 2: reset password
+
+  const handleRequestReset = async () => {
+    if (email.trim() === "") {
+      Alert.alert("Error", "Please enter email");
+      return;
+    }
+    try {
+      const response = await fetch("http://127.0.0.1:3000/api/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        Alert.alert("Error", data.error || "Failed to send reset email");
+        return;
+      }
+      Alert.alert("Success", "Password reset email sent. Please check your email.");
+      setStep(2);
+    } catch (err) {
+      console.error(err);
+      Alert.alert("Error", "An error occurred while requesting password reset.");
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (token.trim() === "" || newPassword.trim() === "") {
+      Alert.alert("Error", "Please enter token and new password");
+      return;
+    }
+    try {
+      const response = await fetch("http://127.0.0.1:3000/api/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, newPassword }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        Alert.alert("Error", data.error || "Reset password failed");
+        return;
+      }
+      Alert.alert("Success", "Password has been reset. Please login.");
+      navigation.navigate("Login");
+    } catch (err) {
+      console.error(err);
+      Alert.alert("Error", "An error occurred during password reset.");
+    }
+  };
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <View style={styles.loginContainer}>
+        <Text style={styles.title}>Forgot Password</Text>
+        {step === 1 && (
+          <>
+            <TextInput
+              placeholder="Email"
+              value={email}
+              onChangeText={setEmail}
+              style={styles.input}
+              autoCapitalize="none"
+              keyboardType="email-address"
+            />
+            <Button title="Send Reset Email" onPress={handleRequestReset} />
+          </>
+        )}
+        {step === 2 && (
+          <>
+            <TextInput
+              placeholder="Reset Token"
+              value={token}
+              onChangeText={setToken}
+              style={styles.input}
+              autoCapitalize="none"
+            />
+            <TextInput
+              placeholder="New Password"
+              value={newPassword}
+              onChangeText={setNewPassword}
+              style={styles.input}
+              secureTextEntry
+            />
+            <Button title="Reset Password" onPress={handleResetPassword} />
+          </>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -321,6 +533,9 @@ const App: React.FC = () => {
           component={ChatScreen}
           options={({ route }) => ({ title: route.params.chatroomName })}
         />
+        {/* New screens for registration and forgot password */}
+        <Stack.Screen name="Register" component={RegisterScreen} options={{ title: "Register" }} />
+        <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} options={{ title: "Forgot Password" }} />
       </Stack.Navigator>
     
   );

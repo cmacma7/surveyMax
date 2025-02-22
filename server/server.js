@@ -6,6 +6,17 @@ const { v4: uuidv4 } = require("uuid");
 const { Expo } = require("expo-server-sdk");
 const mongoose = require("mongoose");
 
+//Require additional modules for authentication and email sending.
+const nodemailer = require("nodemailer");
+const bcrypt = require("bcrypt");
+const crypto = require("crypto");
+// NEW: Use AWS SDK v3 for SES.
+const { SESClient, SendRawEmailCommand } = require("@aws-sdk/client-ses");
+
+// load the environment variables from the .env file
+require('dotenv').config();
+
+
 // Connect to MongoDB
 mongoose.connect("mongodb://localhost:27017/chatdb", {
   useNewUrlParser: true,
@@ -21,6 +32,37 @@ const messageSchema = new mongoose.Schema({
   _id: { type: String, default: () => uuidv4() },
 });
 const Message = mongoose.model("Message", messageSchema);
+
+// NEW: Define a Mongoose schema and model for users.
+const userSchema = new mongoose.Schema({
+  email: { type: String, required: true, unique: true, index: true },
+  password: { type: String },
+  isVerified: { type: Boolean, default: false },
+  verificationToken: { type: String },
+  resetPasswordToken: { type: String },
+  resetPasswordExpires: { type: Date },
+});
+const User = mongoose.model("User", userSchema);
+
+// NEW: Create a transporter for sending emails using Amazon SES.
+// Make sure to set AWS_SES_ACCESS_KEY, AWS_SES_SECRET_KEY, AWS_SES_REGION,
+// and AWS_SES_EMAIL_FROM in your environment.
+const sesClient = new SESClient({
+  region: process.env.AWS_SES_REGION, // e.g., 'us-east-1'
+  credentials: {
+    accessKeyId: process.env.AWS_SES_ACCESS_KEY,
+    secretAccessKey: process.env.AWS_SES_SECRET_KEY,
+  },
+});
+console.log("SES client created:", {
+  region: process.env.AWS_SES_REGION, // e.g., 'us-east-1'
+  credentials: {
+    accessKeyId: process.env.AWS_SES_ACCESS_KEY,
+    secretAccessKey: process.env.AWS_SES_SECRET_KEY,
+  }});
+const transporter = nodemailer.createTransport({
+  SES: { ses: sesClient, aws: { SendRawEmailCommand } },
+});
 
 // Initialize Express and HTTP server.
 const app = express();
@@ -64,6 +106,151 @@ app.get("/api/messages/:channelId", async (req, res) => {
   }
 });
 
+// NEW: API endpoint for user registration.
+// Expects { email } in the request body. A verification email is sent with a token.
+app.post("/api/register", async (req, res) => {
+  const { email } = req.body;
+  if (!email) {
+    return res.status(400).json({ error: "Email is required." });
+  }
+  try {
+    let user = await User.findOne({ email });
+    if (user) {
+      return res.status(400).json({ error: "Email already registered." });
+    }
+    const verificationToken = crypto.randomBytes(20).toString("hex");
+    user = new User({ email, verificationToken });
+    await user.save();
+
+    // Send verification email with a link to set the password.
+    const verificationUrl = `http://yourdomain.com/verify-email?token=${verificationToken}`;
+    const mailOptions = {
+      from: process.env.AWS_SES_EMAIL_FROM,
+      to: email,
+      subject: "Email Verification",
+      text: `Please verify your email by clicking the following link: ${verificationUrl}`,
+    };
+    await transporter.sendMail(mailOptions);
+    console.log(`Sent verification email to ${email}`);
+    return res.status(200).json({ message: "Verification email sent." });
+  } catch (err) {
+    console.error("Error during registration:", err);
+    return res.status(500).json({ error: "Internal server error." });
+  }
+});
+
+// NEW: API endpoint to verify email and set the password.
+// Expects { token, password } in the request body.
+app.post("/api/verify-email", async (req, res) => {
+  const { token, password } = req.body;
+  if (!token || !password) {
+    return res.status(400).json({ error: "Token and password are required." });
+  }
+  try {
+    const user = await User.findOne({ verificationToken: token });
+    if (!user) {
+      return res.status(400).json({ error: "Invalid token." });
+    }
+    user.password = await bcrypt.hash(password, 10);
+    user.isVerified = true;
+    user.verificationToken = undefined;
+    await user.save();
+    console.log(`User ${user.email} verified and password set.`);
+    return res.status(200).json({ message: "Email verified and password set." });
+  } catch (err) {
+    console.error("Error verifying email:", err);
+    return res.status(500).json({ error: "Internal server error." });
+  }
+});
+
+// NEW: API endpoint for user login.
+// Expects { email, password } in the request body.
+app.post("/api/login", async (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) {
+    return res.status(400).json({ error: "Email and password are required." });
+  }
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({ error: "Invalid email or password." });
+    }
+    if (!user.isVerified) {
+      return res.status(400).json({ error: "Email not verified." });
+    }
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ error: "Invalid email or password." });
+    }
+    console.log(`User ${email} logged in successfully.`);
+    return res.status(200).json({ userId: user._id });
+  } catch (err) {
+    console.error("Error during login:", err);
+    return res.status(500).json({ error: "Internal server error." });
+  }
+});
+
+// NEW: API endpoint for forgot password.
+// Expects { email } in the request body and sends a reset email.
+app.post("/api/forgot-password", async (req, res) => {
+  const { email } = req.body;
+  if (!email) {
+    return res.status(400).json({ error: "Email is required." });
+  }
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({ error: "Email not registered." });
+    }
+    const resetToken = crypto.randomBytes(20).toString("hex");
+    user.resetPasswordToken = resetToken;
+    user.resetPasswordExpires = Date.now() + 3600000; // 1 hour from now
+    await user.save();
+
+    const resetUrl = `http://yourdomain.com/reset-password?token=${resetToken}`;
+    const mailOptions = {
+      from: process.env.AWS_SES_EMAIL_FROM,
+      to: email,
+      subject: "Password Reset",
+      text: `You requested a password reset. Please click the following link to reset your password: ${resetUrl}`,
+    };
+    await transporter.sendMail(mailOptions);
+    console.log(`Sent password reset email to ${email}`);
+    return res.status(200).json({ message: "Password reset email sent." });
+  } catch (err) {
+    console.error("Error in forgot password:", err);
+    return res.status(500).json({ error: "Internal server error." });
+  }
+});
+
+// NEW: API endpoint to reset password.
+// Expects { token, newPassword } in the request body.
+app.post("/api/reset-password", async (req, res) => {
+  const { token, newPassword } = req.body;
+  if (!token || !newPassword) {
+    return res.status(400).json({ error: "Token and new password are required." });
+  }
+  try {
+    const user = await User.findOne({
+      resetPasswordToken: token,
+      resetPasswordExpires: { $gt: Date.now() },
+    });
+    if (!user) {
+      return res.status(400).json({ error: "Invalid or expired token." });
+    }
+    user.password = await bcrypt.hash(newPassword, 10);
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    user.isVerified = true; // Automatically verify the email after password reset
+    await user.save();
+    console.log(`Password reset for user ${user.email}`);
+    return res.status(200).json({ message: "Password has been reset." });
+  } catch (err) {
+    console.error("Error resetting password:", err);
+    return res.status(500).json({ error: "Internal server error." });
+  }
+});
+
 // Socket.IO event handlers.
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
@@ -85,7 +272,6 @@ io.on("connection", (socket) => {
     // Save the message to MongoDB
     try {
       await Message.create(message)
-
       console.log(`Stored message in channel ${channelId}:`, message);
     } catch (err) {
       console.error("Error saving message:", err);
