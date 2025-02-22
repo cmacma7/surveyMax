@@ -10,7 +10,7 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.survey-max"
+      "bundleIdentifier": "com.tagfans.survey-max"
     },
     "android": {
       "adaptiveIcon": {

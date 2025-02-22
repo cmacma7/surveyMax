@@ -13,8 +13,11 @@ import {
   FlatList,
   Alert,
 } from "react-native";
+
+const SERVER_URL = "http://192.168.0.186:3000";
+
 import { io } from "socket.io-client";
-const socket = io("http://127.0.0.1:3000");
+const socket = io(SERVER_URL);
 
 import * as ImagePicker from "expo-image-picker";
 import { GiftedChat, IMessage } from "react-native-gifted-chat";
@@ -86,7 +89,7 @@ const ChatScreen: React.FC<any> = ({ route, navigation }) => {
     // This ensures that if the ChatScreen is opened directly, the user is in this room.
     socket.emit("joinRoom", chatroomId);
     // Fetch saved/offline messages for this channel.
-    fetch(`http://127.0.0.1:3000/api/messages/${chatroomId}`)
+    fetch(`${SERVER_URL}/api/messages/${chatroomId}`)
       .then((res) => res.json())
       .then((data) => {
         if (data.messages) {
@@ -102,7 +105,7 @@ const ChatScreen: React.FC<any> = ({ route, navigation }) => {
       const token = await registerForPushNotificationsAsync();
       if (token) {
         // Send the token along with userId to your backend.
-        fetch("http://127.0.0.1:3000/api/register-push-token", {
+        fetch(`${SERVER_URL}/api/register-push-token`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ userId, token }),
@@ -283,7 +286,7 @@ const LoginScreen: React.FC<any> = ({ navigation }) => {
       return;
     }
     try {
-      const response = await fetch("http://127.0.0.1:3000/api/login", {
+      const response = await fetch(`${SERVER_URL}/api/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -353,7 +356,7 @@ const RegisterScreen: React.FC<any> = ({ navigation }) => {
       return;
     }
     try {
-      const response = await fetch("http://127.0.0.1:3000/api/register", {
+      const response = await fetch(`${SERVER_URL}/api/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
@@ -377,7 +380,7 @@ const RegisterScreen: React.FC<any> = ({ navigation }) => {
       return;
     }
     try {
-      const response = await fetch("http://127.0.0.1:3000/api/verify-email", {
+      const response = await fetch(`${SERVER_URL}/api/verify-email`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token, password }),
@@ -449,7 +452,7 @@ const ForgotPasswordScreen: React.FC<any> = ({ navigation }) => {
       return;
     }
     try {
-      const response = await fetch("http://127.0.0.1:3000/api/forgot-password", {
+      const response = await fetch(`${SERVER_URL}/api/forgot-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
@@ -473,7 +476,7 @@ const ForgotPasswordScreen: React.FC<any> = ({ navigation }) => {
       return;
     }
     try {
-      const response = await fetch("http://127.0.0.1:3000/api/reset-password", {
+      const response = await fetch(`${SERVER_URL}/api/reset-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token, newPassword }),
