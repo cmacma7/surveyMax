@@ -1,4 +1,6 @@
 import { StyleSheet, Image, Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useRouter } from 'expo-router';
 
 import { Collapsible } from '@/components/Collapsible';
 import { ExternalLink } from '@/components/ExternalLink';
@@ -8,6 +10,7 @@ import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 
 export default function TabTwoScreen() {
+  const router = useRouter();
   return (
     <ParallaxScrollView
       headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
@@ -91,6 +94,19 @@ export default function TabTwoScreen() {
           ),
         })}
       </Collapsible>
+      {/* NEW: Logout button added here */}
+      <ThemedView style={{ padding: 20 }}>
+        <ThemedText
+          onPress={async () => {
+            await AsyncStorage.removeItem("userToken");
+            await AsyncStorage.removeItem("userId");
+            router.push("/login");
+          }}
+          style={{ color: 'red', textAlign: 'center', paddingVertical: 10 }}
+        >
+          Logout
+        </ThemedText>
+      </ThemedView>
     </ParallaxScrollView>
   );
 }

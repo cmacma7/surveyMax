@@ -265,15 +265,6 @@ const ChatroomListScreen: React.FC<any> = ({ navigation, route }) => {
         renderItem={renderItem}
         contentContainerStyle={styles.chatroomList}
       />
-      {/* Optional: A Logout button to clear stored token */}
-      <Button
-        title="Logout"
-        onPress={async () => {
-          await AsyncStorage.removeItem("userToken");
-          await AsyncStorage.removeItem("userId");
-          navigation.navigate("Login");
-        }}
-      />
     </SafeAreaView>
   );
 };
