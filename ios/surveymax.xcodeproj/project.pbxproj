@@ -32,6 +32,7 @@
 		7A4D352CD337FB3A3BF06240 /* Pods-surveymax.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-surveymax.release.xcconfig"; path = "Target Support Files/Pods-surveymax/Pods-surveymax.release.xcconfig"; sourceTree = "<group>"; };
 		924D9A8C95D411337FAB328C /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = surveymax/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = surveymax/SplashScreen.storyboard; sourceTree = "<group>"; };
+		B4FF3AF12D6A1E4100BEEF6A /* surveymaxDebug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = surveymaxDebug.entitlements; path = surveymax/surveymaxDebug.entitlements; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		FAC715A2D49A985799AEE119 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-surveymax/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
@@ -52,6 +53,7 @@
 		13B07FAE1A68108700A75B9A /* surveymax */ = {
 			isa = PBXGroup;
 			children = (
+				B4FF3AF12D6A1E4100BEEF6A /* surveymaxDebug.entitlements */,
 				BB2F792B24A3F905000567C9 /* Supporting */,
 				13B07FAF1A68108700A75B9A /* AppDelegate.h */,
 				13B07FB01A68108700A75B9A /* AppDelegate.mm */,
@@ -390,7 +392,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_ENTITLEMENTS = surveymax/surveymax.entitlements;
+				CODE_SIGN_ENTITLEMENTS = surveymax/surveymaxDebug.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 363XW4E3R7;
 				ENABLE_BITCODE = NO;

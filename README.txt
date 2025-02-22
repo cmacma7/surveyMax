@@ -30,7 +30,10 @@ You can use node sendMessage.js <message> <user>  to send a system message that 
 1. cd server    node server.js
 2. cd /Users/chenma/mongodb-macos-aarch64-8.0.4/bin   ./mongod --dbpath ~/data/db
 3. under the root survey-max, npx expo start -c  to run already build expo, to rebuild   npx expo run:ios
-4. if use real device, then   npx expo run:ios --device.  
-   It seems we need to open XCode, and go under survey-max/ios directory, to open the project.
-   focus on surveyMax project, fill in all the necessary data, like general, Signing and Capabilities ....
-   when the iOS app of Expo open, it need to connect to the npx expo start  server, the IP address need to enter at the iOS app Expo menu at the bottom to connect 
+4. if use real device, then   npx expo run:ios --device.  Remember to change the IP address in index.tsx, the SERVER_URL need to set to the server.
+   *It seems we need to open XCode, and go under survey-max/ios directory, to open the project. 
+    You can also build the project inside XCode, use Xcode to build and run under product menu, the code will upload to device, then you can npx expo start 
+   *We use eas credentials to handle the push notification certification. So eas will handle the certification for us, suppose in the Expo server.
+   *focus on surveyMax project, fill in all the necessary data, like general, Signing and Capabilities (and you need to add push notification and other features here)
+   *after enabled push notification in Xcode, just rebuild in XCode, then Expo notification can work, otherwise, we won't get the Expo notification Key.
+   when the iOS app of Expo open, it need to connect to the npx expo start  server, the IP address need to enter at the iOS app Expo menu at the bottom to connect. 
