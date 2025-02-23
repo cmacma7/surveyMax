@@ -35,7 +35,7 @@ const messageSchema = new mongoose.Schema({
 });
 const Message = mongoose.model("Message", messageSchema);
 
-// NEW: Define a Mongoose schema and model for users.
+// Define a Mongoose schema and model for users.
 const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true, index: true },
   password: { type: String },
@@ -45,6 +45,23 @@ const userSchema = new mongoose.Schema({
   resetPasswordExpires: { type: Date },
 });
 const User = mongoose.model("User", userSchema);
+
+
+// Define a Mongoose schema and model for channelInfo.
+const channelInfoSchema = new mongoose.Schema({
+  channelId: { type: String, required: true, unique: true, index: true },
+  channelDescription: { type: String },
+});
+const ChannelInfo = mongoose.model("ChannelInfo", channelInfoSchema);
+
+// Define a Mongoose schema and model for adminChannels.
+const adminChannelSchema = new mongoose.Schema({
+  userId: { type: String, required: true, unique: true, index: true },
+  channels: { type: [String], default: [] },
+});
+const AdminChannel = mongoose.model("AdminChannel", adminChannelSchema);
+
+
 
 // NEW: Create a transporter for sending emails using Amazon SES.
 // Make sure to set AWS_SES_ACCESS_KEY, AWS_SES_SECRET_KEY, AWS_SES_REGION,
@@ -84,6 +101,10 @@ const pushTokens = {};
 
 // Initialize Expo SDK client.
 let expo = new Expo();
+
+
+// ********** API Endpoints **********
+// ***********************************
 
 // API endpoint to register a device's push token.
 app.post("/api/register-push-token", (req, res) => {
@@ -260,6 +281,100 @@ app.post("/api/reset-password", async (req, res) => {
     return res.status(500).json({ error: "Internal server error." });
   }
 });
+
+// NEW: Endpoint to update or delete a channel in channelInfo.
+app.post("/api/update-channel", async (req, res) => {
+  const { channelId, channelDescription, deleteChannel } = req.body;
+  if (!channelId) {
+    return res.status(400).json({ error: "channelId is required." });
+  }
+  try {
+    if (deleteChannel === "Yes") {
+      await ChannelInfo.findOneAndDelete({ channelId });
+      console.log(`Channel ${channelId} deleted.`);
+      return res.status(200).json({ message: "Channel deleted." });
+    } else {
+      const update = { channelDescription };
+      const options = { upsert: true, new: true, setDefaultsOnInsert: true };
+      const channel = await ChannelInfo.findOneAndUpdate({ channelId }, update, options);
+      console.log(`Channel ${channelId} updated/created:`, channel);
+      return res.status(200).json({ message: "Channel updated/created.", channel });
+    }
+  } catch (err) {
+    console.error("Error in updateChannel:", err);
+    return res.status(500).json({ error: "Internal server error." });
+  }
+});
+
+// NEW: Endpoint to add or remove a channel from a user's admin channels.
+app.post("/api/add-channel-admin", async (req, res) => {
+  let { channelId, userId, email, deleteAdmin } = req.body;
+  if (!channelId) {
+    return res.status(400).json({ error: "channelId is required." });
+  }
+  if (!userId && !email) {
+    return res.status(400).json({ error: "Either userId or email is required." });
+  }
+  try {
+    if (!userId && email) {
+      const user = await User.findOne({ email });
+      if (!user) {
+        return res.status(400).json({ error: "User not found with provided email." });
+      }
+      userId = user._id;
+    }
+    // Find or create admin channel doc for the user.
+    let adminDoc = await AdminChannel.findOne({ userId });
+    if (!adminDoc) {
+      adminDoc = new AdminChannel({ userId, channels: [] });
+    }
+    if (deleteAdmin === "Yes") {
+      adminDoc.channels = adminDoc.channels.filter(id => id !== channelId);
+      console.log(`Channel ${channelId} removed from admin list for user ${userId}`);
+    } else {
+      if (!adminDoc.channels.includes(channelId)) {
+        adminDoc.channels.push(channelId);
+        console.log(`Channel ${channelId} added to admin list for user ${userId}`);
+      }
+    }
+    await adminDoc.save();
+    return res.status(200).json({ message: "Admin channels updated.", adminChannels: adminDoc });
+  } catch (err) {
+    console.error("Error in addChannelAdmin:", err);
+    return res.status(500).json({ error: "Internal server error." });
+  }
+});
+
+// NEW: Endpoint to list all channels that a user can admin.
+app.post("/api/list-admin", async (req, res) => {
+  let { userId, email } = req.body;
+  if (!userId && !email) {
+    return res.status(400).json({ error: "Either userId or email is required." });
+  }
+  try {
+    if (!userId && email) {
+      const user = await User.findOne({ email });
+      if (!user) {
+        return res.status(400).json({ error: "User not found with provided email." });
+      }
+      userId = user._id;
+    }
+    const adminDoc = await AdminChannel.findOne({ userId });
+    if (!adminDoc || adminDoc.channels.length === 0) {
+      return res.status(200).json({ channels: [] });
+    }
+    // Get channel info from channelInfo collection.
+    const channels = await ChannelInfo.find({ channelId: { $in: adminDoc.channels } });
+    return res.status(200).json({ channels });
+  } catch (err) {
+    console.error("Error in listAdmin:", err);
+    return res.status(500).json({ error: "Internal server error." });
+  }
+});
+
+
+
+
 
 // Socket.IO event handlers.
 io.on("connection", (socket) => {

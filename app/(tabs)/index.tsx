@@ -209,33 +209,65 @@ const ChatScreen: React.FC<any> = ({ route, navigation }) => {
 const ChatroomListScreen: React.FC<any> = ({ navigation, route }) => {
   // Modified: If route.params is undefined, try to load userId from AsyncStorage.
   const [storedUserId, setStoredUserId] = useState<string | null>(null);
+  const [storedUserEmail, setStoredUserEmail] = useState<string | null>(null);
   useEffect(() => {
-    if (route.params && route.params.userId) {
-      setStoredUserId(route.params.userId);
-    } else {
-      AsyncStorage.getItem("userId").then((id) => {
-        if (id) setStoredUserId(id);
-      });
-    }
+    if (route.params) {
+        if (route.params.userId) setStoredUserId(route.params.userId);
+        if (route.params.email) setStoredUserEmail(route.params.email);
+      } else {
+        AsyncStorage.getItem("userId").then((id) => {
+          if (id) setStoredUserId(id);
+        });
+        AsyncStorage.getItem("userEmail").then((email) => {
+          if (email) setStoredUserEmail(email);
+        });
+      }
   }, [route.params]);
 
-  const userId = storedUserId;
+  // Use userId if available; otherwise, fallback to email.
+  const userIdentifier = storedUserId || storedUserEmail;
   const [chatrooms, setChatrooms] = useState<{ id: string; name: string }[]>([]);
 
-  // Sample implementation to fetch chatrooms.
-  const fetchChatrooms = async () => {
-    // Replace with your API call.
-    const sampleChatrooms = [
-      { id: "1", name: "Survey Chatroom 1" },
-      { id: "2", name: "Survey Chatroom 2" },
-      { id: "3", name: "Survey Chatroom 3" },
-    ];
-    setChatrooms(sampleChatrooms);
-  };
+// Sample implementation to fetch chatrooms from listAdmin endpoint.
+const fetchChatrooms = async () => {
+  if (!userIdentifier) {
+    console.error("No userId or email found.");
+    return;
+  }
+  let payload = {};
+  if (storedUserId) {
+    payload["userId"] = storedUserId;
+  } else {
+    payload["email"] = storedUserEmail;
+  }
+  
+  try {
+    const response = await fetch(`${SERVER_URL}/api/list-admin`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const data = await response.json();
+    if (response.ok && data.channels) {
+      // Map channels to expected format: id and name.
+      const formattedChannels = data.channels.map(channel => ({
+        id: channel.channelId,
+        name: channel.channelDescription || channel.channelId,
+      }));
+      setChatrooms(formattedChannels);
+    } else {
+      console.error("Error fetching admin channels:", data.error);
+      setChatrooms([]);
+    }
+  } catch (err) {
+    console.error(err);
+  }
+};
+
 
   useEffect(() => {
     fetchChatrooms();
-  }, []);
+  }, [storedUserId, storedUserEmail]);
 
   // Once chatrooms are fetched, join all rooms.
   useEffect(() => {
@@ -251,7 +283,7 @@ const ChatroomListScreen: React.FC<any> = ({ navigation, route }) => {
         navigation.navigate("Chat", {
           chatroomId: item.id,
           chatroomName: item.name,
-          userId,
+          userId: storedUserId
         })
       }
     >
@@ -299,6 +331,7 @@ const LoginScreen: React.FC<any> = ({ navigation }) => {
       // Store token and userId so user doesn't need to login next time.
       await AsyncStorage.setItem("userToken", data.token);
       await AsyncStorage.setItem("userId", data.userId);
+      await AsyncStorage.setItem("userEmail", email);
       // Navigate to the ChatroomList screen and pass the userId.
       navigation.navigate("ChatroomList", { userId: data.userId });
     } catch (err) {
@@ -539,9 +572,10 @@ const ForgotPasswordScreen: React.FC<any> = ({ navigation }) => {
 const Stack = createNativeStackNavigator();
 
 const App: React.FC = () => {
-  // NEW: Check AsyncStorage to determine initial route so user stays logged in.
+  // Check AsyncStorage to determine initial route so user stays logged in.
   const [initialRoute, setInitialRoute] = useState<string | null>(null);
   const [storedUserId, setStoredUserId] = useState<string | null>(null);
+  
 
   useEffect(() => {
     const checkLogin = async () => {
