@@ -14,7 +14,8 @@ import {
   Alert,
 } from "react-native";
 
-const SERVER_URL = "http://192.168.0.186:3000";
+const SERVER_URL = 'https://b200.tagfans.com:5301';
+// const SERVER_URL = 'http://192.168.100.125:5300';
 
 import { io } from "socket.io-client";
 const socket = io(SERVER_URL);
