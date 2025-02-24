@@ -41,9 +41,10 @@ You can use node sendMessage.js <message> <user>  to send a system message that 
 
 5. To deploy
    npx expo build:ios
-   in XCode, go to the surveymax project, make sure signing and capabilities, release build has the push notification cap. 
-   on production tab of Xcode, click archive.
-   after upload, make sure to 
+   In XCode, go to the surveymax project, make sure in 'signing and capabilities', release build has the push notification cap. 
+   To build and archive the code, click production tab of Xcode, click archive.
+   After archive finished, dialog box show the new version of your new build, select upload, 
+   After upload finish, make sure to 
      https://appstoreconnect.apple.com/teams/69a6de84-62fe-47e3-e053-5b8c7c11a4d1/apps/6742369482/testflight/ios 
    to agree the encryption to activate the upload version.
   

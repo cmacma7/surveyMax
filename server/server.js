@@ -595,10 +595,19 @@ io.on("connection", (socket) => {
     for (const [userId, token] of Object.entries(pushTokens)) {
       // Skip sending a push notification to the sender.
       if (userId === message.user._id) continue;
+
+      // Check if the user has admin access to the room.
+      const adminDoc = await AdminChannel.findOne({ userId });
+      if (!adminDoc || !adminDoc.channels.includes(channelId)) {
+        console.log(`Skipping push notification for user ${userId}, not an admin of ${channelId}`);
+        continue;
+      }
+
       if (!Expo.isExpoPushToken(token)) {
         console.error(`Push token ${token} is not a valid Expo push token`);
         continue;
       }
+
       messagesToSend.push({
         to: token,
         sound: "default",
@@ -607,6 +616,7 @@ io.on("connection", (socket) => {
         data: { message },
       });
     }
+
     const chunks = expo.chunkPushNotifications(messagesToSend);
     for (const chunk of chunks) {
       try {

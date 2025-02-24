@@ -99,6 +99,18 @@ const ChatScreen: React.FC<any> = ({ route, navigation }) => {
         }
       })
       .catch((err) => console.error(err));
+
+    const handleReconnect = () => {
+      console.log("Socket reconnected. Rejoining room:", chatroomId);
+      socket.emit("joinRoom", chatroomId);
+    };
+  
+    socket.on("connect", handleReconnect);
+  
+    return () => {
+      socket.off("connect", handleReconnect);
+    };
+    
   }, [chatroomId, chatroomName]);
 
   useEffect(() => {
