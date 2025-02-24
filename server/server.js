@@ -90,6 +90,7 @@ const transporter = nodemailer.createTransport({
 // Initialize Express and HTTP server.
 const app = express();
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 const server = http.createServer(app);
 
@@ -150,7 +151,7 @@ app.post("/api/register", async (req, res) => {
     await user.save();
 
     // Send verification email with a link to set the password.
-    const verificationUrl = `${BASE_URL}/verify-email?token=${verificationToken}`;
+    const verificationUrl = `${BASE_URL}/api/verify-email?token=${verificationToken}`;
     const mailOptions = {
       from: process.env.AWS_SES_EMAIL_FROM,
       to: email,
@@ -241,7 +242,7 @@ app.post("/api/forgot-password", async (req, res) => {
     user.resetPasswordExpires = Date.now() + 3600000; // 1 hour from now
     await user.save();
 
-    const resetUrl = `http://yourdomain.com/reset-password?token=${resetToken}`;
+    const resetUrl = `${BASE_URL}/reset-password?token=${resetToken}`; // http get reset-password
     const mailOptions = {
       from: process.env.AWS_SES_EMAIL_FROM,
       to: email,
@@ -258,9 +259,100 @@ app.post("/api/forgot-password", async (req, res) => {
 });
 
 // NEW: API endpoint to reset password.
+
+// This is the http get, to show a page to collect new password, then issue api/reset-password again
+app.get("/reset-password", (req, res) => {
+  // Get the reset token from the query parameters
+  const token = req.query.token || "";
+  
+  // Build the HTML string with inline CSS for responsiveness and a modern look.
+  const html = `
+  <!DOCTYPE html>
+  <html>
+  <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Reset Your Password</title>
+      <style>
+          body {
+              margin: 0;
+              padding: 0;
+              font-family: Arial, sans-serif;
+              background-color: #f7f7f7;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              height: 100vh;
+          }
+          .container {
+              background-color: #fff;
+              padding: 20px;
+              border-radius: 8px;
+              box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+              max-width: 400px;
+              width: 90%;
+          }
+          h1 {
+              text-align: center;
+              color: #333;
+              margin-bottom: 20px;
+          }
+          label {
+              display: block;
+              margin: 10px 0 5px;
+              color: #555;
+          }
+          input[type="password"] {
+              width: 100%;
+              padding: 10px;
+              margin-bottom: 15px;
+              border: 1px solid #ccc;
+              border-radius: 4px;
+              box-sizing: border-box;
+          }
+          button {
+              width: 100%;
+              padding: 10px;
+              background-color: #4CAF50;
+              color: white;
+              border: none;
+              border-radius: 4px;
+              font-size: 16px;
+              cursor: pointer;
+          }
+          button:hover {
+              background-color: #45a049;
+          }
+          @media (max-width: 480px) {
+              .container {
+                  padding: 15px;
+              }
+          }
+      </style>
+  </head>
+  <body>
+      <div class="container">
+          <h1>Reset Your Password</h1>
+          <form action="/api/reset-password" method="POST">
+              <input type="hidden" name="token" value="${token}" />
+              <label for="newPassword">New Password</label>
+              <input type="password" name="newPassword" id="newPassword" placeholder="Enter your new password" required />
+              <button type="submit">Reset Password</button>
+          </form>
+      </div>
+  </body>
+  </html>
+  `;
+  
+  // Send the HTML back to the client
+  res.send(html);
+});
+
+
 // Expects { token, newPassword } in the request body.
 app.post("/api/reset-password", async (req, res) => {
   const { token, newPassword } = req.body;
+  console.log(req.body);
   if (!token || !newPassword) {
     return res.status(400).json({ error: "Token and new password are required." });
   }
