@@ -1,23 +1,49 @@
 // Usage:
 //   1) npm install node-fetch uuid
-//   2) For sending a message:
-//         node sendMessage.js "Hello from Node" "myUserId123" "default"
-//      For updating/creating a channel:
-//         node sendMessage.js update-channel "channelId123" "Channel Description"
-//         node sendMessage.js update-channel "channelId123" "Channel Description" "Yes"   // deletes if delete flag is "Yes"
-//      For adding a channel admin:
-//         node sendMessage.js add-channel-admin "channelId123" "userId123"
-//         node sendMessage.js add-channel-admin "channelId123" "user@example.com"
-//         node sendMessage.js add-channel-admin "channelId123" "user@example.com" "Yes"    // deletes if delete flag is "Yes"
 //
-// This script will POST a GiftedChat-format message or update the database via the API server at the appropriate endpoints.
-// The message _id is generated via uuid (currently commented out, assuming the server generates it).
+//   # Sending a message:
+//     node sendMessage.js "Hello from Node" "myUserId123" "default"
 //
+//   # Updating or deleting a channel:
+//     node sendMessage.js update-channel "channelId123" "Channel Description"
+//     node sendMessage.js update-channel "channelId123" "Channel Description" "Yes"   // deletes if delete flag is "Yes"
+//
+//   # Adding or removing a channel admin:
+//     node sendMessage.js add-channel-admin "channelId123" "userId123"
+//     node sendMessage.js add-channel-admin "channelId123" "user@example.com"
+//     node sendMessage.js add-channel-admin "channelId123" "user@example.com" "Yes"    // deletes if delete flag is "Yes"
+//
+//   # Register a new user (email only):
+//     node sendMessage.js register "user@example.com"
+//
+//   # Verify email and set password:
+//     node sendMessage.js verify-email "<tokenFromEmail>" "<newPassword>"
+//
+//   # Login:
+//     node sendMessage.js login "user@example.com" "<password>"
+//
+//   # Forgot password (send email with token):
+//     node sendMessage.js forgot-password "user@example.com"
+//
+//   # Reset password (using token from email):
+//     node sendMessage.js reset-password "<tokenFromEmail>" "<newPassword>"
+//
+//   # List channels that a user is admin of (by userId or email):
+//     node sendMessage.js list-admin "user@example.com"
+//     or
+//     node sendMessage.js list-admin "someUserId123"
+//
+//////////////////////////////////////
+
 const fetch = require('node-fetch');
 const { v4: uuidv4 } = require('uuid');
 
 // API server base URL
 const BASE_URL = 'http://b200.tagfans.com:5300';
+
+// -------------------
+// Existing functions
+// -------------------
 
 // Function to post a chat message to /api/send-message.
 async function postMessage(textMsg, uid, channelId = 'default') {
@@ -96,21 +122,189 @@ async function postAddChannelAdmin(channelId, userIdentifier, deleteAdmin) {
   }
 }
 
-// Command-line parsing
-const args = process.argv.slice(2);
-if (args.length === 0) {
-  console.error('Error: No arguments provided.');
+// ----------------------------------------
+// New functions for user & channel actions
+// ----------------------------------------
+
+// Function to register a new user (by email) via /api/register.
+async function postRegister(email) {
+  try {
+    const response = await fetch(`${BASE_URL}/api/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Server responded with status ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log('User registration result:', data);
+  } catch (error) {
+    console.error('Error in register:', error.message);
+  }
+}
+
+// Function to verify email & set password via /api/verify-email.
+async function postVerifyEmail(token, password) {
+  try {
+    const response = await fetch(`${BASE_URL}/api/verify-email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, password }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Server responded with status ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log('Email verification result:', data);
+  } catch (error) {
+    console.error('Error in verify-email:', error.message);
+  }
+}
+
+// Function to login via /api/login.
+async function postLogin(email, password) {
+  try {
+    const response = await fetch(`${BASE_URL}/api/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Server responded with status ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log('Login successful. Received token:', data.token);
+    console.log('User ID:', data.userId);
+  } catch (error) {
+    console.error('Error in login:', error.message);
+  }
+}
+
+// Function to send a forgot-password email via /api/forgot-password.
+async function postForgotPassword(email) {
+  try {
+    const response = await fetch(`${BASE_URL}/api/forgot-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Server responded with status ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log('Forgot password result:', data);
+  } catch (error) {
+    console.error('Error in forgot-password:', error.message);
+  }
+}
+
+// Function to reset password via /api/reset-password.
+async function postResetPassword(token, newPassword) {
+  try {
+    const response = await fetch(`${BASE_URL}/api/reset-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, newPassword }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Server responded with status ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log('Reset password result:', data);
+  } catch (error) {
+    console.error('Error in reset-password:', error.message);
+  }
+}
+
+// Function to list all channels that a user can admin via /api/list-admin.
+async function postListAdmin(userIdOrEmail) {
+  // Determine if userIdOrEmail is an email (contains '@') or a userId
+  let payload = {};
+  if (userIdOrEmail.includes('@')) {
+    payload.email = userIdOrEmail;
+  } else {
+    payload.userId = userIdOrEmail;
+  }
+
+  try {
+    const response = await fetch(`${BASE_URL}/api/list-admin`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Server responded with status ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log('list-admin result:', data);
+  } catch (error) {
+    console.error('Error in list-admin:', error.message);
+  }
+}
+
+// ------------------------------------------------
+// Command-line argument parsing and usage handling
+// ------------------------------------------------
+
+function printUsageAndExit() {
+  console.log(`
+Usage:
+  # Send a message:
+    node sendMessage.js "Hello from Node" [userId] [channelId]
+
+  # Update or delete a channel:
+    node sendMessage.js update-channel <channelId> <channelDescription> [deleteChannel: Yes]
+
+  # Add or remove a channel admin:
+    node sendMessage.js add-channel-admin <channelId> <userIdOrEmail> [deleteAdmin: Yes]
+
+  # Register a new user (email only):
+    node sendMessage.js register <email>
+
+  # Verify email and set password:
+    node sendMessage.js verify-email <token> <password>
+
+  # Login:
+    node sendMessage.js login <email> <password>
+
+  # Forgot password (send email with token):
+    node sendMessage.js forgot-password <email>
+
+  # Reset password (using token from email):
+    node sendMessage.js reset-password <token> <newPassword>
+
+  # List channels that a user is admin of (by userId or email):
+    node sendMessage.js list-admin <userIdOrEmail>
+`);
   process.exit(1);
+}
+
+const args = process.argv.slice(2);
+if (args.length === 0 || args[0] === 'help') {
+  printUsageAndExit();
 }
 
 const command = args[0];
 
 switch (command) {
   case 'update-channel': {
-    // Expected: update-channel <channelId> <channelDescription> [deleteChannel]
+    // Expected: update-channel <channelId> <channelDescription> [deleteChannel: Yes]
     if (args.length < 3) {
-      console.error('Usage: node sendMessage.js update-channel <channelId> <channelDescription> [deleteChannel: Yes]');
-      process.exit(1);
+      console.error('Error: Missing arguments for update-channel.');
+      printUsageAndExit();
     }
     const updChannelId = args[1];
     const updChannelDescription = args[2];
@@ -118,11 +312,12 @@ switch (command) {
     postUpdateChannel(updChannelId, updChannelDescription, deleteChannel);
     break;
   }
+
   case 'add-channel-admin': {
     // Expected: add-channel-admin <channelId> <userIdOrEmail> [deleteAdmin: Yes]
     if (args.length < 3) {
-      console.error('Usage: node sendMessage.js add-channel-admin <channelId> <userIdOrEmail> [deleteAdmin: Yes]');
-      process.exit(1);
+      console.error('Error: Missing arguments for add-channel-admin.');
+      printUsageAndExit();
     }
     const adminChannelId = args[1];
     const userIdentifier = args[2];
@@ -130,6 +325,76 @@ switch (command) {
     postAddChannelAdmin(adminChannelId, userIdentifier, deleteAdmin);
     break;
   }
+
+  case 'register': {
+    // Usage: node sendMessage.js register <email>
+    if (args.length < 2) {
+      console.error('Error: Missing email for register.');
+      printUsageAndExit();
+    }
+    const email = args[1];
+    postRegister(email);
+    break;
+  }
+
+  case 'verify-email': {
+    // Usage: node sendMessage.js verify-email <token> <password>
+    if (args.length < 3) {
+      console.error('Error: Missing token or password for verify-email.');
+      printUsageAndExit();
+    }
+    const token = args[1];
+    const password = args[2];
+    postVerifyEmail(token, password);
+    break;
+  }
+
+  case 'login': {
+    // Usage: node sendMessage.js login <email> <password>
+    if (args.length < 3) {
+      console.error('Error: Missing email or password for login.');
+      printUsageAndExit();
+    }
+    const email = args[1];
+    const password = args[2];
+    postLogin(email, password);
+    break;
+  }
+
+  case 'forgot-password': {
+    // Usage: node sendMessage.js forgot-password <email>
+    if (args.length < 2) {
+      console.error('Error: Missing email for forgot-password.');
+      printUsageAndExit();
+    }
+    const email = args[1];
+    postForgotPassword(email);
+    break;
+  }
+
+  case 'reset-password': {
+    // Usage: node sendMessage.js reset-password <token> <newPassword>
+    if (args.length < 3) {
+      console.error('Error: Missing token or newPassword for reset-password.');
+      printUsageAndExit();
+    }
+    const token = args[1];
+    const newPassword = args[2];
+    postResetPassword(token, newPassword);
+    break;
+  }
+
+  case 'list-admin': {
+    // Usage: node sendMessage.js list-admin <userIdOrEmail>
+    if (args.length < 2) {
+      console.error('Error: Missing userIdOrEmail for list-admin.');
+      printUsageAndExit();
+    }
+    const userIdOrEmail = args[1];
+    postListAdmin(userIdOrEmail);
+    break;
+  }
+
   default:
     // Default: assume send-message
     // Usage: node sendMessage.js "text" [userId] [channelId]

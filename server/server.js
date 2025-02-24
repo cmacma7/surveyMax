@@ -19,6 +19,9 @@ const jwt = require("jsonwebtoken");
 require('dotenv').config();
 
 
+// API server base URL
+const BASE_URL = 'http://b200.tagfans.com:5300';
+
 // Connect to MongoDB
 mongoose.connect("mongodb://localhost:27017/chatdb", {
   useNewUrlParser: true,
@@ -147,7 +150,7 @@ app.post("/api/register", async (req, res) => {
     await user.save();
 
     // Send verification email with a link to set the password.
-    const verificationUrl = `http://yourdomain.com/verify-email?token=${verificationToken}`;
+    const verificationUrl = `${BASE_URL}/verify-email?token=${verificationToken}`;
     const mailOptions = {
       from: process.env.AWS_SES_EMAIL_FROM,
       to: email,
