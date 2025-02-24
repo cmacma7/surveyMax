@@ -513,6 +513,6 @@ app.post("/api/send-message", async (req, res) => {
 });
 
 // Start the server.
-server.listen(3000, () => {
-  console.log("Server running on http://localhost:3000");
+server.listen(5300, () => {
+  console.log("Server running on http://localhost:5300");
 });

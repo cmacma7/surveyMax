@@ -17,7 +17,7 @@ const fetch = require('node-fetch');
 const { v4: uuidv4 } = require('uuid');
 
 // API server base URL
-const BASE_URL = 'http://192.168.0.186:3000';
+const BASE_URL = 'http://b200.tagfans.com:5300';
 
 // Function to post a chat message to /api/send-message.
 async function postMessage(textMsg, uid, channelId = 'default') {
