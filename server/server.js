@@ -151,7 +151,7 @@ app.post("/api/register", async (req, res) => {
     await user.save();
 
     // Send verification email with a link to set the password.
-    const verificationUrl = `${BASE_URL}/api/verify-email?token=${verificationToken}`;
+    const verificationUrl = `${BASE_URL}/verify-email?token=${verificationToken}`;
     const mailOptions = {
       from: process.env.AWS_SES_EMAIL_FROM,
       to: email,
@@ -168,6 +168,95 @@ app.post("/api/register", async (req, res) => {
 });
 
 // NEW: API endpoint to verify email and set the password.
+
+// GET endpoint to render the email verification page (set password)
+app.get("/verify-email", (req, res) => {
+  // Get the verification token from the query parameters
+  const token = req.query.token || "";
+  
+  // Build an HTML page with a form that allows the user to set a password.
+  const html = `
+  <!DOCTYPE html>
+  <html>
+  <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Verify Your Email</title>
+      <style>
+          body {
+              margin: 0;
+              padding: 0;
+              font-family: Arial, sans-serif;
+              background-color: #f7f7f7;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              height: 100vh;
+          }
+          .container {
+              background-color: #fff;
+              padding: 20px;
+              border-radius: 8px;
+              box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+              max-width: 400px;
+              width: 90%;
+          }
+          h1 {
+              text-align: center;
+              color: #333;
+              margin-bottom: 20px;
+          }
+          label {
+              display: block;
+              margin: 10px 0 5px;
+              color: #555;
+          }
+          input[type="password"] {
+              width: 100%;
+              padding: 10px;
+              margin-bottom: 15px;
+              border: 1px solid #ccc;
+              border-radius: 4px;
+              box-sizing: border-box;
+          }
+          button {
+              width: 100%;
+              padding: 10px;
+              background-color: #4CAF50;
+              color: white;
+              border: none;
+              border-radius: 4px;
+              font-size: 16px;
+              cursor: pointer;
+          }
+          button:hover {
+              background-color: #45a049;
+          }
+          @media (max-width: 480px) {
+              .container {
+                  padding: 15px;
+              }
+          }
+      </style>
+  </head>
+  <body>
+      <div class="container">
+          <h1>Verify Your Email</h1>
+          <form action="/api/verify-email" method="POST">
+              <input type="hidden" name="token" value="${token}" />
+              <label for="password">Set Password</label>
+              <input type="password" name="password" id="password" placeholder="Enter your new password" required />
+              <button type="submit">Verify Email</button>
+          </form>
+      </div>
+  </body>
+  </html>
+  `;
+  
+  res.send(html);
+});
+
+
 // Expects { token, password } in the request body.
 app.post("/api/verify-email", async (req, res) => {
   const { token, password } = req.body;
