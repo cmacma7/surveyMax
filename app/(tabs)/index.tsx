@@ -22,7 +22,7 @@ import { io } from "socket.io-client";
 const socket = io(SERVER_URL);
 
 import * as ImagePicker from "expo-image-picker";
-import { GiftedChat, IMessage } from "react-native-gifted-chat";
+import { GiftedChat, IMessage, Send } from "react-native-gifted-chat";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
@@ -84,8 +84,6 @@ const ChatScreen: React.FC<any> = ({ route, navigation }) => {
   const notificationListener = useRef<Notifications.Subscription>();
   const responseListener = useRef<Notifications.Subscription>();
 
-  // Compute a vertical offset equal to 20% of the screen height.
-  const topOffset = Dimensions.get('window').height * 0.2;
 
   useEffect(() => {
     console.log("Entered ChatRoom:", chatroomName, "ID:", chatroomId);
@@ -202,21 +200,46 @@ const ChatScreen: React.FC<any> = ({ route, navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
-        style={{ flex: 1 }}
+        style={{ flex: 1,  marginBottom: 51}} // the keyboard will cover the message input without this
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={topOffset} // leave 20% from the top
+        keyboardVerticalOffset={-1000} // this will push up the chat area
       >
-        <GiftedChat
-          messages={messages}
-          onSend={onSend}
-          user={{ _id: userId }}
-          placeholder="Type a message..."
-          renderActions={renderCustomActions}
-          listViewProps={{
-            contentContainerStyle: styles.contentContainer,
-          }}
-        />
+      
+      // Inside your ChatScreen component's return statement:
+      <GiftedChat
+        messages={messages}
+        onSend={onSend}
+        user={{ _id: userId }}
+        placeholder="Type a message..."
+        renderActions={renderCustomActions}
+        textInputProps={{
+          multiline: true,
+          style: {
+            // Fixed width so that the input doesn't occupy the entire space
+            width: Dimensions.get("window").width * 0.8,
+            minHeight: 40,
+            maxHeight: 120,
+            padding: 10,
+            borderWidth: 1,
+            borderColor: "#ccc",
+            borderRadius: 5,
+          },
+        }}
+        renderSend={(props) => (
+          <Send {...props}>
+            <View style={{ margin: 10 }}>
+                <Icon name="send" size={28} color="#007AFF" />
+              </View>
+          </Send>
+        )}
+        
+        listViewProps={{
+          contentContainerStyle: styles.contentContainer,
+        }}
+        
+      />
       </KeyboardAvoidingView>
+     
     </SafeAreaView>
   );
 };
