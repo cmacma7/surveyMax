@@ -12,6 +12,7 @@ import {
   TouchableOpacity,
   FlatList,
   Alert,
+  Dimensions,
 } from "react-native";
 
 const SERVER_URL = 'https://b200.tagfans.com:5301';
@@ -74,7 +75,6 @@ async function registerForPushNotificationsAsync() {
   return token;
 }
 
-
 // ------------------ ChatScreen ------------------
 const ChatScreen: React.FC<any> = ({ route, navigation }) => {
   const { chatroomId, chatroomName, userId } = route.params;
@@ -83,6 +83,9 @@ const ChatScreen: React.FC<any> = ({ route, navigation }) => {
   // Refs for notification listeners.
   const notificationListener = useRef<Notifications.Subscription>();
   const responseListener = useRef<Notifications.Subscription>();
+
+  // Compute a vertical offset equal to 20% of the screen height.
+  const topOffset = Dimensions.get('window').height * 0.2;
 
   useEffect(() => {
     console.log("Entered ChatRoom:", chatroomName, "ID:", chatroomId);
@@ -199,9 +202,9 @@ const ChatScreen: React.FC<any> = ({ route, navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
-        style={{ flex: 1, marginBottom: 50 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={90}
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={topOffset} // leave 20% from the top
       >
         <GiftedChat
           messages={messages}
@@ -225,16 +228,16 @@ const ChatroomListScreen: React.FC<any> = ({ navigation, route }) => {
   const [storedUserEmail, setStoredUserEmail] = useState<string | null>(null);
   useEffect(() => {
     if (route.params) {
-        if (route.params.userId) setStoredUserId(route.params.userId);
-        if (route.params.email) setStoredUserEmail(route.params.email);
-      } else {
-        AsyncStorage.getItem("userId").then((id) => {
-          if (id) setStoredUserId(id);
-        });
-        AsyncStorage.getItem("userEmail").then((email) => {
-          if (email) setStoredUserEmail(email);
-        });
-      }
+      if (route.params.userId) setStoredUserId(route.params.userId);
+      if (route.params.email) setStoredUserEmail(route.params.email);
+    } else {
+      AsyncStorage.getItem("userId").then((id) => {
+        if (id) setStoredUserId(id);
+      });
+      AsyncStorage.getItem("userEmail").then((email) => {
+        if (email) setStoredUserEmail(email);
+      });
+    }
   }, [route.params]);
 
   // Use userId if available; otherwise, fallback to email.
@@ -242,40 +245,40 @@ const ChatroomListScreen: React.FC<any> = ({ navigation, route }) => {
   const [chatrooms, setChatrooms] = useState<{ id: string; name: string }[]>([]);
 
 // Sample implementation to fetch chatrooms from listAdmin endpoint.
-const fetchChatrooms = async () => {
-  if (!userIdentifier) {
-    console.error("No userId or email found.");
-    return;
-  }
-  let payload = {};
-  if (storedUserId) {
-    payload["userId"] = storedUserId;
-  } else {
-    payload["email"] = storedUserEmail;
-  }
-  
-  try {
-    const response = await fetch(`${SERVER_URL}/api/list-admin`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    const data = await response.json();
-    if (response.ok && data.channels) {
-      // Map channels to expected format: id and name.
-      const formattedChannels = data.channels.map(channel => ({
-        id: channel.channelId,
-        name: channel.channelDescription || channel.channelId,
-      }));
-      setChatrooms(formattedChannels);
-    } else {
-      console.error("Error fetching admin channels:", data.error);
-      setChatrooms([]);
+  const fetchChatrooms = async () => {
+    if (!userIdentifier) {
+      console.error("No userId or email found.");
+      return;
     }
-  } catch (err) {
-    console.error(err);
-  }
-};
+    let payload = {};
+    if (storedUserId) {
+      payload["userId"] = storedUserId;
+    } else {
+      payload["email"] = storedUserEmail;
+    }
+    
+    try {
+      const response = await fetch(`${SERVER_URL}/api/list-admin`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json();
+      if (response.ok && data.channels) {
+      // Map channels to expected format: id and name.
+        const formattedChannels = data.channels.map(channel => ({
+          id: channel.channelId,
+          name: channel.channelDescription || channel.channelId,
+        }));
+        setChatrooms(formattedChannels);
+      } else {
+        console.error("Error fetching admin channels:", data.error);
+        setChatrooms([]);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
 
   useEffect(() => {
@@ -355,36 +358,43 @@ const LoginScreen: React.FC<any> = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.loginContainer}>
-        <Text style={styles.title}>Login</Text>
-        <TextInput
-          placeholder="Email"
-          value={email}
-          onChangeText={setEmail}
-          style={styles.input}
-          autoCapitalize="none"
-          keyboardType="email-address"
-        />
-        <TextInput
-          placeholder="Password"
-          value={password}
-          onChangeText={setPassword}
-          style={styles.input}
-          secureTextEntry
-        />
-        <Button title="Login" onPress={handleLogin} />
+      {/* Wrap login content with KeyboardAvoidingView to keep buttons visible when keyboard appears */}
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 20}
+      >
+        <View style={styles.loginContainer}>
+          <Text style={styles.title}>Login</Text>
+          <TextInput
+            placeholder="Email"
+            value={email}
+            onChangeText={setEmail}
+            style={styles.input}
+            autoCapitalize="none"
+            keyboardType="email-address"
+          />
+          <TextInput
+            placeholder="Password"
+            value={password}
+            onChangeText={setPassword}
+            style={styles.input}
+            secureTextEntry
+          />
+          <Button title="Login" onPress={handleLogin} />
         {/* New: Buttons to navigate to Register and Forgot Password screens */}
-        <View style={{ marginTop: 10 }}>
-          <Button
-            title="Create Account"
-            onPress={() => navigation.navigate("Register")}
-          />
-          <Button
-            title="Forgot Password"
-            onPress={() => navigation.navigate("ForgotPassword")}
-          />
+          <View style={{ marginTop: 10 }}>
+            <Button
+              title="Create Account"
+              onPress={() => navigation.navigate("Register")}
+            />
+            <Button
+              title="Forgot Password"
+              onPress={() => navigation.navigate("ForgotPassword")}
+            />
+          </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
@@ -589,7 +599,7 @@ const App: React.FC = () => {
   const [initialRoute, setInitialRoute] = useState<string | null>(null);
   const [storedUserId, setStoredUserId] = useState<string | null>(null);
   
-
+  
   useEffect(() => {
     const checkLogin = async () => {
       const token = await AsyncStorage.getItem("userToken");
@@ -618,8 +628,11 @@ const App: React.FC = () => {
         <Stack.Screen
           name="ChatroomList"
           component={ChatroomListScreen}
-          options={{ title: "Chat Rooms" }}
-          // NEW: Pass stored userId as initialParams if available.
+          options={{ 
+            title: "Chat Rooms",
+            // Hide the back button so the user can’t go back to Login.
+            headerLeft: () => null 
+          }}
           initialParams={{ userId: storedUserId }}
         />
         <Stack.Screen
