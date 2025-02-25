@@ -61,6 +61,8 @@ const ChannelInfo = mongoose.model("ChannelInfo", channelInfoSchema);
 const adminChannelSchema = new mongoose.Schema({
   userId: { type: String, required: true, unique: true, index: true },
   channels: { type: [String], default: [] },
+  // Modified: Allow multiple push tokens per user.
+  pushTokens: { type: [String], default: [] },
 });
 const AdminChannel = mongoose.model("AdminChannel", adminChannelSchema);
 
@@ -100,8 +102,7 @@ const io = new Server(server, {
   maxHttpBufferSize: 1e8, // 100 MB in bytes
 });
 
-// In-memory storage for push tokens (userId => token).
-const pushTokens = {};
+
 
 // Initialize Expo SDK client.
 let expo = new Expo();
@@ -111,14 +112,25 @@ let expo = new Expo();
 // ***********************************
 
 // API endpoint to register a device's push token.
-app.post("/api/register-push-token", (req, res) => {
+app.post("/api/register-push-token", async (req, res) => {
   const { userId, token } = req.body;
   if (!userId || !token) {
     return res.status(400).json({ error: "userId and token are required." });
   }
-  pushTokens[userId] = token;
-  console.log(`Registered push token for user ${userId}: ${token}`);
-  return res.status(200).json({ success: true });
+  try {
+    // Update or create the AdminChannel record to include the push token.
+    // Using $addToSet to prevent duplicates.
+    await AdminChannel.findOneAndUpdate(
+      { userId },
+      { $addToSet: { pushTokens: token } },
+      { upsert: true, new: true }
+    );
+    console.log(`Registered push token for user ${userId}: ${token}`);
+    return res.status(200).json({ success: true });
+  } catch (err) {
+    console.error("Error registering push token:", err);
+    return res.status(500).json({ error: "Internal server error." });
+  }
 });
 
 // API endpoint to retrieve stored messages for a channel.
@@ -556,10 +568,6 @@ app.post("/api/list-admin", async (req, res) => {
   }
 });
 
-
-
-
-
 // Socket.IO event handlers.
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
@@ -591,32 +599,26 @@ io.on("connection", (socket) => {
     console.log(`Broadcast message to room ${channelId}`);
 
     // Prepare remote push notifications for registered devices (if needed)
+    const adminDocs = await AdminChannel.find({ channels: channelId });
     const messagesToSend = [];
-    for (const [userId, token] of Object.entries(pushTokens)) {
+    adminDocs.forEach(doc => {
       // Skip sending a push notification to the sender.
-      if (userId === message.user._id) continue;
-
-      // Check if the user has admin access to the room.
-      const adminDoc = await AdminChannel.findOne({ userId });
-      if (!adminDoc || !adminDoc.channels.includes(channelId)) {
-        console.log(`Skipping push notification for user ${userId}, not an admin of ${channelId}`);
-        continue;
-      }
-
-      if (!Expo.isExpoPushToken(token)) {
-        console.error(`Push token ${token} is not a valid Expo push token`);
-        continue;
-      }
-
-      messagesToSend.push({
-        to: token,
-        sound: "default",
-        title: "New Message",
-        body: message.text ? message.text : "You received an image or document",
-        data: { message },
+      if (doc.userId === message.user._id) return;
+      // Iterate over each push token for the user.
+      doc.pushTokens.forEach(token => {
+        if (!Expo.isExpoPushToken(token)) {
+          console.error(`Push token ${token} is not a valid Expo push token`);
+          return;
+        }
+        messagesToSend.push({
+          to: token,
+          sound: "default",
+          title: "New Message",
+          body: message.text ? message.text : "You received an image or document",
+          data: { message },
+        });
       });
-    }
-
+    });
     const chunks = expo.chunkPushNotifications(messagesToSend);
     for (const chunk of chunks) {
       try {
@@ -676,21 +678,25 @@ app.post("/api/send-message", async (req, res) => {
   io.to(finalMessage.channelId).emit("receiveMessage", finalMessage);
 
   // Prepare remote push notifications for registered devices.
+  // Query AdminChannel for tokens of users admining the room.
+  const adminDocs = await AdminChannel.find({ channels: finalMessage.channelId });
   const messagesToSend = [];
-  for (const [userId, token] of Object.entries(pushTokens)) {
-    if (userId === finalMessage.user._id) continue;
-    if (!Expo.isExpoPushToken(token)) {
-      console.error(`Push token ${token} is not a valid Expo push token`);
-      continue;
-    }
-    messagesToSend.push({
-      to: token,
-      sound: "default",
-      title: "New Message",
-      body: finalMessage.text ? finalMessage.text : "You received an image",
-      data: { message: finalMessage },
+  adminDocs.forEach(doc => {
+    if (doc.userId === finalMessage.user._id) return;
+    doc.pushTokens.forEach(token => {
+      if (!Expo.isExpoPushToken(token)) {
+        console.error(`Push token ${token} is not a valid Expo push token`);
+        return;
+      }
+      messagesToSend.push({
+        to: token,
+        sound: "default",
+        title: "New Message",
+        body: finalMessage.text ? finalMessage.text : "You received an image",
+        data: { message: finalMessage },
+      });
     });
-  }
+  });
   const chunks = expo.chunkPushNotifications(messagesToSend);
   for (const chunk of chunks) {
     try {
