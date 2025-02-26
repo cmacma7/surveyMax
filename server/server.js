@@ -5,6 +5,8 @@ const { Server } = require("socket.io");
 const { v4: uuidv4 } = require("uuid");
 const { Expo } = require("expo-server-sdk");
 const mongoose = require("mongoose");
+const { S3Client, PutObjectCommand, GetObjectCommand } = require("@aws-sdk/client-s3");
+const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 
 //Require additional modules for authentication and email sending.
 const nodemailer = require("nodemailer");
@@ -106,6 +108,24 @@ const io = new Server(server, {
 
 // Initialize Expo SDK client.
 let expo = new Expo();
+
+
+// ########### AWS S3 ################
+
+// Configure the S3 client using your AWS credentials and region
+const s3Client = new S3Client({
+  region: process.env.AWS_S3_REGION ,
+  credentials: {
+    accessKeyId: process.env.AWS_S3_ACCESS_KEY,
+    secretAccessKey: process.env.AWS_S3_SECRET_KEY,
+  },
+});
+
+// Your S3 bucket name (set this in your .env file or here directly)
+const bucketName = process.env.AWS_S3_BUCKET_NAME;
+console.log(bucketName);
+
+
 
 
 // ********** API Endpoints **********
@@ -711,6 +731,68 @@ app.post("/api/send-message", async (req, res) => {
     broadcasted: finalMessage,
   });
 });
+
+
+// Endpoint to generate a presigned URL for PUT (upload)
+app.get("/presigned-url/put", async (req, res) => {
+  const key = req.query.key;
+  if (!key) {
+    return res.status(400).json({ error: "Missing key query parameter" });
+  }
+  console.log(bucketName, key);
+  const command = new PutObjectCommand({
+    Bucket: bucketName,
+    Key: key,
+    ContentType: "image/jpeg", // adjust if needed or pass from client
+  });
+
+  try {
+    // The URL will expire in 5 minutes (300 seconds)
+    const signedUrl = await getSignedUrl(s3Client, command, { expiresIn: 300 });
+    res.json({ signedUrl });
+  } catch (error) {
+    console.error("Error generating PUT presigned URL:", error.message);
+    console.error(error);
+    res.status(500).json({ error: "Error generating presigned URL", details: error.message });
+  }
+});
+
+// Endpoint to generate a presigned URL for GET (download/view)
+app.get("/presigned-url/get", async (req, res) => {
+  const key = req.query.key;
+  if (!key) {
+    return res.status(400).json({ error: "Missing key query parameter" });
+  }
+  const command = new GetObjectCommand({
+    Bucket: bucketName,
+    Key: key,
+  });
+
+  try {
+    // The URL will expire in 5 minutes (300 seconds)
+    const signedUrl = await getSignedUrl(s3Client, command, { expiresIn: 300 });
+    res.json({ signedUrl });
+  } catch (error) {
+    console.error("Error generating GET presigned URL:", error.message);
+    console.error(error);
+    res.status(500).json({ error: "Error generating presigned URL", details: error.message });
+  }
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // Start the server.
 server.listen(5300, () => {
