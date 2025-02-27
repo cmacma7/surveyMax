@@ -40,6 +40,17 @@ const messageSchema = new mongoose.Schema({
 });
 const Message = mongoose.model("Message", messageSchema);
 
+
+// Define a Mongoose schema for general data (e.g., surveys)
+// Using { strict: false } allows us to store any additional fields sent in the payload.
+const generalDataSchema = new mongoose.Schema({
+  _id: { type: String, default: () => uuidv4() },
+  _type: { type: String, required: true },
+}, { strict: false });
+
+const GeneralData = mongoose.model("GeneralData", generalDataSchema);
+
+
 // Define a Mongoose schema and model for users.
 const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true, index: true },
@@ -731,6 +742,31 @@ app.post("/api/send-message", async (req, res) => {
     broadcasted: finalMessage,
   });
 });
+
+
+// NEW: API endpoint to handle general data submissions (e.g., surveys)
+app.post("/api/send-data", async (req, res) => {
+  // The client must send data with at least a _type field.
+  const payload = req.body;
+  if (!payload._type) {
+    return res.status(400).json({ error: "_type field is required." });
+  }
+  
+  // Always generate a new unique _id for the document,
+  // even if an _id was provided by the client.
+  payload._id = uuidv4();
+
+  try {
+    const newData = new GeneralData(payload);
+    await newData.save();
+    console.log(`Saved ${payload._type} data with id ${payload._id}`);
+    return res.status(200).json({ success: true, data: newData });
+  } catch (err) {
+    console.error("Error saving general data:", err);
+    return res.status(500).json({ error: "Internal server error." });
+  }
+});
+
 
 
 // Endpoint to generate a presigned URL for PUT (upload)
