@@ -46,6 +46,8 @@ const Message = mongoose.model("Message", messageSchema);
 const generalDataSchema = new mongoose.Schema({
   _id: { type: String, default: () => uuidv4() },
   _type: { type: String, required: true },
+  _channelId: { type: String, required: true },
+  _storeId: { type: String, required: true }
 }, { strict: false });
 
 const GeneralData = mongoose.model("GeneralData", generalDataSchema);
@@ -767,6 +769,37 @@ app.post("/api/send-data", async (req, res) => {
   }
 });
 
+// NEW: API endpoint to read general data based on _channelId, _storeId, and _type
+app.get("/api/read-data", async (req, res) => {
+  const { _channelId, _storeId, _type } = req.query;
+
+  // Ensure at least one filter parameter is provided
+  if (!_channelId && !_storeId && !_type) {
+    return res.status(400).json({ error: "At least one filter parameter is required." });
+  }
+
+  try {
+    // Build the query object dynamically based on provided parameters
+    let query = {};
+    if (_channelId) query._channelId = _channelId;
+    if (_storeId) query._storeId = _storeId;
+    if (_type) query._type = _type;
+
+    // Fetch matching records from MongoDB
+    const results = await GeneralData.find(query);
+
+    if (results.length === 0) {
+      return res.status(200).json({ message: "No matching data found.", data: [] });
+    }
+
+    console.log(`Fetched ${results.length} records`);
+    return res.status(200).json({ success: true, data: results });
+
+  } catch (err) {
+    console.error("Error fetching general data:", err);
+    return res.status(500).json({ error: "Internal server error." });
+  }
+});
 
 
 // Endpoint to generate a presigned URL for PUT (upload)
