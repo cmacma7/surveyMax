@@ -192,6 +192,15 @@
    /*********************************************
    * summary page
    *********************************************/
+
+    /* Container for survey summaries */
+    #surveyDataContent {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+      padding: 1rem;
+      box-sizing: border-box;
+    }
    .full-page-overlay {
       position: fixed;
       top: 0;
@@ -235,6 +244,13 @@
     .page-content {
       padding: 1rem;
     }
+
+
+
+
+
+
+
 
 
       /**********************************************
@@ -3156,7 +3172,10 @@ async function fetchSurveyData() {
 }
 
 // Function to summarize and display the fetched survey data.
-function summarizeSurveyData(responses) {
+async function summarizeSurveyData(responses) {
+
+  let surveySchema = await fetchSurvey(CurrentSurveySchemaId);
+
   // Aggregate answers by questionId
   const summaryMap = {};
   responses.forEach(response => {
@@ -3169,6 +3188,8 @@ function summarizeSurveyData(responses) {
           answers: []
         };
       }
+      summaryMap[qid].question = item.question;  // update to last row of the question, to prevent question change
+      summaryMap[qid].type = item.questionType;  // update to last row of the type, to prevent type change
       summaryMap[qid].answers.push(item.answer);
     });
   });
@@ -3176,7 +3197,7 @@ function summarizeSurveyData(responses) {
   const content = document.getElementById("surveyDataContent");
   content.innerHTML = "";
 
-  // Define an array of colors for the bars.
+  // Define color arrays for chart bars.
   const backgroundColors = [
     'rgba(255, 99, 132, 0.6)',
     'rgba(54, 162, 235, 0.6)',
@@ -3199,20 +3220,22 @@ function summarizeSurveyData(responses) {
     const summary = summaryMap[qid];
     const container = document.createElement("div");
     container.className = "question-summary";
-    container.style.marginBottom = "1.5rem";
+    // Compact styling for each block
     container.style.padding = "1rem";
     container.style.border = "1px solid #ddd";
     container.style.borderRadius = "8px";
     container.style.boxShadow = "0 2px 5px rgba(0,0,0,0.1)";
+    container.style.background = "#fff";
 
     // Header: show question text and type.
     const header = document.createElement("h5");
     header.textContent = `${summary.question} (${summary.type})`;
+    header.style.fontSize = "1rem";
     header.style.marginBottom = "0.5rem";
     header.style.color = "#333";
     container.appendChild(header);
 
-    // For text/longtext, skip chart and numerical summary.
+    // For text/longtext, skip chart and summary.
     if (summary.type === "text" || summary.type === "longtext") {
       const note = document.createElement("p");
       note.textContent = "文字回答不進行統計摘要。";
@@ -3240,9 +3263,9 @@ function summarizeSurveyData(responses) {
     // Create a canvas element for the chart.
     const canvas = document.createElement("canvas");
     canvas.id = "chart_" + qid;
-    canvas.style.maxWidth = "600px";
-    canvas.style.height = "300px";
-    canvas.style.marginBottom = "1rem";
+    canvas.style.width = "100%";
+    canvas.style.height = "200px";
+    canvas.style.marginBottom = "0.5rem";
     container.appendChild(canvas);
 
     // Delay chart creation to ensure the canvas is in the DOM.
@@ -3265,36 +3288,23 @@ function summarizeSurveyData(responses) {
           scales: {
             y: {
               beginAtZero: true,
-              ticks: {
-                precision: 0
-              },
+              ticks: { precision: 0 },
               title: {
                 display: true,
                 text: "回應數量",
-                font: {
-                  size: 14,
-                  weight: 'bold'
-                }
+                font: { size: 14, weight: 'bold' }
               }
             },
             x: {
               title: {
                 display: true,
                 text: "選項",
-                font: {
-                  size: 14,
-                  weight: 'bold'
-                }
+                font: { size: 14, weight: 'bold' }
               }
             }
           },
           plugins: {
-            legend: {
-              display: false
-            },
-            title: {
-              display: false
-            }
+            legend: { display: false }
           }
         }
       });
@@ -3310,7 +3320,7 @@ function summarizeSurveyData(responses) {
       avgP.textContent = `平均評分: ${avg.toFixed(2)} （共 ${summary.answers.length} 筆回應）`;
       container.appendChild(avgP);
     } else {
-      // For radio/checkbox/date: also show frequency list below the chart.
+      // For radio/checkbox/date: show frequency list below the chart.
       const list = document.createElement("ul");
       list.style.listStyleType = "none";
       list.style.paddingLeft = "0";
@@ -3329,6 +3339,7 @@ function summarizeSurveyData(responses) {
   // Open the full-page overlay.
   openSurveyDataPage();
 }
+
 
 
 
