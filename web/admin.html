@@ -1,0 +1,3245 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Survey Admin with Multi-Language Support</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Material Icons and Materialize CSS -->
+    <link
+      href="https://fonts.googleapis.com/icon?family=Material+Icons"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css"
+    />
+
+    <style>
+      /* Base resets */
+      body, html {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+      }
+      main {
+        margin-top: 0px;
+      }
+      .navbar-fixed {
+        z-index: 1000;
+      }
+      body.no-scroll {
+        overflow: hidden;
+      }
+
+      /**********************************************
+       * NAV BAR
+       **********************************************/		
+		#nav-title {
+		  font-size: 1.1rem; /* default size */
+		  cursor: pointer;
+		}
+
+    .truncated {
+      display: inline-block;  /* Allows width to be applied */
+      width: 50vw;             /* Sets a fixed width relative to the parent */
+      white-space: nowrap;    /* Keeps the text on a single line */
+      overflow: hidden;       /* Hides overflow text */
+      text-overflow: ellipsis;/* Displays an ellipsis for overflow */
+      margin-left:5px;
+    }
+     
+
+
+      /**********************************************
+       * MAIN CONTENT
+       **********************************************/
+      #main-content {
+        margin-left: 240px; /* On desktop, push right for sidebar */
+        transition: margin-left 0.3s ease;
+        padding: 0 20px;
+      }
+      /* This class forcibly sets margin-left to 0 */
+      #main-content.no-sidebar {
+        margin-left: 0 !important;
+        transition: margin-left 0.3s ease;
+      }
+
+
+      /**********************************************
+       * SIDEBAR
+       **********************************************/
+	/* Force the sidebar to always show a scrollbar and display it on the left */
+	#sidebar {
+	  position: fixed;
+	  top: 64px;
+	  left: 0;
+	  width: 500px;
+	  height: calc(100% - 64px);
+	  overflow-y: scroll;              /* Always show scrollbar */
+	  -webkit-overflow-scrolling: touch;
+	  transition: transform 0.3s ease;
+	  z-index: 999;
+	  background: white;
+	  box-shadow: 0 0 12px 0px;
+	  direction: rtl;                  /* Force scrollbar to the left */
+	}
+
+	/* Reset the direction for inner content so that text is left-to-right */
+	#questions-list {
+	  direction: ltr;
+	}
+
+      #sidebar.collapsed {
+        transform: translateX(-110%);
+      }
+      #questions-list .collection-item {
+        cursor: grab;
+		touch-action: none;
+      }
+	  
+      #questions-list .collection-item:active {
+        cursor: grabbing;
+      }
+      #questions-list .collection-item:hover {
+        background-color: #e0e0e0;
+      }
+
+      /* A small circle to display question (or group) index number */
+      .list-index-circle {
+        display: inline-block;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        line-height: 24px;
+        text-align: center;
+        background-color: #2196f3;
+        color: #fff;
+        margin-right: 8px;
+        font-size: 14px;
+      }
+
+		/* Default (desktop): no gutter */
+		#sidebar.with-gutter {
+		  position: fixed;
+		  top: 64px;
+		  left: 0;
+		  width: 500px;
+		  height: calc(100% - 64px);
+		  overflow-y: scroll;
+		  -webkit-overflow-scrolling: touch;
+		  background: white;
+		  box-shadow: 0 0 12px 0px;
+		}
+		#sidebar.with-gutter .scroll-gutter {
+		  display: none;
+		}
+		#sidebar.with-gutter #questions-list {
+		  margin-left: 0;
+		}
+
+      /**********************************************
+       * QUESTIONS & STICKY-BOTTOM BUTTONS
+       **********************************************/
+      .question-card {
+        margin-bottom: 20px;
+        position: relative;
+      }
+      .question-type-select {
+        display: block;
+        margin-top: 10px;
+      }
+      .question-actions {
+        position: absolute;
+        background: antiquewhite;
+        border: 0px !important;
+      }
+
+      .sticky-bottom {
+        position: sticky;
+        bottom: 0;
+        background-color: #fff;
+        z-index: 998;
+        padding: 10px 0;
+        box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .sticky-bottom .col.s12 {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+      }
+      .sticky-bottom .col.s12 > * {
+        margin-bottom: 10px;
+      }
+
+      /* Floating action buttons in each question or group. */
+      .question-actions, .group-actions {
+        position: absolute;
+        background: #fafafa;
+        border: 0px !important;
+        z-index: 100;
+      }
+      .question-actions button,
+      .group-actions button {
+        margin-right: 5px;
+      }
+
+	  .recording-btn {
+		background-color: red !important;
+	  }
+
+      /**********************************************
+       * RESPONSIVE
+       **********************************************/
+      @media only screen and (max-width: 992px) {
+        #sidebar {
+          transform: translateX(-110%);
+        }
+        #sidebar:not(.collapsed) {
+          transform: translateX(0);
+        }
+        /* Hide text on some buttons to save space */
+        #add-question-text,
+        #add-group-text,
+        #undo-text,
+        #redo-text,
+        #generate-text {
+          display: none !important;
+        }
+        
+
+        /* Ensure main-content not shrink */
+        #main-content {
+          width : 100%;
+        }
+      }
+	  	
+	  	@media only screen and (max-width: 600px) {
+		  #nav-title {
+			font-size: 1rem; /* smaller font on small devices */
+		  }
+		}
+		
+		@media only screen and (min-width: 1200px) {
+		  /* Increase the sidebar width for large screens */
+		  #sidebar {
+			width: 500px; /* Adjust to your desired width */
+		  }
+		  /* Update main content margin to match the new sidebar width */
+		  #main-content {
+			margin-left: 500px;
+		  }
+		}
+		@keyframes highlightFade {
+		  0% { background-color: lightgrey; } /* blue highlight */
+		  100% { background-color: transparent; }
+		}
+
+		.highlight-new {
+		  animation: highlightFade 0.5s ease-out;
+		}
+		
+		@keyframes slideIn {
+		  0% { transform: translateX(150px); opacity: 0; }  /* Start off-screen */
+		  100% { transform: translateX(0); opacity: 1; }  /* End at normal position */
+		}
+
+		.slide-in {
+		  animation: slideIn 0.6s ease-out;
+		}
+		
+		
+/* Mobile devices: add a 40px gutter */
+@media only screen and (max-width: 768px) {
+  #sidebar.with-gutter {
+    width: 340px; /* original 300px + 40px for gutter */
+  }
+  #sidebar.with-gutter .scroll-gutter {
+    display: block;
+    position: absolute;
+    top: 0;
+    bottom: 0;  /* Instead of height: 100%, use top: 0 and bottom: 0 */
+    left: 0;
+    width: 40px;
+
+   /* Create a grip/dot pattern using radial gradients */
+    background: radial-gradient(circle, #aaa 2px, transparent 2px),
+                radial-gradient(circle, #aaa 2px, transparent 2px);
+    background-size: 10px 10px;
+    background-position: 0 0, 5px 5px;	
+    z-index: 1;
+  }
+  #sidebar.with-gutter #questions-list {
+    margin-left: 40px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .material-icons.left {
+        margin-right: 0 !important;
+      }   
+}		
+		
+     /**********************************************
+       * Utility
+       **********************************************/
+
+      /* Full-page overlay spinner */
+      #loadingSpinner {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(255, 255, 255, 0.8); /* semi-transparent overlay */
+        z-index: 10000;  /* make sure it's above all other elements */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: all;  /* ensures clicks are intercepted */
+      }
+
+      /* Optional: Style for the spinner wrapper if needed */
+      .spinner-wrapper {
+        text-align: center;
+      }
+
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+
+      .spinner {
+        font-size: 2em;
+        animation: spin 1s linear infinite;
+      }
+
+      .loading-text {
+        font-size: 2em;
+        margin-left: 0.5em; /* Optional spacing */
+      }
+		
+		        
+
+    </style>
+  </head>
+
+  <body class="grey lighten-4">
+  
+  	<!-- Spinner element -->
+	  <div class="loading-container" id="loadingSpinner" style="display:none;">
+		<div class="spinner-wrapper">
+			<span class="material-icons spinner">refresh</span>
+			<!-- The spinner text will be updated via setLanguage -->
+			<span class="loading-text">Processing, please wait ...</span>
+		</div>
+	  </div>
+
+	<!-- Materialize Modal for Store Selection -->
+   
+	<div id="selectStore" class="modal">
+	  <div class="modal-content">
+		<h4><!-- Title will be updated via setLanguage --></h4>
+		<div id="storeOptions">
+		  <!-- Store options will be dynamically added here -->
+		</div>
+	  </div>
+	  <div class="modal-footer">
+		<a href="#!" class="modal-close btn-flat" onclick="confirmSelection()"><!-- Confirm text will be updated via setLanguage --></a>
+		<a href="#!" class="modal-close btn-flat"><!-- Cancel text will be updated via setLanguage --></a>
+	  </div>
+	</div>
+  
+	<!-- FIXED NAV WRAPPER -->
+    <div class="navbar-fixed">
+      <nav class="blue">
+		  <div class="nav-wrapper">
+			<!-- Left side buttons -->
+			<ul class="left">
+			  <li>
+				<a href="#!" onclick="toggleSidebar()" class="tooltipped" data-tooltip="Menu">
+				  <i class="material-icons">menu</i>
+				</a>
+			  </li>
+        <!--  This is the store selector. 
+			  <li>
+				<a id="storeButton" onclick="initSelectStore();">
+			  </li>
+        -->
+			</ul>
+
+			<!-- Center brand title (clickable for switching survey) -->
+			<a id="nav-title" class="brand-logo center" onclick="handleSwitchSurvey()"> </a>
+
+			<!-- Right side button -->
+			<ul class="right">
+			  <li>
+				<a href="#!" onclick="openSettingsModal()" class="tooltipped" data-tooltip="Settings">
+				  <i class="material-icons">settings</i>
+				</a>
+			  </li>
+			</ul>
+		  </div>
+		</nav>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal" style="min-height:320px;">
+      <div class="modal-content">
+        <h5><!-- Settings title will be updated via setLanguage --></h5>
+			
+        <div>
+          <label for="language-select"><!-- Language label will be updated via setLanguage --></label>
+          <select id="language-select" onchange="setLanguage(this.value)">
+            <option value="en-US">English</option>
+            <option value="zh-TW">繁體中文</option>
+            <option value="ja-JP">日本語</option>
+          </select>
+        </div>
+		
+		<div>
+		  <label for="endpoint-url"><!-- Endpoint URL label will be updated via setLanguage --></label>
+		  <input
+			type="text"
+			id="endpoint-url"
+			placeholder="https://your-api-endpoint.com/survey"
+		  />
+		</div>
+      </div>
+      <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+		  <button class="modal-close btn red" onclick="logout();"><!-- Logout text will be updated via setLanguage --></button>
+		  <button class="modal-close btn blue"><!-- Close text will be updated via setLanguage --></button>
+		</div>
+    </div>
+	
+	<!-- Survey Link Modal -->
+	<div id="surveyLinkModal" class="modal">
+	  <div class="modal-content">
+		<h4><!-- Survey Link title will be updated via setLanguage --></h4>
+		<p id="surveyLinkText" style="word-break: break-all;"></p>
+		<div style="margin-top: 20px;">
+		  <a class="btn" id="copyBtn">
+			<i class="material-icons left">content_copy</i><!-- Copy text will be updated via setLanguage -->
+		  </a>
+		  <a class="btn blue" id="goBtn">
+			<i class="material-icons left">send</i><!-- Go to Survey text will be updated via setLanguage -->
+		  </a>
+		</div>
+	  </div>
+	  
+	  <div class="modal-footer">
+		<a href="#!" class="modal-close btn-flat"><!-- Close text will be updated via setLanguage --></a>
+	  </div>
+	</div>
+	
+<!-- Select Survey Modal -->
+<div id="selectSurveyModal" class="modal">
+  <div class="modal-content">
+    <h4><!-- Title will be updated via setLanguage --></h4>
+    <ul id="surveyList" class="collection"></ul>
+  </div>
+  <div
+    class="modal-footer"
+    style="position:sticky; bottom:0; display: flex; justify-content: space-between; align-items: center; padding: 10px 20px;"
+  >
+    <!-- Import Survey Button on Left -->
+    <div>
+      <a href="#!" id="importSurveyBtn" class="btn-flat" onclick="openImportSurveyModal()">
+        <i class="material-icons left">download</i><!-- Import Survey text will be updated via setLanguage -->
+      </a>
+    </div>
+    <!-- Confirm Button on Right -->
+    <div>
+      <a href="#!" id="confirmSurveyBtn" class="btn"><!-- Confirm text will be updated via setLanguage --></a>
+    </div>
+  </div>
+</div>
+
+<!-- Import Survey Modal (Popup) -->
+<div id="importSurveyModal" class="modal">
+  <div class="modal-content">
+    <h4><!-- Import Survey title will be updated via setLanguage --></h4>
+    <div style="margin-bottom: 15px;">
+      <!-- Radio Buttons to Choose Import Mode -->
+      <label style="margin-right: 10px;">
+        <input name="importMode" type="radio" value="file" checked onchange="updateImportModePopup()" />
+        <span id="importModeFileLabel"><!-- Will be updated via setLanguage --></span>
+      </label>
+      <label style="margin-right: 10px;">
+        <input name="importMode" type="radio" value="url" onchange="updateImportModePopup()" />
+        <span id="importModeUrlLabel"><!-- Will be updated via setLanguage --></span>
+      </label>
+      <label>
+        <input name="importMode" type="radio" value="text" onchange="updateImportModePopup()" />
+        <span id="importModeTextLabel"><!-- Will be updated via setLanguage --></span>
+      </label>
+    </div>
+    <!-- File Import Option -->
+    <div id="popupImportFileContainer" style="margin-top: 15px;">
+      <input type="file" id="popupImportSurveyFile" accept=".json" style="display: none;" onchange="handleImportSurveyFilePopup(event)" />
+      <button class="btn" id="chooseFileBtn" onclick="document.getElementById('popupImportSurveyFile').click();">
+        <i class="material-icons left">download</i><!-- Choose File text will be updated via setLanguage -->
+      </button>
+    </div>
+    <!-- URL Import Option -->
+    <div id="popupImportUrlContainer" style="display: none; margin-top: 15px;">
+      <input type="text" id="popupImportSurveyUrl" placeholder="Enter URL to JSON" style="width: 100%; padding: 8px;" />
+    </div>
+	<!-- Text Import Option (Manual + Auto-Generate) -->
+	<div id="popupImportTextContainer" style="display: none; margin-top: 15px;">
+	  <textarea
+		id="popupImportSurveyText"
+		placeholder="Paste JSON here"
+		style="width: 100%; height: 200px; padding: 8px;"
+	  ></textarea>
+
+	  <!-- Container for the description input and the two buttons -->
+	  <div id="survey-gen-container" style="margin-top: 15px;">
+		<!-- Label + Textarea for user description -->
+		<label for="survey-description-input" style="display: block; margin-bottom: 5px;">
+		  Describe the survey you want:
+		</label>
+		<textarea
+		  id="survey-description-input"
+		  placeholder="e.g. a customer satisfaction survey with star rating and multiple choice"
+		  style="width: 100%; height: 100px; padding: 8px;"
+		></textarea>
+
+		<!-- Buttons row: Generate on the left, Voice on the right -->
+		<div
+		  style="
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-top: 10px;
+		  "
+		>
+		  <!-- Generate button on the left -->
+		  <button id="generate-survey-schema-btn" class="btn teal" disabled>
+			<i class="material-icons left">autorenew</i>
+			Generate Survey Schema
+		  </button>
+		  <!-- Voice button on the right -->
+		  <button id="start-voice-btn" class="btn teal">
+			<i class="material-icons">mic</i>
+		  </button>
+		</div>
+	  </div>
+	</div>
+
+
+  </div>
+  <div class="modal-footer" style="display: flex; justify-content: flex-end; align-items: center; padding: 10px 20px;">
+    <a href="#!" class="modal-close btn-flat"><!-- Cancel text will be updated via setLanguage --></a>
+    <a href="#!" class="btn" onclick="handleFinalImport()"><!-- Import text will be updated via setLanguage --></a>
+  </div>
+</div>
+
+
+    <!-- SIDEBAR -->
+ 
+	<div id="sidebar" class="with-gutter">
+	  <div class="scroll-gutter"></div>
+	  <ul id="questions-list" class="collection">
+		<!-- Draggable items here -->
+	  </ul>
+	</div>
+	
+
+    <!-- MAIN CONTENT -->
+    <main>
+      <div id="main-content" class="no-sidebar">
+        <div class="section">
+			<div style="display: flex; align-items: center; justify-content: space-between;">
+			<h5 id="page-subtitle" style="flex:4;"></h5>
+			<!-- Add the survey title input on the right -->
+			   <div style="display: flex; align-items: center; flex:6; justify-content: space-between;">
+				<div style="display: flex; align-items: center;">
+				  <label id="survey-title-label" for="survey-title-input" style="margin-right: 8px; font-size:1em; width:6em;">問卷標題:</label>
+				  <input id="survey-title-input" type="text" placeholder="請輸入問卷標題" style="padding: 4px 8px;" />
+				</div>
+				<div style="display: flex; align-items: center;">
+				  <label id="channel-id-label" for="channel-id-input" style="margin-right: 8px; font-size:1em; width:6em;">頻道代碼:</label>
+				  <input id="channel-id-input" type="text" placeholder="請輸入頻道代碼" style="padding: 4px 8px;" />
+				</div>
+			  </div>
+		  </div>
+          <!-- NEW: Banner Image URL input (the original upload image button has been removed) -->
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 10px;">
+            <label id="survey-banner-label" for="survey-banner-input" style="margin-right: 8px; font-size:1em; width:6em;"><!-- Banner Image URL label will be updated via setLanguage --></label>
+            <input id="survey-banner-input" type="text" placeholder="<!-- Banner Image placeholder will be updated via setLanguage -->" style="padding: 4px 8px;" />
+          </div>
+
+          <!-- Questions/Groups Container -->
+          <div id="questions-and-groups"></div>
+
+          <!-- Button Row (sticky at bottom) -->
+          <div class="row sticky-bottom">
+            <div class="col s12">
+              <!-- Add Question -->
+              <button
+                class="btn green waves-effect waves-light"
+                id="add-question-btn"
+                onclick="addQuestion()"
+              >
+                <i class="material-icons left">add</i>
+                <span id="add-question-text"></span>
+              </button>
+
+              <!-- Add Group -->
+              <button
+                class="btn orange waves-effect waves-light"
+                id="add-group-btn"
+                onclick="addGroup()"
+              >
+                <i class="material-icons left">group_work</i>
+                <span id="add-group-text"></span>
+              </button>
+
+              <!-- Undo / Redo -->
+              <button
+                id="undo-btn"
+                class="btn grey waves-effect waves-light"
+              >
+                <i class="material-icons left">undo</i>
+                <span id="undo-text"></span>
+              </button>
+              <button
+                id="redo-btn"
+                class="btn grey waves-effect waves-light"
+              >
+                <i class="material-icons left">redo</i>
+                <span id="redo-text"></span>
+              </button>
+
+              <!-- Generate & Go to Survey -->
+              <button
+                class="btn blue waves-effect waves-light right"
+                onclick="generateSurvey()"
+              >
+                <i class="material-icons left">save</i>
+                <span id="generate-text"></span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Materialize JS -->
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"
+      defer
+    ></script>
+	<script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>		
+	<script type="text/javascript" src="../admin/common.js?v=20"></script>
+	<script type="text/javascript" src="../admin/db.js?v=20"></script>		
+	
+
+    <script>
+	
+  	  const BASE_URL = 'http://b200.tagfans.com:5300';
+	  //  const BASE_URL = 'http://127.0.0.1:5300';
+	
+      // On load, check if userToken exists. If not, redirect to login.html.
+      if (!localStorage.getItem("userToken")) {
+        // Pass the current page as the redirect target
+        window.location.href = "login.html?redirect=admin.html";
+      }
+
+	
+	
+      /***********************************************
+       * TRANSLATIONS
+       ***********************************************/
+      const i18n_local = {
+        'en-US': {
+          navTitle: "Survey Admin",
+          subtitle: "Create or Edit Your Survey",
+          addQuestion: "Add New Question",
+          addGroup: "Add New Group",
+          undo: "Undo",
+          redo: "Redo",
+          generate: "Generate & Go to Survey",
+          questionTextLabel: "Question Text",
+          questionTypeLabel: "Question Type",
+          textInput: "Text Input",
+          radioInput: "Multiple Choice (Single Select)",
+          checkboxInput: "Multiple Choice (Multiple Select)",
+          dateInput: "Date Picker",
+          longtextInput: "Long Text Input",
+          starsInput: "Star Rating",
+          uploadImage: "Upload Image", // NEW key
+          requiredLabel: "Required",
+          compackLabel: "Compact",
+          optionsLabel: "Options",
+          addOption: "Add Option",
+          removeOption: "Remove",
+          questionPlaceholder: "Question #",
+          deleteMsg: "Question deleted",
+          deleteButton: "Delete",
+          moveUp: "Move Up",
+          moveDown: "Move Down",
+          maxStarsLabel: "Max Stars",
+          /* Groups */
+          groupTitleLabel: "Group Title",
+          anchorQuestionLabel: "Anchor Question (Show This Group When...)",
+          anchorValuesLabel: "If anchor question answer is in:",
+          groupPlaceholder: "Group #",
+          deleteGroupMsg: "Group deleted",
+          anchorNoQuestion: "No anchor set",
+		  pleaseSelectSurvey: "Please select a survey",
+		  surveyTitleLabel: "Survey Title:",
+          // New translation keys
+          processingText: "Processing, please wait ...",
+          menuTooltip: "Menu",
+          selectStoreTitle: "Select Store",
+          confirm: "Confirm",
+          cancel: "Cancel",
+          settingsTitle: "Settings",
+          languageLabel: "Language",
+          endpointUrlLabel: "Endpoint URL",
+          logout: "Logout",
+          close: "Close",
+          surveyLinkTitle: "Survey Link",
+          copy: "Copy",
+          goToSurvey: "Go to Survey",
+          selectSurveyTitle: "Select Survey",
+          importSurvey: "Import Survey",
+          enterSurveyTitle: "Please enter survey title",
+          copiedToClipboard: "Copied to clipboard",
+          unsavedChangesPrompt: "You have unsaved changes. Do you want to save the current survey?",
+          logoutConfirm: "Are you sure you want to logout?",
+          importSurveySuccess: "Survey imported successfully",
+          importSurveyFail: "Failed to parse the file",
+          newSurvey: "New Survey",
+          surveyIdLabel: "Survey ID:",
+          createNewSurvey: "Create New Survey",
+          surveyIdPrefix: "ID:",
+          // Additional keys for import survey modal and error messages
+          importSurveyTitle: "Import Survey",
+          importModeFile: "File",
+          importModeUrl: "URL",
+          importModeText: "Text",
+          chooseFile: "Choose File",
+          enterUrlPlaceholder: "Enter URL to JSON",
+          pasteJsonPlaceholder: "Paste JSON here",
+          importText: "Import",
+          invalidJsonFile: "Please select a valid JSON file",
+          fileParseError: "Failed to parse JSON file",
+          enterUrl: "Please enter a URL",
+          importSurveyUrlFail: "Failed to import survey from URL",
+          pasteJsonText: "Please paste JSON text",
+          parseJsonTextError: "Failed to parse JSON text",
+          importSurveyFailed: "Failed to import survey",
+          endpointUrlPlaceholder: "https://your-api-endpoint.com/survey",
+          noOptionsAvailable: "No options available",
+		  importReplaceConfirmation: "Importing a new survey will replace the current survey. Do you want to continue?",
+		  convertToGroup: "Convert to Group",
+		  unpackToStandalone: "Unpack to Standalone",
+          // NEW keys for banner image
+          bannerImageUrl: "Banner Image URL:",
+          bannerImagePlaceholder: "Enter URL for banner image",
+		  extraText: "Extra Text"
+        },
+        'zh-TW': {
+          navTitle: "問卷管理",
+          subtitle: "創建或編輯您的問卷",
+          addQuestion: "新增問題",
+          addGroup: "新增群組",
+          undo: "復原",
+          redo: "重做",
+          generate: "產生並前往問卷",
+          questionTextLabel: "問題內容",
+          questionTypeLabel: "問題類型",
+          textInput: "文字輸入",
+          radioInput: "單選題",
+          checkboxInput: "多選題",
+          dateInput: "日期選擇",
+          longtextInput: "長文本輸入",
+          starsInput: "星級評分",
+          uploadImage: "上傳圖片", // NEW key
+          requiredLabel: "必填",
+          compackLabel: "壓縮顯示",
+          optionsLabel: "選項",
+          addOption: "新增選項",
+          removeOption: "刪除",
+          questionPlaceholder: "問題 #",
+          deleteMsg: "已刪除問題",
+          deleteButton: "刪除",
+          moveUp: "上移",
+          moveDown: "下移",
+          maxStarsLabel: "最大星數",
+          /* Groups */
+          groupTitleLabel: "群組標題",
+          anchorQuestionLabel: "控制顯示問題 (當此問題的答案...)",
+          anchorValuesLabel: "等於下列選項時顯示此群組:",
+          groupPlaceholder: "群組 #",
+          deleteGroupMsg: "已刪除群組",
+          anchorNoQuestion: "未設定控制問題",
+		  pleaseSelectSurvey: "請選擇一個問卷",
+		  surveyTitleLabel: "問卷標題:",
+          // New translation keys
+          processingText: "處理中，請稍候 ...",
+          menuTooltip: "選單",
+          selectStoreTitle: "選擇商店",
+          confirm: "確認",
+          cancel: "取消",
+          settingsTitle: "設定",
+          languageLabel: "語言",
+          endpointUrlLabel: "端點 URL",
+          logout: "登出",
+          close: "關閉",
+          surveyLinkTitle: "問卷連結",
+          copy: "複製",
+          goToSurvey: "前往問卷",
+          selectSurveyTitle: "選擇問卷",
+          importSurvey: "匯入問卷",
+          enterSurveyTitle: "請輸入問卷標題",
+          copiedToClipboard: "已複製到剪貼簿",
+          unsavedChangesPrompt: "您有未儲存的變更。是否要儲存當前問卷？",
+          logoutConfirm: "您確定要登出嗎？",
+          importSurveySuccess: "匯入問卷成功",
+          importSurveyFail: "檔案解析失敗",
+          newSurvey: "新問卷",
+          surveyIdLabel: "問卷 ID:",
+          createNewSurvey: "建立新問卷",
+          surveyIdPrefix: "編號:",
+          // Additional keys for import survey modal and error messages
+          importSurveyTitle: "匯入問卷",
+          importModeFile: "檔案",
+          importModeUrl: "URL",
+          importModeText: "文字",
+          chooseFile: "選擇檔案",
+          enterUrlPlaceholder: "輸入 JSON 的 URL",
+          pasteJsonPlaceholder: "貼上 JSON 內容",
+          importText: "匯入",
+          invalidJsonFile: "請選擇有效的 JSON 檔案",
+          fileParseError: "解析 JSON 檔案失敗",
+          enterUrl: "請輸入 URL",
+          importSurveyUrlFail: "從 URL 匯入問卷失敗",
+          pasteJsonText: "請貼上 JSON 文字",
+          parseJsonTextError: "解析 JSON 文字失敗",
+          importSurveyFailed: "匯入問卷失敗",
+          endpointUrlPlaceholder: "https://your-api-endpoint.com/survey",
+          noOptionsAvailable: "無可用選項",
+		  importReplaceConfirmation: "匯入新的問卷將取代目前的問卷。您確定要繼續嗎？",
+		  convertToGroup: "轉換為群組",
+		  unpackToStandalone: "拆分為獨立問題",
+          // NEW keys for banner image
+          bannerImageUrl: "橫幅圖片網址:",
+          bannerImagePlaceholder: "輸入橫幅圖片的網址",
+		  extraText: "補充文字"
+        },
+        'ja-JP': {
+          navTitle: "アンケート管理",
+          subtitle: "アンケートを作成または編集",
+          addQuestion: "新しい質問を追加",
+          addGroup: "新しいグループを追加",
+          undo: "元に戻す",
+          redo: "やり直す",
+          generate: "生成してアンケートへ進む",
+          questionTextLabel: "質問文",
+          questionTypeLabel: "質問タイプ",
+          textInput: "テキスト入力",
+          radioInput: "単一選択式 (ラジオボタン)",
+          checkboxInput: "複数選択式 (チェックボックス)",
+          dateInput: "日付入力",
+          longtextInput: "長文入力",
+          starsInput: "星の評価",
+          uploadImage: "画像アップロード", // NEW key
+          requiredLabel: "必須",
+          compackLabel: "コンパクト表示",
+          optionsLabel: "オプション",
+          addOption: "オプションを追加",
+          removeOption: "削除",
+          questionPlaceholder: "質問 #",
+          deleteMsg: "質問を削除しました",
+          deleteButton: "削除",
+          moveUp: "上へ移動",
+          moveDown: "下へ移動",
+          maxStarsLabel: "最大星数",
+          /* Groups */
+          groupTitleLabel: "グループタイトル",
+          anchorQuestionLabel: "アンカー質問 (この回答によって表示...)",
+          anchorValuesLabel: "アンカー質問の回答が以下の場合、表示:",
+          groupPlaceholder: "グループ #",
+          deleteGroupMsg: "グループを削除しました",
+          anchorNoQuestion: "アンカー質問未設定",
+		  pleaseSelectSurvey: "アンケートを選択してください",
+		  surveyTitleLabel: "アンケートタイトル:",
+          // New translation keys
+          processingText: "処理中、しばらくお待ちください ...",
+          menuTooltip: "メニュー",
+          selectStoreTitle: "店舗を選択",
+          confirm: "確認",
+          cancel: "キャンセル",
+          settingsTitle: "設定",
+          languageLabel: "言語",
+          endpointUrlLabel: "エンドポイント URL",
+          logout: "ログアウト",
+          close: "閉じる",
+          surveyLinkTitle: "アンケートリンク",
+          copy: "コピー",
+          goToSurvey: "アンケートへ移動",
+          selectSurveyTitle: "アンケートを選択",
+          importSurvey: "アンケートをインポート",
+          enterSurveyTitle: "アンケートタイトルを入力してください",
+          copiedToClipboard: "クリップボードにコピーしました",
+          unsavedChangesPrompt: "保存されていない変更があります。現在のアンケートを保存しますか？",
+          logoutConfirm: "本当にログアウトしますか？",
+          importSurveySuccess: "アンケートのインポートに成功しました",
+          importSurveyFail: "JSONファイルの解析に失敗しました",
+          newSurvey: "新規アンケート",
+          surveyIdLabel: "アンケートID:",
+          createNewSurvey: "新規アンケート作成",
+          surveyIdPrefix: "番号:",
+          // Additional keys for import survey modal and error messages
+          importSurveyTitle: "アンケートをインポート",
+          importModeFile: "ファイル",
+          importModeUrl: "URL",
+          importModeText: "テキスト",
+          chooseFile: "ファイルを選択",
+          enterUrlPlaceholder: "JSON の URL を入力",
+          pasteJsonPlaceholder: "JSON を貼り付け",
+          importText: "インポート",
+          invalidJsonFile: "有効なJSONファイルを選択してください",
+          fileParseError: "JSONファイルの解析に失敗しました",
+          enterUrl: "URLを入力してください",
+          importSurveyUrlFail: "URLからのアンケートインポートに失敗しました",
+          pasteJsonText: "JSONテキストを貼り付けてください",
+          parseJsonTextError: "JSONテキストの解析に失敗しました",
+          importSurveyFailed: "アンケートのインポートに失敗しました",
+          endpointUrlPlaceholder: "https://your-api-endpoint.com/survey",
+          noOptionsAvailable: "利用可能なオプションはありません",
+		  importReplaceConfirmation: "新しいアンケートをインポートすると、現在のアンケートが置き換えられます。続行しますか？",
+		  convertToGroup: "グループに変換",
+		  unpackToStandalone: "独立に戻す",
+          // NEW keys for banner image
+          bannerImageUrl: "バナー画像のURL:",
+          bannerImagePlaceholder: "バナー画像のURLを入力",
+		  extraText: "追加テキスト"
+        },
+      };
+
+      let currentLang = "en-US";
+
+      /***********************************************
+       * GLOBAL DATA
+       ***********************************************/
+      /*
+        We'll store both questions and groups in the same array, each item has:
+        {
+          type: "question" | "group",
+          id: number,
+          ...
+        }
+
+        If type === "question", it has your existing question fields:
+          questionText, questionType, options, required, compack, etc.
+
+        If type === "group", it has:
+          groupTitle,
+          anchorQuestionId,      // which question controls the group
+          anchorValuesToShow: [],// which answers trigger "show"
+          subQuestions: [ {...}, {...} ] // array of normal question objects
+        ...
+      */
+      let surveyItems = [];
+      let undoStack = [];
+      let redoStack = [];
+	  let CurrentSurveySchemaId;
+	  
+      // For mobile click-outside to close the sidebar
+      let mobileClickOutsideHandler = null;
+	  
+	  
+	  window.onload = function() {
+	  	
+		console.log("window loaded");
+	  	
+	  }
+
+      /***********************************************
+       * INITIALIZATION
+       ***********************************************/
+      document.addEventListener("DOMContentLoaded", async function () {
+          // Load existing data from localStorage
+          // const existingData = localStorage.getItem("surveyQuestions");
+
+          
+
+          surveys = await fetchSurvey(null);
+          // here we should select a survey to continue, or new one
+          let existingData = null;
+
+          if (surveys && surveys.length > 0) {
+              if (surveys.length === 1) {
+                  CurrentSurveySchemaId = surveys[0]._id;
+              } else {
+                  // If more than one survey exists, force the user to select one.
+                  let selection;
+                  selection = localStorage.CurrentSurveySchemaId || await showSelectSurveyModal(surveys);
+                  if (selection == 'create new')
+                      selection = undefined;
+                  CurrentSurveySchemaId = selection;
+                  updateNavTitle();
+
+              }
+          }
+
+          if (CurrentSurveySchemaId === "create_new") {
+              CurrentSurveySchemaId = undefined;
+          } else if (CurrentSurveySchemaId) {
+              let tmp = await fetchSurvey(CurrentSurveySchemaId);
+              existingData = tmp;
+          } else {}
+
+          if (existingData) {
+              // For backward-compatibility, older code might store only questions.
+              // We'll interpret them as "type=question" items if not present:
+              const parsed = (typeof existingData == "string") ? JSON.parse(existingData) : existingData;
+              let items = parsed.surveyItems;
+              surveyItems = items.map((item) => {
+                  if (!item.type) {
+                      return {
+                          type: "question",
+                          ...item
+                      };
+                  }
+                  return item;
+              });
+              // *** Set the survey title input if one exists ***
+              if (parsed.surveyTitle) {
+                  document.getElementById("survey-title-input").value = parsed.surveyTitle;
+              }
+              // *** Set the banner image URL if exists ***
+              if (parsed.bannerImage) {
+                  document.getElementById("survey-banner-input").value = parsed.bannerImage;
+              }
+			  
+			  if (parsed._channelId) {
+                  document.getElementById("channel-id-input").value = parsed._channelId;
+              }
+			  
+          } else {
+              surveyItems = [];
+          }
+
+          // Set default language from localStorage or fallback
+          const storedLang = localStorage.getItem("preferredLanguage");
+          if (storedLang) {
+              currentLang = storedLang;
+          } else {
+              currentLang = "zh-TW"; // or "en-US"
+          }
+
+          // Update the <select> UI
+          const languageSelect = document.getElementById("language-select");
+          if (languageSelect) {
+              languageSelect.value = currentLang;
+          }
+
+          // Apply language
+          setLanguage(currentLang);
+          setupUndoRedoButtons();
+          renderAllItems();
+
+
+		  // openai call to llm user request
+			document.getElementById("generate-survey-schema-btn").onclick = async () => {
+			  const descriptionInput = document.getElementById("survey-description-input");
+			  const description = descriptionInput.value.trim();
+			  
+			  // If description is empty, show toast and exit
+			  if (!description) {
+				M.toast({
+				  html: "Please enter a survey description",
+				  displayLength: 2000
+				});
+				return;
+			  }
+			  
+			  // Disable the button and show the spinner
+			  const genBtn = document.getElementById("generate-survey-schema-btn");
+			  genBtn.disabled = true;
+			  document.getElementById("loadingSpinner").style.display = "flex";
+			  
+			  try {
+				const response = await fetch('http://127.0.0.1:3000/api/generateSurveySchema', {
+				  method: 'POST',
+				  headers: { 'Content-Type': 'application/json' },
+				  body: JSON.stringify({ description })
+				});
+				const data = await response.json();
+				if (data.schema) {
+				  const schemaString = typeof data.schema === 'object' ? JSON.stringify(data.schema, null, 2) : data.schema;
+				  document.getElementById("popupImportSurveyText").value = schemaString;
+				  M.toast({
+					html: "Survey schema generated successfully",
+					displayLength: 2000
+				  });
+				} else {
+				  M.toast({
+					html: "Failed to generate survey schema",
+					displayLength: 2000
+				  });
+				}
+			  } catch (error) {
+				console.error(error);
+				M.toast({
+				  html: "Error generating survey schema",
+				  displayLength: 2000
+				});
+			  } finally {
+				// Re-enable the button and hide the spinner regardless of outcome
+				genBtn.disabled = false;
+				document.getElementById("loadingSpinner").style.display = "none";
+			  }
+			};
+			// enable/disable the description text area
+			document.getElementById("survey-description-input").addEventListener("input", function() {
+			  const generateBtn = document.getElementById("generate-survey-schema-btn");
+			  // Disable the button if the text area is empty (ignoring whitespace)
+			  generateBtn.disabled = this.value.trim() === "";
+			});
+			
+
+
+          // Handle responsive sidebar on load & resize
+          const sidebar = document.getElementById("sidebar");
+          const mainContent = document.getElementById("main-content");
+          function checkScreenSize() {
+              if (window.innerWidth < 992) {
+                  // On mobile, hide (collapse) sidebar
+                  sidebar.classList.add("collapsed");
+                  mainContent.classList.add("no-sidebar");
+                  enableMobileClickOutsideToCloseSidebar();
+              } else {
+                  // On desktop, show sidebar
+                  sidebar.classList.remove("collapsed");
+                  mainContent.classList.remove("no-sidebar");
+                  disableMobileClickOutsideToCloseSidebar();
+              }
+          }
+          window.addEventListener("resize", checkScreenSize);
+          checkScreenSize();
+      });
+      /***********************************************
+       * MOBILE CLICK-OUTSIDE-TO-CLOSE SIDEBAR
+       ***********************************************/
+      function enableMobileClickOutsideToCloseSidebar() {
+        // Only attach once
+        if (!mobileClickOutsideHandler) {
+          mobileClickOutsideHandler = function (e) {
+            const sidebar = document.getElementById("sidebar");
+            const toggleElements = document.querySelectorAll('[onclick="toggleSidebar()"]');
+            // If it's not collapsed already and user clicks outside it => close
+            if (!sidebar.classList.contains("collapsed")) {
+              if (!sidebar.contains(e.target) && !toggleElements[0].contains(e.target)) {
+                toggleSidebar();
+              }
+            }
+          };
+          document.addEventListener("click", mobileClickOutsideHandler);
+        }
+      }
+
+      function disableMobileClickOutsideToCloseSidebar() {
+        if (mobileClickOutsideHandler) {
+          document.removeEventListener("click", mobileClickOutsideHandler);
+          mobileClickOutsideHandler = null;
+        }
+      }
+
+      /***********************************************
+       * SIDEBAR TOGGLE
+       ***********************************************/
+      function toggleSidebar() {
+        const sidebar = document.getElementById("sidebar");
+        const mainContent = document.getElementById("main-content");
+        sidebar.classList.toggle("collapsed");
+        if (sidebar.classList.contains("collapsed")) {
+          mainContent.classList.add("no-sidebar");
+        } else {
+          mainContent.classList.remove("no-sidebar");
+        }
+      }
+
+      /***********************************************
+       * LANGUAGE SELECTION
+       ***********************************************/
+      document.addEventListener("DOMContentLoaded", function () {
+        // Initialize Materialize modal
+        const modalElems = document.querySelectorAll(".modal");
+        M.Modal.init(modalElems, {
+            onCloseEnd: function () {
+                // Save the current settings when the modal closes
+                const selectedLang = document.getElementById("language-select").value;
+                const endpointUrl = document.getElementById("endpoint-url").value;
+				
+                localStorage.setItem("preferredLanguage", selectedLang);
+                localStorage.setItem("surveyEndpoint", endpointUrl);
+				
+            },
+        });
+
+		// Get the language select element (make sure it's declared here)
+		const langSelect = document.getElementById("language-select");		
+		 // Detect iOS device
+		  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+		  if (!isIOS) {
+			// Only initialize Materialize's custom select on non-iOS devices.
+			var elems = document.querySelectorAll("select");
+			M.FormSelect.init(elems);
+		  }
+		  else {
+			// For iOS, force the native select control to show by adding browser-default
+			if (langSelect) {
+			  langSelect.classList.add("browser-default");
+			}
+		  }
+
+        // Load stored settings for language and endpoint URL
+        let storedLang = localStorage.getItem("preferredLanguage") || "zh-TW";
+		if (!i18n_local[storedLang]){
+			storedLang = "zh-TW";
+		}
+		
+        
+        document.getElementById("language-select").value = storedLang;
+        setLanguage(storedLang);
+
+        const storedEndpoint = localStorage.getItem("surveyEndpoint") || "";
+        document.getElementById("endpoint-url").value = storedEndpoint;
+		
+		
+      });      
+	  function openSettingsModal() {
+        const modal = M.Modal.getInstance(
+          document.getElementById("settings-modal")
+        );
+        modal.open();
+      }
+
+function setLanguage(lang) {
+  localStorage.setItem("preferredLanguage", lang);
+  currentLang = lang;
+
+  // Update dropdown value
+  const languageSelect = document.getElementById("language-select");
+  if (languageSelect) {
+    languageSelect.value = lang;
+  }
+
+  // Update UI text using translations
+  // document.getElementById("nav-title").textContent = i18n_local[lang].navTitle;
+  document.getElementById("page-subtitle").textContent = i18n_local[lang].subtitle;
+  document.getElementById("survey-title-label").textContent = i18n_local[lang].surveyTitleLabel;
+  // NEW: Update Banner Image label and placeholder
+  const bannerLabel = document.getElementById("survey-banner-label");
+  if(bannerLabel) { bannerLabel.textContent = i18n_local[currentLang].bannerImageUrl; }
+  const bannerInput = document.getElementById("survey-banner-input");
+  if(bannerInput) { bannerInput.setAttribute("placeholder", i18n_local[currentLang].bannerImagePlaceholder); }
+
+  document.getElementById("add-question-text").textContent = i18n_local[lang].addQuestion;
+  document.getElementById("add-group-text").textContent = i18n_local[lang].addGroup;
+  document.getElementById("undo-text").textContent = i18n_local[lang].undo;
+  document.getElementById("redo-text").textContent = i18n_local[lang].redo;
+  document.getElementById("generate-text").textContent = i18n_local[lang].generate;
+  
+  // Update spinner text
+  const loadingTextEl = document.querySelector('.loading-text');
+  if(loadingTextEl) { loadingTextEl.textContent = i18n_local[lang].processingText; }
+  
+  // Update tooltip for Menu button
+  const menuBtn = document.querySelector('[onclick="toggleSidebar()"]');
+  if(menuBtn) { menuBtn.setAttribute("data-tooltip", i18n_local[lang].menuTooltip); }
+  
+  // Update store button text if not already set by store selection
+  const storeBtn = document.getElementById("storeButton");
+  if(storeBtn && (!storeBtn.textContent || storeBtn.textContent.trim() === "選擇商店")) {
+    storeBtn.textContent = i18n_local[lang].selectStoreTitle;
+  }
+  
+  // Update Settings modal texts
+  const settingsTitleEl = document.querySelector("#settings-modal h5");
+  if(settingsTitleEl) { settingsTitleEl.textContent = i18n_local[lang].settingsTitle; }
+  const langLabel = document.querySelector("#settings-modal label[for='language-select']");
+  if(langLabel) { langLabel.textContent = i18n_local[lang].languageLabel; }
+  const endpointLabel = document.querySelector("#settings-modal label[for='endpoint-url']");
+  if(endpointLabel) { endpointLabel.textContent = i18n_local[lang].endpointUrlLabel; }
+  const settingsFooterButtons = document.querySelectorAll("#settings-modal .modal-footer button");
+  if(settingsFooterButtons.length >= 2) {
+    settingsFooterButtons[0].textContent = i18n_local[lang].logout;
+    settingsFooterButtons[1].textContent = i18n_local[lang].close;
+  }
+  
+  // Update Survey Link modal texts
+  const surveyLinkTitleEl = document.querySelector("#surveyLinkModal h4");
+  if(surveyLinkTitleEl) { surveyLinkTitleEl.textContent = i18n_local[lang].surveyLinkTitle; }
+  const copyBtn = document.getElementById("copyBtn");
+  if(copyBtn) { 
+    copyBtn.innerHTML = '<i class="material-icons left">content_copy</i>' + i18n_local[lang].copy; 
+  }
+  const goBtn = document.getElementById("goBtn");
+  if(goBtn) { 
+    goBtn.innerHTML = '<i class="material-icons left">send</i>' + i18n_local[lang].goToSurvey; 
+  }
+  const surveyLinkClose = document.querySelector("#surveyLinkModal .modal-footer a");
+  if(surveyLinkClose) { surveyLinkClose.textContent = i18n_local[lang].close; }
+  
+  // Update Select Survey modal texts
+  const selectSurveyTitleEl = document.querySelector("#selectSurveyModal h4");
+  if(selectSurveyTitleEl) { selectSurveyTitleEl.textContent = i18n_local[lang].selectSurveyTitle; }
+  // Update Import Survey button text in Select Survey modal footer
+  const importSurveyBtn = document.getElementById("importSurveyBtn");
+	if (importSurveyBtn) {
+	  importSurveyBtn.innerHTML = '<i class="material-icons left">download</i>' + i18n_local[lang].importSurvey;
+	}
+  const confirmSurveyBtn = document.getElementById("confirmSurveyBtn");
+  if(confirmSurveyBtn) { confirmSurveyBtn.textContent = i18n_local[lang].confirm; }
+  
+  // Update text for select store modal buttons
+	const selectStoreModal = document.getElementById("selectStore");
+	if (selectStoreModal) {
+	  const storeConfirm = selectStoreModal.querySelector(".modal-footer a:nth-child(1)");
+	  const storeCancel = selectStoreModal.querySelector(".modal-footer a:nth-child(2)");
+	  if (storeConfirm) storeConfirm.textContent = i18n_local[currentLang].confirm;
+	  if (storeCancel) storeCancel.textContent = i18n_local[currentLang].cancel;
+	}
+
+  // Update endpoint URL placeholder in settings modal
+  const endpointInput = document.getElementById("endpoint-url");
+  if(endpointInput) { endpointInput.setAttribute("placeholder", i18n_local[lang].endpointUrlPlaceholder); }
+  
+  // Update Import Survey modal texts
+  const importSurveyTitleEl = document.querySelector("#importSurveyModal h4");
+  if(importSurveyTitleEl) { importSurveyTitleEl.textContent = i18n_local[lang].importSurveyTitle; }
+  
+  // Update radio button labels in Import Survey modal
+  const importModeFileLabel = document.getElementById("importModeFileLabel");
+  if(importModeFileLabel) { importModeFileLabel.textContent = i18n_local[lang].importModeFile; }
+  const importModeUrlLabel = document.getElementById("importModeUrlLabel");
+  if(importModeUrlLabel) { importModeUrlLabel.textContent = i18n_local[lang].importModeUrl; }
+  const importModeTextLabel = document.getElementById("importModeTextLabel");
+  if(importModeTextLabel) { importModeTextLabel.textContent = i18n_local[lang].importModeText; }
+  
+  // Update Choose File button text
+  const chooseFileBtn = document.getElementById("chooseFileBtn");
+  if(chooseFileBtn) {
+    chooseFileBtn.innerHTML = '<i class="material-icons left">download</i>' + i18n_local[lang].chooseFile;
+  }
+  
+  // Update placeholder for URL import option
+  const importUrlInput = document.getElementById("popupImportSurveyUrl");
+  if(importUrlInput) {
+    importUrlInput.setAttribute("placeholder", i18n_local[lang].enterUrlPlaceholder);
+  }
+  
+  // Update placeholder for Text import option
+  const importTextArea = document.getElementById("popupImportSurveyText");
+  if(importTextArea) {
+    importTextArea.setAttribute("placeholder", i18n_local[lang].pasteJsonPlaceholder);
+  }
+  
+  // Update Import Survey modal footer buttons text
+  const importModalFooterButtons = document.querySelectorAll("#importSurveyModal .modal-footer a");
+  if(importModalFooterButtons.length >= 2) {
+    importModalFooterButtons[0].textContent = i18n_local[lang].cancel;
+    importModalFooterButtons[1].textContent = i18n_local[lang].importText;
+  }
+  
+  // Re-render items if necessary
+  renderAllItems();
+}
+
+      /***********************************************
+       * NEW: DRAG & DROP HANDLERS FOR SIDEBAR ITEMS
+       ***********************************************/
+      // For top-level items (questions and group headers)
+      function handleTopDragStart(e) {
+        e.dataTransfer.setData("text/plain", JSON.stringify({ type: "top", index: parseInt(e.target.dataset.index, 10) }));
+      }
+      function handleTopDragOver(e) {
+        e.preventDefault();
+      }
+// Top-level drop handler: always reorders top-level items.
+function handleTopDrop(e) {
+  e.preventDefault();
+  const targetLI = e.target.closest("li");
+  if (!targetLI || !targetLI.dataset.index) return;
+  const targetIndex = parseInt(targetLI.dataset.index, 10);
+  const draggedData = JSON.parse(e.dataTransfer.getData("text/plain"));
+  if (draggedData.type !== "top") return;
+  const draggedIndex = draggedData.index;
+  if (draggedIndex === targetIndex) return;
+  // Reorder the main surveyItems array.
+  const draggedItem = surveyItems.splice(draggedIndex, 1)[0];
+  surveyItems.splice(targetIndex, 0, draggedItem);
+  renderAllItems();
+}
+
+
+// Sub-question drop handler: handles reordering of sub–questions
+// and allows a standalone question (dragged as "top") to be dropped into a group.
+function handleSubDrop(e) {
+  e.preventDefault();
+  const targetLI = e.target.closest("li");
+  if (!targetLI || targetLI.dataset.type !== "sub") return;
+  const targetGroupIndex = parseInt(targetLI.dataset.groupIndex, 10);
+  const targetSubIndex = parseInt(targetLI.dataset.subIndex, 10);
+  const draggedData = JSON.parse(e.dataTransfer.getData("text/plain"));
+      
+  if (draggedData.type === "sub") {
+    // Reorder within (or between) groups:
+    const sourceGroup = surveyItems[draggedData.groupIndex];
+    if (!sourceGroup || !sourceGroup.subQuestions) return;
+    const draggedSub = sourceGroup.subQuestions.splice(draggedData.subIndex, 1)[0];
+    surveyItems[targetGroupIndex].subQuestions.splice(targetSubIndex, 0, draggedSub);
+    renderAllItems();
+  } else if (draggedData.type === "top") {
+    // Dragged item is a standalone question.
+    const draggedItem = surveyItems.splice(draggedData.index, 1)[0];
+    surveyItems[targetGroupIndex].subQuestions.splice(targetSubIndex, 0, draggedItem);
+    renderAllItems();
+  }
+}
+
+
+
+
+      /***********************************************
+		 * MODIFY DRAG & DROP HANDLERS FOR SUB–QUESTIONS
+		 * Allow moving a sub–question from one group to another.
+		 ***********************************************/
+		function handleSubDragStart(e) {
+		  const targetLI = e.target.closest("li");
+		  const groupIndex = parseInt(targetLI.dataset.groupIndex, 10);
+		  const subIndex = parseInt(targetLI.dataset.subIndex, 10);
+		  e.dataTransfer.setData("text/plain", JSON.stringify({ type: "sub", groupIndex: groupIndex, subIndex: subIndex }));
+		}
+
+		function handleSubDragOver(e) {
+		  e.preventDefault();
+		}
+
+		function handleSubDrop(e) {
+		  e.preventDefault();
+		  const targetLI = e.target.closest("li");
+		  if (!targetLI || targetLI.dataset.type !== "sub") return;
+		  const targetGroupIndex = parseInt(targetLI.dataset.groupIndex, 10);
+		  const targetSubIndex = parseInt(targetLI.dataset.subIndex, 10);
+		  const draggedData = JSON.parse(e.dataTransfer.getData("text/plain"));
+		  if (draggedData.type !== "sub") return;
+		  // Remove the dragged sub–question from its original group:
+		  const sourceGroup = surveyItems[draggedData.groupIndex];
+		  if (!sourceGroup || !sourceGroup.subQuestions) return;
+		  const draggedSub = sourceGroup.subQuestions.splice(draggedData.subIndex, 1)[0];
+		  // Insert the dragged sub–question into the target group's subQuestions array:
+		  const targetGroup = surveyItems[targetGroupIndex];
+		  targetGroup.subQuestions.splice(targetSubIndex, 0, draggedSub);
+		  renderAllItems();
+		}
+
+      
+      /***********************************************
+       * RENDER MASTER
+       ***********************************************/
+      function renderAllItems() {
+        const container = document.getElementById("questions-and-groups");
+        container.innerHTML = "";
+
+        // Render each item: question or group
+        surveyItems.forEach((item, index) => {
+          if (item.type === "question") {
+            container.appendChild(renderQuestionCard(item, index));
+          } else if (item.type === "group") {
+            container.appendChild(renderGroupCard(item, index));
+          }
+        });
+
+        // Also re-render sidebar
+        renderSidebarList();
+      }
+
+	/***********************************************
+       * RENDER QUESTION CARD (for standalone and sub‐questions)
+       ***********************************************/
+	function renderQuestionCard(questionObj, index, { isSubQuestion = false, groupIndex = null } = {}) {
+	  // questionObj = { type: 'question', questionText, questionType, ... }
+	  const card = document.createElement("div");
+	  card.className = isSubQuestion ? "card question-card sub-question" : "card question-card";
+	  // For sub‐questions, include the group index in the ID
+	  card.id = isSubQuestion ? `question-card-${groupIndex}-${index}-sub` : `question-card-${index}`;
+
+	  const cardContent = document.createElement("div");
+	  cardContent.className = "card-content";
+
+        // QUESTION TEXT
+        const questionLabel = document.createElement("label");
+        questionLabel.textContent = i18n_local[currentLang].questionTextLabel;
+        cardContent.appendChild(questionLabel);
+
+        const inputText = document.createElement("input");
+        inputText.type = "text";
+        inputText.className = "input-field";
+        inputText.value = questionObj.questionText || "";
+        inputText.oninput = (e) => {
+          questionObj.questionText = e.target.value;
+          renderSidebarList();
+        };
+        cardContent.appendChild(inputText);
+
+        // QUESTION TYPE
+        const typeLabel = document.createElement("label");
+        typeLabel.textContent = i18n_local[currentLang].questionTypeLabel;
+        cardContent.appendChild(typeLabel);
+
+        const selectType = document.createElement("select");
+        selectType.className = "browser-default question-type-select";
+        selectType.onchange = (e) => {
+          questionObj.questionType = e.target.value;
+          // Clear specialized fields if switching
+          if (
+            e.target.value === "text" ||
+            e.target.value === "date" ||
+            e.target.value === "longtext"
+          ) {
+            questionObj.options = [];
+            delete questionObj.maxStars;
+            delete questionObj.answer;
+          }
+          if (e.target.value === "radio" || e.target.value === "checkbox") {
+            questionObj.options = questionObj.options || [];
+            delete questionObj.maxStars;
+            delete questionObj.answer;
+          }
+          if (e.target.value === "stars") {
+            questionObj.maxStars = questionObj.maxStars || 5;
+            questionObj.options = [];
+            delete questionObj.answer;
+          }
+          if (e.target.value === "uploadImage") {
+            // For image upload, initialize answer as empty.
+            questionObj.answer = questionObj.answer || "";
+            questionObj.options = [];
+            delete questionObj.maxStars;
+          }
+          renderAllItems();
+        };
+
+        const typeOptions = [
+          { value: "text", label: i18n_local[currentLang].textInput },
+          { value: "radio", label: i18n_local[currentLang].radioInput },
+          { value: "checkbox", label: i18n_local[currentLang].checkboxInput },
+          { value: "date", label: i18n_local[currentLang].dateInput },
+          { value: "longtext", label: i18n_local[currentLang].longtextInput },
+          { value: "stars", label: i18n_local[currentLang].starsInput },
+          { value: "uploadImage", label: i18n_local[currentLang].uploadImage } // NEW option
+        ];
+        typeOptions.forEach((opt) => {
+          const optEl = document.createElement("option");
+          optEl.value = opt.value;
+          optEl.text = opt.label;
+          selectType.appendChild(optEl);
+        });
+        selectType.value = questionObj.questionType || "text";
+        cardContent.appendChild(selectType);
+
+        // REQUIRED + COMPACT row
+        const switchesRow = document.createElement("div");
+        switchesRow.style.display = "flex";
+        switchesRow.style.gap = "1.5em";
+        switchesRow.style.margin = "10px 0";
+
+        // REQUIRED SWITCH
+        const requiredSwitchContainer = document.createElement("div");
+        requiredSwitchContainer.className = "switch required-switch";
+        requiredSwitchContainer.innerHTML = `
+          <label>
+            <input type="checkbox" ${questionObj.required ? "checked" : ""}/>
+            <span class="lever"></span>
+            ${i18n_local[currentLang].requiredLabel}
+          </label>
+        `;
+        requiredSwitchContainer.querySelector("input").addEventListener("change", (e) => {
+          questionObj.required = e.target.checked;
+        });
+        switchesRow.appendChild(requiredSwitchContainer);
+
+        // COMPACT SWITCH (radio/checkbox only)
+        if (questionObj.questionType === "radio" || questionObj.questionType === "checkbox") {
+          const compackSwitchContainer = document.createElement("div");
+          compackSwitchContainer.className = "switch compack-switch";
+          compackSwitchContainer.innerHTML = `
+            <label>
+              <input type="checkbox" ${questionObj.compack ? "checked" : ""}/>
+              <span class="lever"></span>
+              ${i18n_local[currentLang].compackLabel}
+            </label>
+          `;
+          compackSwitchContainer
+            .querySelector("input")
+            .addEventListener("change", (e) => {
+              questionObj.compack = e.target.checked;
+            });
+          switchesRow.appendChild(compackSwitchContainer);
+        } else {
+          questionObj.compack = false;
+        }
+        cardContent.appendChild(switchesRow);
+
+        // OPTIONS (for radio/checkbox)
+        if (questionObj.questionType === "radio" || questionObj.questionType === "checkbox") {
+          const optionsLabel = document.createElement("label");
+          optionsLabel.textContent = i18n_local[currentLang].optionsLabel;
+          cardContent.appendChild(optionsLabel);
+
+          questionObj.options = questionObj.options || [];
+			questionObj.options.forEach((opt, optIndex) => {
+  // Convert plain string to object if necessary.
+  if (typeof opt !== "object") {
+    questionObj.options[optIndex] = { text: opt, hasTextInput: false };
+    opt = questionObj.options[optIndex];
+  }
+
+  // Create a container row.
+  const rowDiv = document.createElement("div");
+  rowDiv.className = "row";
+
+  // --- Option Text Input Column ---
+  const colInputDiv = document.createElement("div");
+  colInputDiv.className = "col s8"; // Adjust width as needed
+  const optionInput = document.createElement("input");
+  optionInput.type = "text";
+  optionInput.className = "input-field";
+  optionInput.value = opt.text;
+  optionInput.oninput = (e) => {
+    questionObj.options[optIndex].text = e.target.value;
+  };
+  colInputDiv.appendChild(optionInput);
+  rowDiv.appendChild(colInputDiv);
+
+  // --- "Require Extra Text" Toggle Column ---
+  const colToggleDiv = document.createElement("div");
+  colToggleDiv.className = "col s2";
+  const extraLabel = document.createElement("label");
+  extraLabel.style.fontSize = "0.8em";
+  // Create the checkbox with proper Materialize markup.
+  const extraCheckbox = document.createElement("input");
+  extraCheckbox.type = "checkbox";
+  extraCheckbox.classList.add("filled-in");
+  extraCheckbox.checked = opt.hasTextInput;
+  extraCheckbox.onchange = (e) => {
+    questionObj.options[optIndex].hasTextInput = e.target.checked;
+  };
+  extraLabel.appendChild(extraCheckbox);
+  // Materialize requires a sibling <span> to render the custom checkbox.
+  const extraSpan = document.createElement("span");
+  extraSpan.textContent = i18n_local[currentLang].extraText;
+  extraLabel.appendChild(extraSpan);
+  colToggleDiv.appendChild(extraLabel);
+  rowDiv.appendChild(colToggleDiv);
+
+  // --- Remove Option Button Column ---
+  const colButtonDiv = document.createElement("div");
+  colButtonDiv.className = "col s2 right-align";
+  const removeBtn = document.createElement("button");
+  removeBtn.className = "btn-small red waves-effect waves-light";
+  removeBtn.textContent = i18n_local[currentLang].removeOption;
+  removeBtn.onclick = () => {
+    pushUndo({
+      type: "delete-option",
+      parentIndex: index,
+      parentType: isSubQuestion ? "group-sub" : "main",
+      optionIndex: optIndex,
+      deletedOption: opt,
+    });
+    questionObj.options.splice(optIndex, 1);
+    renderAllItems();
+  };
+  colButtonDiv.appendChild(removeBtn);
+  rowDiv.appendChild(colButtonDiv);
+
+  // Append the constructed row to the card content.
+  cardContent.appendChild(rowDiv);
+});
+
+
+          // ADD OPTION BUTTON
+          const addOptionBtn = document.createElement("button");
+          addOptionBtn.className = "btn grey darken-2 waves-effect waves-light";
+          addOptionBtn.style.marginTop = "10px";
+          addOptionBtn.style.marginLeft = "10px";
+          addOptionBtn.innerHTML = `
+            <i class="material-icons left">add</i>${i18n_local[currentLang].addOption}
+          `;
+          addOptionBtn.onclick = () => {
+            questionObj.options.push("");
+            renderAllItems();
+          };
+          cardContent.appendChild(addOptionBtn);
+        }
+
+        // STAR RATING
+        if (questionObj.questionType === "stars") {
+          const maxStarsLabel = document.createElement("label");
+          maxStarsLabel.textContent = i18n_local[currentLang].maxStarsLabel;
+          cardContent.appendChild(maxStarsLabel);
+
+          const maxStarsInput = document.createElement("input");
+          maxStarsInput.type = "number";
+          maxStarsInput.value = questionObj.maxStars || 5;
+          maxStarsInput.min = "1";
+          maxStarsInput.oninput = (e) => {
+            questionObj.maxStars = parseInt(e.target.value, 10);
+          };
+          cardContent.appendChild(maxStarsInput);
+        }
+        
+        // NEW: UPLOAD IMAGE QUESTION HANDLER
+        if (questionObj.questionType === "uploadImage") {/*
+          const uploadLabel = document.createElement("label");
+          uploadLabel.textContent = i18n_local[currentLang].uploadImage;
+          cardContent.appendChild(uploadLabel);
+
+          const fileInput = document.createElement("input");
+          fileInput.type = "file";
+          fileInput.accept = "image/*";
+          fileInput.onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+              const reader = new FileReader();
+              reader.onload = function(evt) {
+                questionObj.answer = evt.target.result;
+                previewImg.style.display = "block";
+                previewImg.src = evt.target.result;
+              };
+              reader.readAsDataURL(file);
+            }
+          };
+          cardContent.appendChild(fileInput);
+
+          // Preview image element:
+          const previewImg = document.createElement("img");
+          previewImg.style.maxWidth = "100%";
+          previewImg.style.marginTop = "10px";
+          previewImg.style.display = questionObj.answer ? "block" : "none";
+          if (questionObj.answer) {
+            previewImg.src = questionObj.answer;
+          }
+          cardContent.appendChild(previewImg);
+		  */
+        }
+
+		 /********* ACTION BUTTONS *********/
+		  const cardAction = document.createElement("div");
+		  cardAction.className = "card-action question-actions";
+
+		  // Move up button
+		  const moveUpBtn = document.createElement("button");
+		  moveUpBtn.className = "btn-small grey waves-effect waves-light";
+		  moveUpBtn.innerHTML = `<i class="material-icons">arrow_upward</i>`;
+		  moveUpBtn.style.marginRight = "5px";
+		  moveUpBtn.title = i18n_local[currentLang].moveUp;
+
+		  // Move down button
+		  const moveDownBtn = document.createElement("button");
+		  moveDownBtn.className = "btn-small grey waves-effect waves-light";
+		  moveDownBtn.innerHTML = `<i class="material-icons">arrow_downward</i>`;
+		  moveDownBtn.style.marginRight = "5px";
+		  moveDownBtn.title = i18n_local[currentLang].moveDown;
+
+		  // Delete button
+		  const deleteBtn = document.createElement("button");
+		  deleteBtn.className = "btn-small red waves-effect waves-light";
+		  deleteBtn.innerHTML = `<i class="material-icons">delete</i>`;
+		  deleteBtn.title = i18n_local[currentLang].deleteButton;
+
+		  if (!isSubQuestion) {
+			// For standalone questions, attach standard actions…
+			moveUpBtn.onclick = () => moveItemUp(index);
+			moveDownBtn.onclick = () => moveItemDown(index);
+			deleteBtn.onclick = () => deleteQuestion(index);
+			// ...and add a **Group** button to convert the question into a group.
+			const groupBtn = document.createElement("button");
+			groupBtn.className = "btn-small blue waves-effect waves-light";
+			groupBtn.innerHTML = `<i class="material-icons">group</i>`;
+			groupBtn.title = "Convert to Group";
+			groupBtn.onclick = () => convertQuestionToGroup(index);
+			cardAction.appendChild(groupBtn);
+		  } else {
+			// For sub‐questions, attach sub‐question actions…
+			moveUpBtn.onclick = () => moveSubQuestionUp(groupIndex, index);
+			moveDownBtn.onclick = () => moveSubQuestionDown(groupIndex, index);
+			deleteBtn.onclick = () => deleteSubQuestion(groupIndex, index);
+			// ...and add an **Unpack** button to remove it from the group.
+			const unpackBtn = document.createElement("button");
+			unpackBtn.className = "btn-small orange waves-effect waves-light";
+			unpackBtn.innerHTML = `<i class="material-icons">call_split</i>`;
+			unpackBtn.title = "Unpack to Standalone";
+			unpackBtn.onclick = () => unpackSubQuestion(groupIndex, index);
+			cardAction.appendChild(unpackBtn);
+		  }
+		  
+		  // Append the common action buttons
+		  cardAction.appendChild(moveUpBtn);
+		  cardAction.appendChild(moveDownBtn);
+		  cardAction.appendChild(deleteBtn);
+
+		  card.appendChild(cardContent);
+		  card.appendChild(cardAction);
+		  return card;
+      }
+	  
+		/***********************************************
+		 * NEW FUNCTIONS: CONVERT & UNPACK
+		 ***********************************************/
+		function convertQuestionToGroup(index) {
+		  // Take a standalone question and convert it to a group.
+		  // Here we “wrap” the question inside a group so that it now has sub‐questions.
+		  const question = surveyItems[index];
+		  const group = {
+			type: "group",
+			id: question.id, // reuse the question id or generate a new one as desired
+			groupTitle: question.questionText || "",
+			anchorQuestionId: null,
+			anchorValuesToShow: [],
+			// Place the original question as the first sub‐question:
+			subQuestions: [question]
+		  };
+		  surveyItems[index] = group;
+		  renderAllItems();
+		}
+
+		function unpackSubQuestion(groupIndex, subIndex) {
+		  // Remove a sub‐question from a group and add it as a standalone question.
+		  const groupItem = surveyItems[groupIndex];
+		  const question = groupItem.subQuestions.splice(subIndex, 1)[0];
+		  surveyItems.push(question);
+		  renderAllItems();
+		}	  
+	  
+
+		/***********************************************
+		 * UPDATE GROUP CARD RENDERING
+		 * Add a drop zone so that standalone questions can be dragged into a group.
+		 ***********************************************/
+		function renderGroupCard(groupObj, index) {
+		  const card = document.createElement("div");
+		  card.className = "card group-card";
+		  card.id = `group-card-${index}`;
+
+		  const cardContent = document.createElement("div");
+		  cardContent.className = "card-content";
+
+		  // GROUP TITLE
+		  const groupTitleLabel = document.createElement("label");
+		  groupTitleLabel.textContent = i18n_local[currentLang].groupTitleLabel;
+		  cardContent.appendChild(groupTitleLabel);
+
+		  const groupTitleInput = document.createElement("input");
+		  groupTitleInput.type = "text";
+		  groupTitleInput.value = groupObj.groupTitle || "";
+		  groupTitleInput.oninput = (e) => {
+			groupObj.groupTitle = e.target.value;
+			renderSidebarList();
+		  };
+		  cardContent.appendChild(groupTitleInput);
+
+
+        // ANCHOR QUESTION SELECT
+        const anchorLabel = document.createElement("label");
+        anchorLabel.textContent = i18n_local[currentLang].anchorQuestionLabel;
+        cardContent.appendChild(anchorLabel);
+
+        const anchorSelect = document.createElement("select");
+        anchorSelect.className = "browser-default";
+        const allQuestions = surveyItems.filter(item => item.type === "question");
+        // Option: no anchor
+        {
+          const optNone = document.createElement("option");
+          optNone.value = "";
+          optNone.text = `-- ${i18n_local[currentLang].anchorNoQuestion} --`;
+          anchorSelect.appendChild(optNone);
+        }
+        // All question items
+        allQuestions.forEach((qItem) => {
+          const opt = document.createElement("option");
+          opt.value = qItem.id;
+          opt.text = qItem.questionText
+            ? qItem.questionText.substring(0, 40)
+            : `Q# ${qItem.id}`;
+          anchorSelect.appendChild(opt);
+        });
+        anchorSelect.value = groupObj.anchorQuestionId || "";
+		anchorSelect.onchange = (e) => {
+		  groupObj.anchorQuestionId = e.target.value ? parseInt(e.target.value, 10) : null;
+		  renderAllItems(); // re-render to update the anchor values dropdown immediately
+		};
+
+        cardContent.appendChild(anchorSelect);
+
+        
+// ANCHOR VALUES (Replace text input with multiple select)
+const anchorValuesLabel = document.createElement("label");
+anchorValuesLabel.textContent = i18n_local[currentLang].anchorValuesLabel;
+cardContent.appendChild(anchorValuesLabel);
+
+// Create a multiple select element
+const anchorValuesSelect = document.createElement("select");
+anchorValuesSelect.multiple = true;
+anchorValuesSelect.style.height = "auto"; // adjust as needed
+
+// Find the anchor question from surveyItems using groupObj.anchorQuestionId
+let anchorQuestionOptions = [];
+if (groupObj.anchorQuestionId) {
+  const anchorQuestion = surveyItems.find(q => q.type === "question" && q.id == groupObj.anchorQuestionId);
+  if (anchorQuestion) {
+    if (anchorQuestion.questionType === "radio" || anchorQuestion.questionType === "checkbox") {
+      anchorQuestionOptions = anchorQuestion.options || [];
+    } else if (anchorQuestion.questionType === "stars") {
+      // Generate options from 1 to the star count
+      const maxStars = anchorQuestion.maxStars || 5;
+      anchorQuestionOptions = [];
+      for (let i = 1; i <= maxStars; i++) {
+        anchorQuestionOptions.push(i.toString());
+      }
+    }
+  }
+}
+
+
+// Populate the select element with options
+if (anchorQuestionOptions.length === 0) {
+  // Add a default option if there are no choices
+  const defaultOpt = document.createElement("option");
+  defaultOpt.value = "";
+  defaultOpt.text = i18n_local[currentLang].noOptionsAvailable;
+  anchorValuesSelect.appendChild(defaultOpt);
+} else {
+  anchorQuestionOptions.forEach(option => {
+    const optEl = document.createElement("option");
+    optEl.value = option;
+    optEl.text = option;
+    // Mark the option as selected if it is already in groupObj.anchorValuesToShow
+    if (groupObj.anchorValuesToShow && groupObj.anchorValuesToShow.includes(option)) {
+      optEl.selected = true;
+    }
+    anchorValuesSelect.appendChild(optEl);
+  });
+}
+
+// Update groupObj.anchorValuesToShow when selection changes
+anchorValuesSelect.onchange = (e) => {
+  const selectedOptions = Array.from(e.target.selectedOptions).map(opt => opt.value);
+  groupObj.anchorValuesToShow = selectedOptions;
+};
+
+cardContent.appendChild(anchorValuesSelect);
+// Delay initialization to ensure the element is attached
+setTimeout(() => {
+  M.FormSelect.init(document.querySelectorAll('select[multiple]'));
+}, 0);
+
+
+  // SUB–QUESTIONS CONTAINER
+  const subQuestionsContainer = document.createElement("div");
+  subQuestionsContainer.style.marginTop = "20px";
+  groupObj.subQuestions = groupObj.subQuestions || [];
+
+  groupObj.subQuestions.forEach((sq, sqIndex) => {
+    const subQCard = renderQuestionCard(sq, sqIndex, { isSubQuestion: true, groupIndex: index });
+    subQuestionsContainer.appendChild(subQCard);
+  });
+
+  // ADD BUTTON: To add a new sub–question manually.
+  const addSubQuestionBtn = document.createElement("button");
+  addSubQuestionBtn.className = "btn green waves-effect waves-light";
+  addSubQuestionBtn.style.marginTop = "10px";
+  addSubQuestionBtn.innerHTML = `<i class="material-icons left">add</i>${i18n_local[currentLang].addQuestion}`;
+  addSubQuestionBtn.onclick = () => {
+    const newQ = {
+      type: "question",
+      id: Date.now(),
+      questionText: "",
+      questionType: "text",
+      required: false,
+      compack: false,
+      options: [],
+    };
+    groupObj.subQuestions.push(newQ);
+    renderAllItems();
+    // Optionally scroll to the new sub–question
+    setTimeout(() => {
+      const subIndex = groupObj.subQuestions.length - 1;
+      const newCard = document.getElementById(`question-card-${index}-${subIndex}-sub`);
+      if (newCard) {
+        newCard.scrollIntoView({ behavior: "smooth" });
+      }
+    }, 0);
+  };
+  subQuestionsContainer.appendChild(addSubQuestionBtn);
+
+  cardContent.appendChild(subQuestionsContainer);
+
+  // GROUP CARD ACTIONS (move up, move down, delete group)
+  const cardAction = document.createElement("div");
+  cardAction.className = "card-action group-actions";
+
+  const moveUpBtn = document.createElement("button");
+  moveUpBtn.className = "btn-small grey waves-effect waves-light";
+  moveUpBtn.innerHTML = `<i class="material-icons">arrow_upward</i>`;
+  moveUpBtn.style.marginRight = "5px";
+  moveUpBtn.title = i18n_local[currentLang].moveUp;
+  moveUpBtn.onclick = () => moveItemUp(index);
+
+  const moveDownBtn = document.createElement("button");
+  moveDownBtn.className = "btn-small grey waves-effect waves-light";
+  moveDownBtn.innerHTML = `<i class="material-icons">arrow_downward</i>`;
+  moveDownBtn.style.marginRight = "5px";
+  moveDownBtn.title = i18n_local[currentLang].moveDown;
+  moveDownBtn.onclick = () => moveItemDown(index);
+
+  const deleteBtn = document.createElement("button");
+  deleteBtn.className = "btn-small red waves-effect waves-light";
+  deleteBtn.innerHTML = `<i class="material-icons">delete</i>`;
+  deleteBtn.title = i18n_local[currentLang].deleteButton;
+  deleteBtn.onclick = () => deleteGroup(index);
+
+  cardAction.appendChild(moveUpBtn);
+  cardAction.appendChild(moveDownBtn);
+  cardAction.appendChild(deleteBtn);
+
+  card.appendChild(cardContent);
+  card.appendChild(cardAction);
+  return card;
+      }
+
+      /***********************************************
+       * RENDER SIDEBAR
+       ***********************************************/
+function renderSidebarList() {
+  const listContainer = document.getElementById("questions-list");
+  listContainer.innerHTML = "";
+
+  surveyItems.forEach((item, index) => {
+    if (item.type === "question") {
+      // Render top-level standalone question
+      const listItem = document.createElement("li");
+      listItem.className = "collection-item";
+      listItem.draggable = true;
+      listItem.dataset.type = "top";
+      listItem.dataset.index = index;
+      
+      // Display index circle and text
+      const indexCircle = document.createElement("span");
+      indexCircle.className = "list-index-circle";
+      indexCircle.textContent = index + 1;
+      listItem.appendChild(indexCircle);
+      
+      const textSpan = document.createElement("span");
+      textSpan.textContent = item.questionText
+        ? item.questionText.substring(0, 40) + (item.questionText.length > 40 ? "..." : "")
+        : i18n_local[currentLang].questionPlaceholder + (index + 1);
+      listItem.appendChild(textSpan);
+      
+      // Attach top-level drag events
+      listItem.addEventListener("dragstart", handleTopDragStart);
+      listItem.addEventListener("dragover", handleTopDragOver);
+      listItem.addEventListener("drop", handleTopDrop);
+      
+      // On click, scroll to question card
+      listItem.onclick = () => {
+        const cardId = `question-card-${index}`;
+        const targetCard = document.getElementById(cardId);
+        if (targetCard) {
+          const elementPosition = targetCard.getBoundingClientRect().top;
+          const offsetPosition = elementPosition + window.pageYOffset - 50;
+          window.scrollTo({ top: offsetPosition, behavior: "smooth" });
+        }
+      };
+	  addContextMenuAndSwipeForStandalone(listItem, index);
+      listContainer.appendChild(listItem);
+    } else if (item.type === "group") {
+      // Render group header
+      const groupItem = document.createElement("li");
+      groupItem.className = "collection-item";
+      groupItem.draggable = true;
+      groupItem.dataset.type = "top";
+      groupItem.dataset.index = index;
+      
+      const indexCircle = document.createElement("span");
+      indexCircle.className = "list-index-circle";
+      indexCircle.textContent = index + 1;
+      groupItem.appendChild(indexCircle);
+      
+      const textSpan = document.createElement("span");
+      textSpan.textContent = item.groupTitle
+        ? item.groupTitle.substring(0, 40) + (item.groupTitle.length > 40 ? "..." : "")
+        : i18n_local[currentLang].groupPlaceholder + (index + 1);
+      groupItem.appendChild(textSpan);
+      
+      groupItem.addEventListener("dragstart", handleTopDragStart);
+      groupItem.addEventListener("dragover", handleTopDragOver);
+      groupItem.addEventListener("drop", handleTopDrop);
+      
+      groupItem.onclick = () => {
+        const cardId = `group-card-${index}`;
+        const targetCard = document.getElementById(cardId);
+        if (targetCard) {
+          const elementPosition = targetCard.getBoundingClientRect().top;
+          const offsetPosition = elementPosition + window.pageYOffset - 50;
+          window.scrollTo({ top: offsetPosition, behavior: "smooth" });
+        }
+      };
+
+      listContainer.appendChild(groupItem);
+
+      // Render the group's sub–questions in a nested list (UL)
+      if (item.subQuestions && item.subQuestions.length > 0) {
+        const subList = document.createElement("ul");
+        subList.style.listStyle = "none";
+        subList.style.paddingLeft = "20px";
+        // Save the parent group index so we can use it in the drop handler.
+        subList.dataset.groupIndex = index;
+
+        // Attach drop handler on the UL to catch drops in the empty area.
+        subList.addEventListener("dragover", (e) => { e.preventDefault(); });
+        subList.addEventListener("drop", (e) => {
+		  e.preventDefault();
+		  const draggedData = JSON.parse(e.dataTransfer.getData("text/plain"));
+		  if (draggedData.type === "top") {
+			const groupIdx = parseInt(subList.dataset.groupIndex, 10);
+			// Check if the target group exists:
+			if (!surveyItems[groupIdx]) {
+			  console.error("Group at index", groupIdx, "not found.");
+			  return;
+			}
+			// Ensure the group has a subQuestions array:
+			if (!surveyItems[groupIdx].subQuestions) {
+			  surveyItems[groupIdx].subQuestions = [];
+			}
+			// Remove the dragged item from the top-level array:
+			const targetGroup = surveyItems[groupIdx];
+			const draggedItem = surveyItems.splice(draggedData.index, 1)[0];
+			// Push the dragged standalone question into the target group's subQuestions:
+			targetGroup.subQuestions.push(draggedItem);
+			renderAllItems();
+		  }
+		});
+
+
+        // For each sub–question, create an LI with its own drop handler.
+        item.subQuestions.forEach((subItem, subIndex) => {
+          const subListItem = document.createElement("li");
+          subListItem.className = "collection-item";
+          subListItem.draggable = true;
+          subListItem.dataset.type = "sub";
+          subListItem.dataset.groupIndex = index;
+          subListItem.dataset.subIndex = subIndex;
+
+          // Display text for the sub–question
+          let subDisplayText = "";
+          if (subItem.questionText) {
+            subDisplayText = subItem.questionText.substring(0, 40) + (subItem.questionText.length > 40 ? "..." : "");
+          } else {
+            subDisplayText = i18n_local[currentLang].questionPlaceholder + (subIndex + 1);
+          }
+          const subTextSpan = document.createElement("span");
+          subTextSpan.textContent = subDisplayText;
+          subListItem.appendChild(subTextSpan);
+
+          // Attach sub–question drag events
+          subListItem.addEventListener("dragstart", handleSubDragStart);
+          subListItem.addEventListener("dragover", handleSubDragOver);
+          subListItem.addEventListener("drop", handleSubDrop);
+
+          // On click, scroll to sub–question card.
+          subListItem.onclick = () => {
+            const targetCard = document.getElementById(`question-card-${index}-${subIndex}-sub`);
+            if (targetCard) {
+              const elementPosition = targetCard.getBoundingClientRect().top;
+              const offsetPosition = elementPosition + window.pageYOffset - 50;
+              window.scrollTo({ top: offsetPosition, behavior: "smooth" });
+            }
+          };
+		  addContextMenuAndSwipeForSub(subListItem, index, subIndex);
+          subList.appendChild(subListItem);
+        });
+
+        listContainer.appendChild(subList);
+      }
+    }
+  });
+}
+
+// For standalone questions: attach right-click and swipe handlers to convert to group
+function addContextMenuAndSwipeForStandalone(listItem, index) {
+  listItem.addEventListener("contextmenu", function(e) {
+    e.preventDefault();
+    showContextMenu(e.pageX, e.pageY, [
+      { label: i18n_local[currentLang].convertToGroup || "Convert to Group", action: function() { convertQuestionToGroup(index); } }
+    ]);
+    return false;
+  });
+  addSwipeListener(listItem, function(direction) {
+    if (direction === "left") {
+      showSlideAction(listItem,'<i class="material-icons">group_work</i>', function() {
+        convertQuestionToGroup(index);
+      });
+    }
+  });
+}
+
+// For sub‑questions: attach right-click and swipe handlers to unpack to standalone
+function addContextMenuAndSwipeForSub(listItem, groupIndex, subIndex) {
+  listItem.addEventListener("contextmenu", function(e) {
+    e.preventDefault();
+    showContextMenu(e.pageX, e.pageY, [
+      { label: i18n_local[currentLang].unpackToStandalone || "Unpack to Standalone", action: function() { unpackSubQuestion(groupIndex, subIndex); } }
+    ]);
+    return false;
+  });
+  addSwipeListener(listItem, function(direction) {
+    if (direction === "left") {
+      showSlideAction(listItem, '<i class="material-icons">call_split</i>', function() {
+        unpackSubQuestion(groupIndex, subIndex);
+      });
+    }
+  });
+}
+// Simple swipe listener: if a left swipe is detected, call the callback with "left"
+function addSwipeListener(element, callback) {
+  let touchstartX = 0;
+  let touchstartY = 0;
+  element.addEventListener(
+    'touchstart',
+    function(event) {
+      touchstartX = event.changedTouches[0].screenX;
+      touchstartY = event.changedTouches[0].screenY;
+    },
+    { passive: true }
+  );
+  element.addEventListener(
+    'touchend',
+    function(event) {
+      const touchendX = event.changedTouches[0].screenX;
+      const touchendY = event.changedTouches[0].screenY;
+      const deltaX = touchstartX - touchendX;
+      const deltaY = touchstartY - touchendY;
+      // Trigger only if horizontal movement is significant and dominant
+      if (Math.abs(deltaX) > 50 && Math.abs(deltaX) > Math.abs(deltaY)) {
+        callback("left");
+      }
+    },
+    { passive: true }
+  );
+}
+
+
+
+// Display a slide-out overlay action on mobile
+function showSlideAction(element, label, action) {
+  if (element.querySelector('.slide-action-overlay')) return;
+  const overlay = document.createElement('div');
+  overlay.className = 'slide-action-overlay';
+  overlay.style.position = 'absolute';
+  overlay.style.top = '0';
+  overlay.style.right = '0';
+  overlay.style.bottom = '0';
+  overlay.style.width = '150px';
+  overlay.style.backgroundColor = 'rgba(0,0,0,0.7)';
+  overlay.style.color = 'white';
+  overlay.style.display = 'flex';
+  overlay.style.alignItems = 'center';
+  overlay.style.justifyContent = 'center';
+  overlay.style.cursor = 'pointer';
+  overlay.innerHTML = label;
+  element.style.position = 'relative';
+  element.appendChild(overlay);
+  overlay.addEventListener('click', function(e) {
+    e.stopPropagation();
+    action();
+    if (overlay.parentNode) {
+      overlay.parentNode.removeChild(overlay);
+    }
+  });
+  setTimeout(function() {
+    if (overlay.parentNode) {
+      overlay.parentNode.removeChild(overlay);
+    }
+  }, 3000);
+}
+
+// Display a custom context menu at the specified coordinates with given items
+function showContextMenu(x, y, items) {
+  let existingMenu = document.getElementById('custom-context-menu');
+  if (existingMenu) {
+    existingMenu.parentNode.removeChild(existingMenu);
+  }
+  const menu = document.createElement('div');
+  menu.id = 'custom-context-menu';
+  menu.style.position = 'absolute';
+  menu.style.top = y + 'px';
+  menu.style.left = x + 'px';
+  menu.style.backgroundColor = 'white';
+  menu.style.border = '1px solid #ccc';
+  menu.style.boxShadow = '0 2px 5px rgba(0,0,0,0.3)';
+  menu.style.zIndex = 10000;
+  items.forEach(function(item) {
+    const menuItem = document.createElement('div');
+    menuItem.textContent = item.label;
+    menuItem.style.padding = '8px 12px';
+    menuItem.style.cursor = 'pointer';
+    menuItem.addEventListener('click', function(e) {
+      e.stopPropagation();
+      item.action();
+      if (menu.parentNode) {
+        menu.parentNode.removeChild(menu);
+      }
+    });
+    menu.appendChild(menuItem);
+  });
+  document.body.appendChild(menu);
+  document.addEventListener('click', function handler() {
+    if (menu.parentNode) {
+      menu.parentNode.removeChild(menu);
+    }
+    document.removeEventListener('click', handler);
+  });
+}
+
+      /***********************************************
+       * CRUD: ADD QUESTION / ADD GROUP
+       ***********************************************/
+      function addQuestion() {
+        const newQuestion = {
+          type: "question",
+          id: Date.now(),
+          questionText: "",
+          questionType: "text",
+          options: [],
+          required: false,
+          compack: false,
+        };
+        surveyItems.push(newQuestion);
+        renderAllItems();
+        // Scroll to the last
+        setTimeout(() => {
+          const lastIndex = surveyItems.length - 1;
+          const lastCard = document.getElementById(`question-card-${lastIndex}`);
+          if (lastCard) {
+            lastCard.scrollIntoView({ behavior: "smooth" });
+          }
+        }, 0);
+      }
+
+      function addGroup() {
+        const newGroup = {
+          type: "group",
+          id: Date.now(),
+          groupTitle: "",
+          anchorQuestionId: null,
+          anchorValuesToShow: [],
+          subQuestions: [],
+        };
+        surveyItems.push(newGroup);
+        renderAllItems();
+        // Scroll to the last
+        setTimeout(() => {
+          const lastIndex = surveyItems.length - 1;
+          const lastCard = document.getElementById(`group-card-${lastIndex}`);
+          if (lastCard) {
+            lastCard.scrollIntoView({ behavior: "smooth" });
+          }
+        }, 0);
+      }
+
+      /***********************************************
+       * CRUD: DELETE QUESTION / GROUP / SUBQUESTION
+       ***********************************************/
+      function deleteQuestion(index) {
+        const deletedQ = surveyItems[index];
+        pushUndo({
+          type: "delete-question",
+          index: index,
+          deletedItem: deletedQ,
+        });
+        surveyItems.splice(index, 1);
+        renderAllItems();
+        M.toast({ html: i18n_local[currentLang].deleteMsg, displayLength: 3000 });
+      }
+
+      function deleteGroup(index) {
+        const deletedG = surveyItems[index];
+        pushUndo({
+          type: "delete-group",
+          index: index,
+          deletedItem: deletedG,
+        });
+        surveyItems.splice(index, 1);
+        renderAllItems();
+        M.toast({ html: i18n_local[currentLang].deleteGroupMsg, displayLength: 3000 });
+      }
+
+      function deleteSubQuestion(groupIndex, subIndex) {
+        const groupItem = surveyItems[groupIndex];
+        const deletedQ = groupItem.subQuestions[subIndex];
+        pushUndo({
+          type: "delete-sub-question",
+          groupIndex,
+          subIndex,
+          deletedItem: deletedQ,
+        });
+        groupItem.subQuestions.splice(subIndex, 1);
+        renderAllItems();
+      }
+
+      /***********************************************
+       * MOVE UP/DOWN: MAIN LEVEL
+       ***********************************************/
+      function moveItemUp(index) {
+        if (index > 0) {
+          const temp = surveyItems[index];
+          surveyItems[index] = surveyItems[index - 1];
+          surveyItems[index - 1] = temp;
+          renderAllItems();
+        }
+      }
+
+      function moveItemDown(index) {
+        if (index < surveyItems.length - 1) {
+          const temp = surveyItems[index];
+          surveyItems[index] = surveyItems[index + 1];
+          surveyItems[index + 1] = temp;
+          renderAllItems();
+        }
+      }
+
+      /***********************************************
+       * MOVE UP/DOWN: SUB QUESTIONS
+       ***********************************************/
+      function moveSubQuestionUp(groupIndex, subIndex) {
+        const groupItem = surveyItems[groupIndex];
+        if (subIndex > 0) {
+          const temp = groupItem.subQuestions[subIndex];
+          groupItem.subQuestions[subIndex] = groupItem.subQuestions[subIndex - 1];
+          groupItem.subQuestions[subIndex - 1] = temp;
+          renderAllItems();
+        }
+      }
+
+      function moveSubQuestionDown(groupIndex, subIndex) {
+        const groupItem = surveyItems[groupIndex];
+        if (subIndex < groupItem.subQuestions.length - 1) {
+          const temp = groupItem.subQuestions[subIndex];
+          groupItem.subQuestions[subIndex] = groupItem.subQuestions[subIndex + 1];
+          groupItem.subQuestions[subIndex + 1] = temp;
+          renderAllItems();
+        }
+      }
+
+      /***********************************************
+       * UNDO/REDO
+       ***********************************************/
+      function pushUndo(action) {
+        undoStack.push(action);
+        redoStack = [];
+      }
+
+      function undoAction() {
+        if (undoStack.length === 0) return;
+        const action = undoStack.pop();
+        let redoActionObj = null;
+
+        switch (action.type) {
+          case "delete-question": {
+            // Re-insert
+            surveyItems.splice(action.index, 0, action.deletedItem);
+            redoActionObj = {
+              type: "delete-question",
+              index: action.index,
+              deletedItem: action.deletedItem,
+            };
+            break;
+          }
+          case "delete-group": {
+            // Re-insert
+            surveyItems.splice(action.index, 0, action.deletedItem);
+            redoActionObj = {
+              type: "delete-group",
+              index: action.index,
+              deletedItem: action.deletedItem,
+            };
+            break;
+          }
+          case "delete-sub-question": {
+            const { groupIndex, subIndex, deletedItem } = action;
+            const groupItem = surveyItems[groupIndex];
+            groupItem.subQuestions.splice(subIndex, 0, deletedItem);
+            redoActionObj = {
+              type: "delete-sub-question",
+              groupIndex,
+              subIndex,
+              deletedItem,
+            };
+            break;
+          }
+          case "delete-option": {
+            const { parentIndex, parentType, optionIndex, deletedOption } = action;
+            if (parentType === "main") {
+              surveyItems[parentIndex].options.splice(optionIndex, 0, deletedOption);
+            } else if (parentType === "group-sub") {
+              // not storing sub-question index here, so no direct approach
+              // In real usage you'd store the subIndex too for precise restore
+              // For brevity, skipping more complicated logic
+            }
+            redoActionObj = {
+              type: "delete-option",
+              parentIndex, parentType, optionIndex, deletedOption
+            };
+            break;
+          }
+          default:
+            break;
+        }
+
+        if (redoActionObj) {
+          redoStack.push(redoActionObj);
+        }
+        renderAllItems();
+      }
+
+      function redoAction() {
+        if (redoStack.length === 0) return;
+        const action = redoStack.pop();
+        let undoActionObj = null;
+
+        switch (action.type) {
+          case "delete-question": {
+            const deletedQ = surveyItems.splice(action.index, 1)[0];
+            undoActionObj = {
+              type: "delete-question",
+              index: action.index,
+              deletedItem: deletedQ,
+            };
+            break;
+          }
+          case "delete-group": {
+            const deletedG = surveyItems.splice(action.index, 1)[0];
+            undoActionObj = {
+              type: "delete-group",
+              index: action.index,
+              deletedItem: deletedG,
+            };
+            break;
+          }
+          case "delete-sub-question": {
+            const { groupIndex, subIndex } = action;
+            const groupItem = surveyItems[groupIndex];
+            const deletedQ = groupItem.subQuestions.splice(subIndex, 1)[0];
+            undoActionObj = {
+              type: "delete-sub-question",
+              groupIndex,
+              subIndex,
+              deletedItem: deletedQ,
+            };
+            break;
+          }
+          case "delete-option": {
+            const { parentIndex, parentType, optionIndex } = action;
+            let deletedOpt = null;
+            if (parentType === "main") {
+              deletedOpt = surveyItems[parentIndex].options.splice(optionIndex, 1)[0];
+            } else if (parentType === "group-sub") {
+              // same note as above
+            }
+            undoActionObj = {
+              type: "delete-option",
+              parentIndex, parentType, optionIndex,
+              deletedOption: deletedOpt,
+            };
+            break;
+          }
+          default:
+            break;
+        }
+
+        if (undoActionObj) {
+          undoStack.push(undoActionObj);
+        }
+        renderAllItems();
+      }
+
+      function setupUndoRedoButtons() {
+        const undoBtn = document.getElementById("undo-btn");
+        const redoBtn = document.getElementById("redo-btn");
+        undoBtn.onclick = () => undoAction();
+        redoBtn.onclick = () => redoAction();
+      }
+
+      /***********************************************
+       * GENERATE & GO
+       ***********************************************/
+		async function generateSurvey() {
+		  // Get the survey title input value
+		  const surveyTitleInput = document.getElementById("survey-title-input");
+		  const surveyTitle = surveyTitleInput ? surveyTitleInput.value.trim() : "";
+
+		  // Validate: user must enter a title
+		  if (!surveyTitle) {
+			M.toast({ html: i18n_local[currentLang].enterSurveyTitle, displayLength: 2000 });
+			surveyTitleInput.focus();
+			return;  // stop the function if title is missing
+		  }
+
+		  // Get the endpoint URL from the settings modal input
+		  const endpointUrl = document.getElementById("endpoint-url").value;
+          
+          // Get the banner image URL from the new input
+          const bannerImageUrl = document.getElementById("survey-banner-input").value.trim();
+		  const channelId  = document.getElementById("channel-id-input").value.trim();
+
+		  // Create an output object that includes the survey title and banner image URL
+		  const surveyOutput = {
+			endpointUrl: endpointUrl,
+			surveyItems: surveyItems,
+			surveyTitle: surveyTitle,   // <-- Added field
+      bannerImage: bannerImageUrl, // NEW: Banner image URL
+			storeTitle: null, //@fixme, need to update
+			storeId: null, //@fimxme, need to update
+			_channelId : channelId,
+      _userId: localStorage.userId
+		  };
+
+		  // Save the complete structure to localStorage
+		  localStorage.setItem("surveyQuestions", JSON.stringify(surveyOutput));
+
+		  let result = await updateSurvey(CurrentSurveySchemaId, surveyOutput);
+		  if (!CurrentSurveySchemaId) {
+			CurrentSurveySchemaId = result?._id;
+			localStorage.CurrentSurveySchemaId = CurrentSurveySchemaId;
+		  }
+
+		  // Create the URL string
+		  const finalURL = window.location.origin +
+                 window.location.pathname.replace("admin.html", "survey.html") +
+                 "?id=" + CurrentSurveySchemaId;
+
+
+		  // Set the URL text inside the modal
+		  document.getElementById("surveyLinkText").textContent = finalURL;
+
+		  // Set up the copy button to copy the URL to clipboard
+		  document.getElementById("copyBtn").onclick = function() {
+			navigator.clipboard.writeText(finalURL).then(() => {
+			  M.toast({ html: i18n_local[currentLang].copiedToClipboard, displayLength: 2000 });
+			});
+		  };
+
+		  // Set up the Go button to navigate to the URL
+		  document.getElementById("goBtn").onclick = function() {
+			window.location.href = finalURL;
+		  };
+
+		  // Open the modal (initialize if necessary)
+		  const modalElem = document.getElementById("surveyLinkModal");
+		  let modalInstance = M.Modal.getInstance(modalElem);
+		  if (!modalInstance) {
+			modalInstance = M.Modal.init(modalElem);
+		  }
+		  modalInstance.open();
+		}
+
+
+	  	  
+      /***********************************************
+       * fetch and update survey context
+       ***********************************************/
+    async function fetchSurvey(surveySchemaId, callback) {
+      try {
+        let url = "";
+        if (surveySchemaId) {
+          // Get a specific survey schema by its id.
+          url = `${BASE_URL}/api/survey/${surveySchemaId}`;
+        } else {
+          // If no id is provided, fetch all surveys for the current store.
+          url = `${BASE_URL}/api/survey?userId=${localStorage.userId}`;
+        }
+        const response = await fetch(url);
+        const data = await response.json();
+        if (typeof callback === "function") {
+          callback(null, data);
+        }
+        return data;
+      } catch (error) {
+        if (typeof callback === "function") {
+          callback(error);
+        }
+        throw error;
+      }
+    }
+
+    async function updateSurvey(surveySchemaId, content, callback) {
+      try {
+        let response;
+        if (surveySchemaId) {
+          // Update an existing survey schema.
+          response = await fetch(`${BASE_URL}/api/survey/${surveySchemaId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(content),
+          });
+        } else {
+          // Create a new survey schema.
+          response = await fetch(`${BASE_URL}/api/survey`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(content),
+          });
+        }
+        const data = await response.json();
+        if (typeof callback === "function") {
+          callback(null, data);
+        }
+        return data;
+      } catch (error) {
+        if (typeof callback === "function") {
+          callback(error);
+        }
+        throw error;
+      }
+    }
+
+    async function updateSurveyCounter(surveySchemaId, callback) {
+      try {
+        const response = await fetch(`${BASE_URL}/api/survey/${surveySchemaId}/counter`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+        });
+        const data = await response.json();
+        if (typeof callback === "function") {
+          callback(null, data);
+        }
+        return data;
+      } catch (error) {
+        if (typeof callback === "function") {
+          callback(error);
+        }
+        throw error;
+      }
+    }
+
+	  
+function showSelectSurveyModal(surveys, dismissible = false) {
+  return new Promise((resolve) => {
+    // Populate the list
+    const surveyList = document.getElementById("surveyList");
+    surveyList.innerHTML = ""; // clear any previous items
+
+    // Add existing surveys to the list
+    surveys.forEach((survey) => {
+      const li = document.createElement("li");
+      li.className = "collection-item";
+      li.style.cursor = "pointer";
+      
+      // Display survey title if available; otherwise fallback to survey ID
+      if (survey.surveyTitle) {
+        li.textContent = `${survey.surveyTitle} (ID: ${survey._id})`;
+      } else {
+        li.textContent = i18n_local[currentLang].surveyIdLabel + " " + survey._id;
+      }
+      li.dataset.surveyId = survey._id;
+
+      // Highlight the clicked item
+      li.onclick = function () {
+        document.querySelectorAll("#surveyList .collection-item").forEach((item) => {
+          item.classList.remove("blue", "white-text");
+        });
+        li.classList.add("blue", "white-text");
+      };
+
+      surveyList.appendChild(li);
+    });
+
+    // Add the "Create New" item at the bottom
+    const createNewItem = document.createElement("li");
+    createNewItem.className = "collection-item";
+    createNewItem.style.cursor = "pointer";
+    createNewItem.style.fontWeight = "bold";
+    createNewItem.textContent = i18n_local[currentLang].newSurvey;
+    createNewItem.dataset.surveyId = "create new";
+    createNewItem.onclick = function () {
+      document.querySelectorAll("#surveyList .collection-item").forEach((item) => {
+        item.classList.remove("blue", "white-text");
+      });
+      createNewItem.classList.add("blue", "white-text");
+    };
+
+    surveyList.appendChild(createNewItem);
+
+    // Open the modal (ensuring it doesn't dismiss if nothing is selected)
+    const modalElem = document.getElementById("selectSurveyModal");
+    let modalInstance = M.Modal.getInstance(modalElem);
+    if (modalInstance) {
+      modalInstance.options.dismissible = dismissible;
+    } else {
+      modalInstance = M.Modal.init(modalElem, {
+        dismissible: dismissible
+      });
+    }
+    modalInstance.open();
+
+    // When user clicks "Confirm", get the selected survey ID
+    const confirmBtn = document.getElementById("confirmSurveyBtn");
+    confirmBtn.onclick = function () {
+      const selectedItem = document.querySelector("#surveyList .collection-item.blue");
+      if (selectedItem) {
+        const selectedId = selectedItem.dataset.surveyId;
+		modalInstance.close();
+		localStorage.CurrentSurveySchemaId = selectedId;
+        resolve(selectedId);
+      } else {
+        M.toast({
+          html: i18n_local[currentLang].pleaseSelectSurvey,
+          displayLength: 2000
+        });
+      }
+    };
+  });
+}
+
+let isSurveyModified;
+function handleSwitchSurvey() {
+  if (isSurveyModified) {
+    // Use Materialize's confirm modal or simply window.confirm.
+    // Here we'll use window.confirm for simplicity.
+    if (window.confirm(i18n_local[currentLang].unsavedChangesPrompt)) {
+      // User wants to save changes, so call generateSurvey.
+      generateSurvey().then(() => {
+        // Once saved, open the survey list modal to let user select another survey.
+        openSurveyListModal();
+      });
+    } else {
+      // User does not want to save changes; simply open the survey list modal.
+      openSurveyListModal();
+    }
+  } else {
+    openSurveyListModal();
+  }
+}
+
+async function openSurveyListModal() {
+  // Assume 'surveys' is already available or fetch it here.
+  const surveys = await fetchSurvey(); // or however you fetch the list
+  
+  // Open the survey list modal and get the selected survey ID
+  let selectedId = await showSelectSurveyModal(surveys, true);
+
+  
+  if (selectedId) {
+    // Switch survey after the user selects one.
+    // You might want to store the selected survey ID and then reload the survey content.
+    // For example:
+    switchSurveyById(selectedId);
+  }
+}
+
+async function switchSurveyById(surveyId) {
+  if (surveyId === "create new") {
+    // Handle creating a new survey
+    surveyItems = [];
+    document.getElementById("survey-title-input").value = "";
+    document.getElementById("survey-banner-input").value = "";
+    CurrentSurveySchemaId = undefined;
+    isSurveyModified = false;
+    renderAllItems();
+  } else {
+    // Fetch the survey by its id
+    let tmp = await fetchSurvey(surveyId);
+    const existingData = tmp;
+    if (existingData) {
+      const parsed = typeof existingData === "string" ? JSON.parse(existingData) : existingData;
+      surveyItems = parsed.surveyItems.map(item => item.type ? item : { type: "question", ...item });
+      // Set the survey title input if one exists
+      if (parsed.surveyTitle) {
+        document.getElementById("survey-title-input").value = parsed.surveyTitle;
+      }
+	  else {
+		document.getElementById("survey-title-input").value = '';
+	  }
+      // Set the banner image input if one exists
+      if (parsed.bannerImage) {
+        document.getElementById("survey-banner-input").value = parsed.bannerImage;
+      } else {
+        document.getElementById("survey-banner-input").value = '';
+      }
+      CurrentSurveySchemaId = surveyId;
+      isSurveyModified = false;
+      renderAllItems();
+    }
+  }
+  updateNavTitle();
+	window.scrollTo({ top: 0, behavior: "auto" });
+      // Add highlight effect to new items
+    document.querySelectorAll(".question-card, .group-card").forEach((el) => {
+      el.classList.add("slide-in");
+      setTimeout(() => el.classList.remove("slide-in"), 1000); // Remove highlight after effect
+    });
+  
+}
+
+function logout() {
+	let res = confirm(i18n_local[currentLang].logoutConfirm);
+	res && commonLogout(function() {location.reload();});
+}
+
+function updateNavTitle() {
+    const navTitleEl = document.getElementById("nav-title");
+    let titleText = "";
+    if (!CurrentSurveySchemaId || CurrentSurveySchemaId === "create new") {
+        titleText = i18n_local[currentLang].newSurvey;
+    } else {
+        titleText = CurrentSurveySchemaId;
+    }
+    // Set the innerHTML to include the icon and the text.
+    navTitleEl.innerHTML = `<span class=''><i class="material-icons left">library_add</i>${i18n_local[currentLang].surveyIdPrefix} (${titleText})</span>`;
+}
+
+
+     /***********************************************
+       * IMPORT SURVEY
+       ***********************************************/
+
+// Global variable to hold imported survey JSON (from file)
+var importedSurveyDataFromFile = null;
+
+// Opens the Import Survey popup modal and resets its fields.
+function openImportSurveyModal() {
+
+
+   // NEW: Check if there's an existing survey loaded
+  if (CurrentSurveySchemaId) {
+    if (!confirm(i18n_local[currentLang].importReplaceConfirmation)) {
+      // If user cancels, exit the import process.
+      return;
+    }
+  }
+
+
+  const modalElem = document.getElementById('importSurveyModal');
+  let modalInstance = M.Modal.getInstance(modalElem);
+  if (!modalInstance) {
+    modalInstance = M.Modal.init(modalElem, { dismissible: true });
+  }
+  // Reset mode to "file" by default.
+  document.querySelector('input[name="importMode"][value="file"]').checked = true;
+  updateImportModePopup();
+  // Clear any previous inputs.
+  document.getElementById('popupImportSurveyFile').value = "";
+  document.getElementById('popupImportSurveyUrl').value = "";
+  document.getElementById('popupImportSurveyText').value = "";
+  importedSurveyDataFromFile = null;
+  
+  modalInstance.open();
+}
+
+// Updates the popup UI based on the selected import mode.
+function updateImportModePopup() {
+  const mode = document.querySelector('input[name="importMode"]:checked').value;
+  document.getElementById("popupImportFileContainer").style.display = (mode === "file") ? "block" : "none";
+  document.getElementById("popupImportUrlContainer").style.display = (mode === "url") ? "block" : "none";
+  document.getElementById("popupImportTextContainer").style.display = (mode === "text") ? "block" : "none";
+}
+
+// Handles file import in the popup modal.
+// After the file is read and parsed correctly, the import process is triggered automatically.
+function handleImportSurveyFilePopup(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      importedSurveyDataFromFile = JSON.parse(e.target.result);
+      // M.toast({ html: "File loaded successfully", displayLength: 2000 });
+      // Automatically trigger the import process.
+      handleFinalImport();
+    } catch (error) {
+      M.toast({ html: i18n_local[currentLang].fileParseError, displayLength: 2000 });
+    }
+  };
+  reader.readAsText(file);
+}
+
+// Called when the user clicks "Import" in the popup modal (or automatically for file mode).
+async function handleFinalImport() {
+  const mode = document.querySelector('input[name="importMode"]:checked').value;
+  let importedData;
+  
+  if (mode === "file") {
+    if (!importedSurveyDataFromFile) {
+      M.toast({ html: i18n_local[currentLang].invalidJsonFile, displayLength: 3000 });
+      return;
+    }
+    importedData = importedSurveyDataFromFile;
+  } else if (mode === "url") {
+    const url = document.getElementById('popupImportSurveyUrl').value.trim();
+    if (!url) {
+      M.toast({ html: i18n_local[currentLang].enterUrl, displayLength: 3000 });
+      return;
+    }
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error("Network error");
+      }
+      importedData = await response.json();
+    } catch (error) {
+      M.toast({ html: i18n_local[currentLang].importSurveyUrlFail, displayLength: 3000 });
+      return;
+    }
+  } else if (mode === "text") {
+    const text = document.getElementById('popupImportSurveyText').value.trim();
+    if (!text) {
+      M.toast({ html: i18n_local[currentLang].pasteJsonText, displayLength: 3000 });
+      return;
+    }
+    try {
+      importedData = JSON.parse(text);
+    } catch (error) {
+      M.toast({ html: i18n_local[currentLang].parseJsonTextError, displayLength: 3000 });
+      return;
+    }
+  }
+  
+  // Validate and process the imported data.
+  try {
+    if (!importedData.surveyItems) {
+      throw new Error(i18n_local[currentLang].invalidSurveySchema || "Invalid survey schema: missing surveyItems");
+    }
+
+    // Update survey items and UI
+    surveyItems = importedData.surveyItems;
+    document.getElementById("survey-title-input").value = importedData.surveyTitle || "";
+    // Update banner image if available
+    document.getElementById("survey-banner-input").value = importedData.bannerImage || "";
+    
+    // Add effect for smoother UI
+
+    renderAllItems(); // Render imported survey
+
+	window.scrollTo({ top: 0, behavior: "auto" });
+    // Add highlight effect to new items
+    document.querySelectorAll(".question-card, .group-card").forEach((el) => {
+      el.classList.add("slide-in");
+      setTimeout(() => {
+		el.classList.remove("slide-in")		
+	  }, 1000); // Remove highlight after effect
+    });
+
+    
+
+    // Show success message
+    M.toast({ html: i18n_local[currentLang].importSurveySuccess, displayLength: 3000 });
+
+    // Close import modal
+    const importModalElem = document.getElementById('importSurveyModal');
+    const importModalInstance = M.Modal.getInstance(importModalElem);
+    if (importModalInstance) importModalInstance.close();
+
+    // Close select survey modal (if open)
+    const selectModalElem = document.getElementById('selectSurveyModal');
+    const selectModalInstance = M.Modal.getInstance(selectModalElem);
+    if (selectModalInstance) selectModalInstance.close();
+  } catch (error) {
+    M.toast({ html: i18n_local[currentLang].importSurveyFailed, displayLength: 2000 });
+  }
+}
+
+     /***********************************************
+       * VOICE recognition
+       ***********************************************/
+
+// Global variables for voice recognition insertion tracking
+let isListening = false;
+let recognition = null;
+let insertionPoint = null;     // The starting index where recognized text is inserted
+let lastInsertedLength = 0;    // How many characters of interim text have been inserted
+let keyInserted = false;       // Indicate key is inserting, so that the recog result should be skip
+let rec;
+// Helper to create a new SpeechRecognition instance
+function createRecognition() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    alert("Speech recognition is not supported in this browser.");
+    return null;
+  }
+  rec = new SpeechRecognition();
+  rec.continuous = true;       // Keep listening until manually stopped
+  rec.interimResults = true;   // Get interim (partial) results
+  rec.lang = currentLang || 'en-US';          // Adjust as needed
+
+document.getElementById("start-voice-btn").classList.add("recording-btn");
+// Global variable to track the current interim string
+let currentInterim = "";
+
+rec.onresult = (event) => {
+  const descInput = document.getElementById("survey-description-input");
+  // On first result, record the current cursor position
+  if (insertionPoint === null) {
+    insertionPoint = descInput.selectionStart;
+    lastInsertedLength = 0;
+    currentInterim = "";
+  }
+  
+  // Use only the last result from the event
+  let result = event.results[event.results.length - 1];
+  let transcript = result[0].transcript;
+  
+  //console.log(result);
+  
+  // If the result is not final and the new transcript is a partial (i.e. a prefix)
+  // of the previously inserted interim, then skip updating the display.
+  if (!result.isFinal && currentInterim && (currentInterim.indexOf(transcript)>=0 || currentInterim.length > transcript.length)  ) {
+	console.log("repeat");
+    return;
+  }
+ 
+  if (keyInserted) {
+	console.log("interrupt");
+	
+	if (result.isFinal) {		
+		lastInsertedLength = 0;
+		currentInterim = "";
+		
+	}
+	return;
+  } 
+ 
+ 
+  console.log(keyInserted, transcript);
+  
+  // Remove the previously inserted interim text from the textarea:
+  let currentVal = descInput.value;
+  let before = currentVal.substring(0, insertionPoint);
+  let after = currentVal.substring(insertionPoint + lastInsertedLength);
+
+  // Insert the new transcript
+  descInput.value = before + transcript + after;
+  
+  // Move the cursor to the end of the newly inserted text
+  const newCursorPos = insertionPoint + transcript.length;
+  descInput.setSelectionRange(newCursorPos, newCursorPos);
+  descInput.focus();
+  
+	
+  
+  // Update lastInsertedLength and currentInterim
+  lastInsertedLength = transcript.length;
+  currentInterim = transcript;
+  
+  // If the result is final, finalize the insertion:
+  if (result.isFinal) {
+    // Advance the insertion point so that future speech is appended at the end of this text.
+    insertionPoint += transcript.length;
+    lastInsertedLength = 0;
+    currentInterim = "";
+	
+	// trigger the button 
+	// Manually dispatch an "input" event so the listener fires
+	const event = new Event("input", { bubbles: true, cancelable: true });
+	descInput.dispatchEvent(event);
+	
+	
+	
+	
+  }
+};
+
+
+  rec.onerror = (event) => {
+    console.error("Speech recognition error:", event.error);
+    try {
+      rec.stop();
+    } catch(e) {}
+  };
+
+  rec.onend = () => {
+    // Reset variables when recognition ends
+    isListening = false;
+    recognition = null;
+    insertionPoint = null;
+    lastInsertedLength = 0;
+	if (keyInserted) {
+		rec.start();
+		isListening = true;
+		keyInserted = false;
+		return;
+	}
+    document.getElementById("start-voice-btn").innerHTML = '<i class="material-icons">mic</i>';
+	document.getElementById("start-voice-btn").classList.remove("recording-btn");
+  };
+
+  return rec;
+}
+
+// Add event listeners to update the insertion point if user manually changes the cursor
+const descInput = document.getElementById("survey-description-input");
+descInput.addEventListener("click", () => {
+  if (isListening) {
+    insertionPoint = descInput.selectionStart;
+    lastInsertedLength = 0;
+  }
+});
+descInput.addEventListener("keyup", () => {
+  if (isListening) {
+    insertionPoint = descInput.selectionStart;
+    lastInsertedLength = 0;
+	keyInserted = true; // indicate we should break the recognition for 200ms
+	rec.stop();
+	
+  }
+});
+
+// Handle voice button clicks
+document.getElementById("start-voice-btn").addEventListener("click", () => {
+  if (!isListening) {
+    // Start recognition: create a new instance and record the current cursor position
+    recognition = createRecognition();
+    if (!recognition) return;
+    insertionPoint = descInput.selectionStart;
+    lastInsertedLength = 0;
+    try {
+      recognition.start();
+      isListening = true;
+      document.getElementById("start-voice-btn").innerHTML = '<i class="material-icons">mic_off</i>';
+    } catch (err) {
+      console.error("Error starting speech recognition:", err);
+    }
+  } else {
+    try {
+      recognition.stop();
+      // onend handler will reset state
+    } catch (err) {
+      console.error("Error stopping speech recognition:", err);
+    }
+  }
+});
+
+// Also stop recognition if the user clicks the "Generate Survey Schema" button
+document.getElementById("generate-survey-schema-btn").addEventListener("click", () => {
+  if (isListening && recognition) {
+    try {
+      recognition.stop();
+    } catch (err) {
+      console.error("Error stopping speech recognition:", err);
+    }
+  }
+  // Continue with your generate logic here...
+});
+
+    </script>
+  </body>
+</html>

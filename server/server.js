@@ -21,7 +21,7 @@ const jwt = require("jsonwebtoken");
 require('dotenv').config();
 
 
-// API server base URL
+// API server base URL:  This is used by email verifier for the link that user can click to verify email 
 const BASE_URL = 'http://b200.tagfans.com:5300';
 
 // Connect to MongoDB
@@ -46,8 +46,8 @@ const Message = mongoose.model("Message", messageSchema);
 const generalDataSchema = new mongoose.Schema({
   _id: { type: String, default: () => uuidv4() },
   _type: { type: String, required: true },
-  _channelId: { type: String, required: true },
-  _storeId: { type: String, required: true }
+  _channelId: { type: String },
+  _storeId: { type: String }
 }, { strict: false });
 
 const GeneralData = mongoose.model("GeneralData", generalDataSchema);
@@ -80,6 +80,24 @@ const adminChannelSchema = new mongoose.Schema({
   pushTokens: { type: [String], default: [] },
 });
 const AdminChannel = mongoose.model("AdminChannel", adminChannelSchema);
+
+
+
+// Mongoose schema for survey schemas. 
+const surveySchema = new mongoose.Schema({
+  _id: { type: String, default: () => uuidv4() },
+  _storeId: { type: String },
+  _channelId: { type: String },
+  _userId: { type: String, required: true },    // the create user's id
+  surveyTitle: { type: String },
+  bannerImage: { type: String },
+  surveyItems: { type: Array, default: [] },
+  counter: { type: Number, default: 0 }
+}, { timestamps: true });
+
+const SurveySchema = mongoose.model("SurveySchema", surveySchema);
+
+
 
 
 
@@ -747,26 +765,54 @@ app.post("/api/send-message", async (req, res) => {
 
 
 // NEW: API endpoint to handle general data submissions (e.g., surveys)
-app.post("/api/send-data", async (req, res) => {
-  // The client must send data with at least a _type field.
-  const payload = req.body;
-  if (!payload._type) {
-    return res.status(400).json({ error: "_type field is required." });
-  }
-  
-  // Always generate a new unique _id for the document,
-  // even if an _id was provided by the client.
-  payload._id = uuidv4();
+app.post("/api/send-data", async(req, res) => {
+    // The client must send data with at least a _type and a _channelId field.
+    const payload = req.body;
+    if (!payload._type) {
+        return res.status(400).json({
+            error: "_type field is required."
+        });
+    }
 
-  try {
-    const newData = new GeneralData(payload);
-    await newData.save();
-    console.log(`Saved ${payload._type} data with id ${payload._id}`);
-    return res.status(200).json({ success: true, data: newData });
-  } catch (err) {
-    console.error("Error saving general data:", err);
-    return res.status(500).json({ error: "Internal server error." });
-  }
+    if (payload._type == 'survey') {
+      const survey = await SurveySchema.findOne({
+          _id: payload.surveyId
+      });
+      if (!survey) {
+          return res.status(400).json({
+              error: "Invalid survey id."
+          });
+      }
+    }
+    // NEW: Check if the provided _channelId exists in ChannelInfo
+    /*
+    const channel = await ChannelInfo.findOne({
+        channelId: payload._channelId
+    });
+    if (!channel) {
+        return res.status(400).json({
+            error: "Invalid channel id."
+        });
+    }
+    */
+    // Always generate a new unique _id for the document,
+    // even if an _id was provided by the client.
+    payload._id = uuidv4();
+
+    try {
+        const newData = new GeneralData(payload);
+        await newData.save();
+        console.log(`Saved ${payload._type} data with id ${payload._id}`);
+        return res.status(200).json({
+            success: true,
+            data: newData
+        });
+    } catch (err) {
+        console.error("Error saving general data:", err);
+        return res.status(500).json({
+            error: "Internal server error."
+        });
+    }
 });
 
 // NEW: API endpoint to read general data based on _channelId, _storeId, and _type
@@ -801,7 +847,77 @@ app.get("/api/read-data", async (req, res) => {
   }
 });
 
+// ***** Survey operations *****
+// GET a specific survey schema by id.
+app.get("/api/survey/:id", async (req, res) => {
+  try {
+    const survey = await SurveySchema.findById(req.params.id);
+    if (!survey) return res.status(404).json({ error: "Survey not found" });
+    return res.json(survey);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
 
+// GET list of surveys filtered by storeId (optional).
+app.get("/api/survey", async (req, res) => {
+  try {
+    const { userId } = req.query;
+    let query = {};
+    if (userId) query._userId = userId;
+    const surveys = await SurveySchema.find(query);
+    return res.json(surveys);
+  } catch(err) {
+    console.error(err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST to create a new survey schema.
+app.post("/api/survey", async (req, res) => {
+  try {
+    const content = req.body;
+    const newSurvey = new SurveySchema(content);
+    await newSurvey.save();
+    return res.status(201).json(newSurvey);
+  } catch(err) {
+    console.error(err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// PUT to update an existing survey schema.
+app.put("/api/survey/:id", async (req, res) => {
+  try {
+    const updatedSurvey = await SurveySchema.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!updatedSurvey) return res.status(404).json({ error: "Survey not found" });
+    return res.json(updatedSurvey);
+  } catch(err) {
+    console.error(err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// PATCH to increment a counter in the survey schema.
+app.patch("/api/survey/:id/counter", async (req, res) => {
+  try {
+    const updatedSurvey = await SurveySchema.findByIdAndUpdate(
+      req.params.id,
+      { $inc: { counter: 1 } },
+      { new: true }
+    );
+    if (!updatedSurvey) return res.status(404).json({ error: "Survey not found" });
+    return res.json(updatedSurvey);
+  } catch(err) {
+    console.error(err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+
+
+// ***** AWS S3 operations ******
 // Endpoint to generate a presigned URL for PUT (upload)
 app.get("/presigned-url/put", async (req, res) => {
   const key = req.query.key;

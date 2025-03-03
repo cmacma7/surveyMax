@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Survey Admin with Login</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Material Icons and Materialize CSS -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" />
+    <style>
+      /* (Keep your original styles here) */
+      body, html { margin: 0; padding: 0; height: 100%; }
+      /* … other styles … */
+      /* Style for the login container so it fills the screen */
+      #login-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body class="grey lighten-4">
+    <!-- LOGIN CONTAINER (shown if no token found) -->
+    <div id="login-container">
+      <div class="row">
+        <div class="col s12 m6 offset-m3">
+          <div class="card">
+            <div class="card-content">
+              <span class="card-title">Login</span>
+              <div class="input-field">
+                <input id="login-email" type="email" />
+                <label for="login-email">Email</label>
+              </div>
+              <div class="input-field">
+                <input id="login-password" type="password" />
+                <label for="login-password">Password</label>
+              </div>
+            </div>
+            <div class="card-action">
+              <button id="login-btn" class="btn">Login</button>
+              <a href="#!" id="register-link">Create Account</a>
+              <a href="#!" id="forgot-link">Forgot Password</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REGISTER MODAL -->
+    <div id="register-modal" class="modal">
+      <div class="modal-content">
+        <h4>Register</h4>
+        <div class="input-field">
+          <input id="register-email" type="email" />
+          <label for="register-email">Email</label>
+        </div>
+        <button id="register-btn" class="btn">Register</button>
+      </div>
+      <div class="modal-footer">
+        <a href="#!" class="modal-close btn">Close</a>
+      </div>
+    </div>
+
+    <!-- FORGOT PASSWORD MODAL -->
+    <div id="forgot-modal" class="modal">
+      <div class="modal-content">
+        <h4>Forgot Password</h4>
+        <div class="input-field">
+          <input id="forgot-email" type="email" />
+          <label for="forgot-email">Email</label>
+        </div>
+        <button id="forgot-btn" class="btn">Send Reset Email</button>
+      </div>
+      <div class="modal-footer">
+        <a href="#!" class="modal-close btn">Close</a>
+      </div>
+    </div>
+
+    <!-- ADMIN CONTAINER (the original admin UI) -->
+    <div id="admin-container" style="display:none;">
+      <!-- Include your original spinner, modals, navbar, sidebar and main content here -->
+      <!-- For example, your original admin.html code starting with the spinner element: -->
+      <div class="loading-container" id="loadingSpinner" style="display:none;">
+        <div class="spinner-wrapper">
+          <span class="material-icons spinner">refresh</span>
+          <span class="loading-text">Processing, please wait ...</span>
+        </div>
+      </div>
+      <!-- Materialize Modal for Store Selection -->
+      <div id="selectStore" class="modal">
+        <div class="modal-content">
+          <h4><!-- Title will be updated via setLanguage --></h4>
+          <div id="storeOptions">
+            <!-- Store options will be dynamically added here -->
+          </div>
+        </div>
+        <div class="modal-footer">
+          <a href="#!" class="modal-close btn-flat" onclick="confirmSelection()"><!-- Confirm text will be updated via setLanguage --></a>
+          <a href="#!" class="modal-close btn-flat"><!-- Cancel text will be updated via setLanguage --></a>
+        </div>
+      </div>
+      <!-- FIXED NAV WRAPPER -->
+      <div class="navbar-fixed">
+        <nav class="blue">
+          <div class="nav-wrapper">
+            <!-- Left side buttons -->
+            <ul class="left">
+              <li>
+                <a href="#!" onclick="toggleSidebar()" class="tooltipped" data-tooltip="Menu">
+                  <i class="material-icons">menu</i>
+                </a>
+              </li>
+              <li>
+                <a id="storeButton" onclick="initSelectStore();"><!-- Store button text will be updated via setLanguage --></a>
+              </li>
+            </ul>
+            <!-- Center brand title (clickable for switching survey) -->
+            <a id="nav-title" class="left" onclick="handleSwitchSurvey()"></a>
+            <!-- Right side button -->
+            <ul class="right">
+              <li>
+                <a href="#!" onclick="openSettingsModal()" class="tooltipped" data-tooltip="Settings">
+                  <i class="material-icons">settings</i>
+                </a>
+              </li>
+            </ul>
+          </div>
+        </nav>
+      </div>
+      <!-- (Continue with the rest of your original admin.html content, sidebar, main content, etc.) -->
+      <!-- ... -->
+    </div>
+
+    <!-- Materialize JS and jQuery -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js" defer></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js" 
+            integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" 
+            crossorigin="anonymous"></script>
+    <!-- Your common scripts (e.g., common.js, db.js) -->
+    <script type="text/javascript" src="../admin/common.js?v=20"></script>
+    <script type="text/javascript" src="../admin/db.js?v=20"></script>
+
+    <script>
+      // Change SERVER_URL to the one used by your app code.
+      const SERVER_URL = 'https://b200.tagfans.com:5301';
+
+      // ------------------------------
+      // LOGIN / REGISTER / FORGOT PASSWORD
+      // ------------------------------
+
+      async function handleLogin() {
+        const email = document.getElementById("login-email").value.trim();
+        const password = document.getElementById("login-password").value.trim();
+        if (!email || !password) {
+          M.toast({ html: "Please enter both email and password", displayLength: 2000 });
+          return;
+        }
+        try {
+          const response = await fetch(`${SERVER_URL}/api/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password })
+          });
+          const data = await response.json();
+          if (!response.ok) {
+            M.toast({ html: data.error || "Login failed", displayLength: 2000 });
+            return;
+          }
+          // Store login info in localStorage
+          localStorage.setItem("userToken", data.token);
+          localStorage.setItem("userId", data.userId);
+          localStorage.setItem("userEmail", email);
+          // Hide login container and show admin container
+          document.getElementById("login-container").style.display = "none";
+          document.getElementById("admin-container").style.display = "block";
+          // Initialize the admin page (original logic)
+          initAdmin();
+        } catch (err) {
+          console.error(err);
+          M.toast({ html: "An error occurred during login", displayLength: 2000 });
+        }
+      }
+
+      async function handleRegister() {
+        const email = document.getElementById("register-email").value.trim();
+        if (!email) {
+          M.toast({ html: "Please enter email", displayLength: 2000 });
+          return;
+        }
+        try {
+          const response = await fetch(`${SERVER_URL}/api/register`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email })
+          });
+          const data = await response.json();
+          if (!response.ok) {
+            M.toast({ html: data.error || "Registration failed", displayLength: 2000 });
+            return;
+          }
+          M.toast({ html: "Verification email sent. Please check your email.", displayLength: 2000 });
+          // In a full implementation you would now ask for the token and a password.
+        } catch (err) {
+          console.error(err);
+          M.toast({ html: "An error occurred during registration", displayLength: 2000 });
+        }
+      }
+
+      async function handleForgotPassword() {
+        const email = document.getElementById("forgot-email").value.trim();
+        if (!email) {
+          M.toast({ html: "Please enter email", displayLength: 2000 });
+          return;
+        }
+        try {
+          const response = await fetch(`${SERVER_URL}/api/forgot-password`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email })
+          });
+          const data = await response.json();
+          if (!response.ok) {
+            M.toast({ html: data.error || "Failed to send reset email", displayLength: 2000 });
+            return;
+          }
+          M.toast({ html: "Password reset email sent. Please check your email.", displayLength: 2000 });
+        } catch (err) {
+          console.error(err);
+          M.toast({ html: "An error occurred while requesting password reset", displayLength: 2000 });
+        }
+      }
+
+      // Initialize modals and attach event listeners for login/register/forgot
+      document.addEventListener("DOMContentLoaded", function() {
+        // Initialize Materialize modals
+        const modals = document.querySelectorAll(".modal");
+        M.Modal.init(modals);
+
+        document.getElementById("login-btn").addEventListener("click", handleLogin);
+        document.getElementById("register-link").addEventListener("click", function() {
+          M.Modal.getInstance(document.getElementById("register-modal")).open();
+        });
+        document.getElementById("forgot-link").addEventListener("click", function() {
+          M.Modal.getInstance(document.getElementById("forgot-modal")).open();
+        });
+        document.getElementById("register-btn").addEventListener("click", handleRegister);
+        document.getElementById("forgot-btn").addEventListener("click", handleForgotPassword);
+
+        // If a user token already exists, skip the login and initialize admin immediately.
+        if (localStorage.getItem("userToken")) {
+          document.getElementById("login-container").style.display = "none";
+          document.getElementById("admin-container").style.display = "block";
+          initAdmin();
+        }
+      });
+
+      // ------------------------------
+      // ORIGINAL ADMIN LOGIC INITIALIZATION
+      // ------------------------------
+      function initAdmin() {
+        // This function wraps the original DOMContentLoaded logic of your admin page.
+        // For example, the original code called initTagfans() to handle login and store selection.
+        // Now, after login you can either call a function to fetch store data using the saved token
+        // and then proceed with the original admin logic (rendering the sidebar, questions, etc.).
+        //
+        // Example (you might adapt this to your existing code):
+        //
+        // (1) Use the stored token and userId to fetch store access tokens, etc.
+        // (2) Initialize the admin UI, set language, and render survey items.
+        //
+        // For demonstration we simply call your original initialization code:
+        console.log("User logged in. Initializing admin interface...");
+        // Remove or comment out the original call to initTagfans().
+        // Instead, fetch the necessary data (for example, storeAccessToken) using your new login token.
+        // Then call your renderAllItems() and other functions as before.
+        //
+        // --- Begin original admin logic ---
+        (async function() {
+          // Example: fetch survey list or store tokens using your API and token from localStorage.
+          // Here we assume that your existing functions (getStoreAccessToken, fetchSurvey, etc.)
+          // will work once the user is logged in.
+          //
+          // You might add additional header authorization in your API calls if needed.
+          //
+          // For now, we simply execute the code that was inside your DOMContentLoaded listener:
+          // (Make sure to remove the login call from that listener so it isn’t duplicated.)
+          //
+          // For example:
+          // await initTagfans();  <-- REMOVE this call.
+          // Instead, if needed, call a new function fetchStoreData() that uses the stored token.
+          //
+          // Then continue with setting language, rendering items, etc.
+          //
+          // In this sample we simply log a message and call renderAllItems().
+          renderAllItems();
+        })();
+        // --- End original admin logic ---
+      }
+
+      /* 
+        The rest of your original admin.html code (functions such as renderAllItems,
+        addQuestion, addGroup, language settings, drag & drop handlers, etc.) remains unchanged.
+        Just make sure that this code is defined below in your script so that initAdmin() and subsequent
+        calls work as expected.
+      */
+      
+      // (Place your full original admin.js code here – for brevity it is not repeated in full in this sample.)
+      
+    </script>
+  </body>
+</html>

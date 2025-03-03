@@ -1,0 +1,1427 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Survey Page</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Material Icons and Materialize CSS -->
+    <link
+      href="https://fonts.googleapis.com/icon?family=Material+Icons"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css"
+    />
+
+    <style>
+      html {
+        font-size: 1.1em;
+      }
+      .nav-wrapper {
+        font-size: 1.4em;
+      }
+      /* ------------------------------
+         Hero / Top Banner 
+         ------------------------------ */
+	  .backgroup-column {
+		display:none;
+	  }
+      .hero-container {
+        position: relative;
+        height: 300px; /* Adjust as needed */
+        
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .hero-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(153, 101, 21, 0.4); /* warm brown tone */
+      }
+      .hero-text {
+        position: relative;
+        color: white;
+        font-size: 1.8rem;
+        font-weight: 600;
+        text-align: center;
+        z-index: 1;
+      }
+	  .header-container {
+		width: 100%;
+		margin: 0 auto;
+	  }
+
+      /* Highlight invalid question panels */
+      .invalid-question {
+        border-left: 4px solid #ff7043 !important; /* warm, soft orange */
+        background-color: #fff3e0; /* light warm background */
+      }
+
+      /* Survey items styling */
+      .option-item {
+        margin-bottom: 10px;
+      }
+
+      /* Results panel */
+      #result {
+        margin-top: 20px;
+        overflow: hidden;
+      }
+      #result .result-question {
+        font-weight: bold;
+        margin-top: 10px;
+      }
+      #result .result-answer {
+        margin-left: 15px;
+        color: #1a237e;
+      }
+
+      /* Star rating styling */
+      .stars-container {
+        display: flex;
+        gap: 5px;
+      }
+      .stars-container i {
+        font-size: 2rem;
+        cursor: pointer;
+        color: #ccc;
+      }
+      .stars-container i.selected {
+        color: #ffc107; /* amber for filled star */
+      }
+
+      /* Sub-question indentation */
+      .sub-question {
+        margin-left: 2em;
+        border-left: 3px dotted #ccc;
+        padding-left: 1em;
+      }
+      .group-container {
+        margin-bottom: 1.5em;
+      }
+      .group-title {
+        font-weight: 600;
+        margin-bottom: 0.5em;
+        font-size: 1.1rem;
+      }
+
+      /* Uploaded images grid */
+      .uploaded-images {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 15px;
+      }
+      .uploaded-images img {
+        width: 100px;
+        height: 100px;
+        object-fit: cover;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+      }
+
+      /* Progress bar container (optional extra styling) */
+      #progress-bar-container {
+        position: fixed;      /* Sticky to the bottom */
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        z-index: 1000;        /* Ensure it’s above other elements */
+        background-color: rgba(255, 255, 255, 0.8); /* Semi opaque background */
+        padding: 10px 0;
+        text-align: center;
+      }
+
+      /* Optionally, style the progress bar number */
+      #progress-number {
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: #1a237e;
+      }
+	  
+	  @media only screen and (min-width: 768px) {
+			.header-container {
+				width: 88%;
+			}
+			.backgroup-column {
+				display:block;
+				position: fixed;
+				width: 88%;
+				height: 100%;
+				margin: 0 6%;
+				top: 0;
+				background: #f8f8f8;
+				z-index: -1;
+				box-shadow: 0px 0px 7px 1px;
+			}
+	  }
+    </style>
+  </head>
+  <body class="background-color: #fff8f0;">
+    
+    <!-- Hero Section (Example) -->
+    <div class="hero-container header-container"></div>
+
+    <nav class="brown darken-3 header-container">
+      <div class="nav-wrapper center">
+	 
+        <a href="#!" id="nav-title">問卷調查</a>
+        <!--
+        <ul id="nav-mobile" class="right">
+          <li>
+            <select
+              id="language-selector"
+              class="browser-default blue"
+              onchange="changeLanguage()"
+            >
+              <option value="en">English</option>
+              <option value="zh" selected>繁體中文</option>
+              <option value="jp">日本語</option>
+            </select>
+          </li>
+        </ul>
+        -->
+      </div>
+    </nav>
+	
+	<div class="backgroup-column">
+	</div>
+
+
+    <div class="container">
+	  
+      <div class="section">
+        <!-- <h5 id="survey-instruction">請完成以下問卷</h5> -->
+        <form id="survey-form" onsubmit="handleSubmit(event)">
+          <div id="survey-questions"></div>
+
+          <!-- Progress Bar (Materialize) -->
+          <div id="progress-bar-container">
+            <div class="progress" style="margin-bottom: 5px;">
+              <div class="determinate" id="progress-bar" style="width: 0%"></div>
+            </div>
+            <span id="progress-number">0%</span>
+          </div>
+
+
+          <!-- Submit button -->
+          <button
+            id="submit-button"
+            class="btn waves-effect waves-light deep-orange accent-4"
+            type="submit"
+            style="margin-top: 20px;"
+          >
+            <i class="material-icons left">send</i>
+            <span id="submit-btn">提交問卷</span>
+          </button>
+        </form>
+        <div id="result" class="card-panel grey lighten-5"></div>
+      </div>
+    </div>
+
+    <!-- Materialize JS -->
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"
+      defer
+    ></script>
+    <script
+      src="https://code.jquery.com/jquery-3.6.0.min.js"
+      integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4="
+      crossorigin="anonymous"
+    ></script>
+    <script type="text/javascript" src="../admin/common.js?v=20"></script>
+    <script type="text/javascript" src="../admin/db.js?v=20"></script>
+
+    <script>
+
+	const SERVER_URL = "https://b200.tagfans.com:5301";
+
+	/***********************************************
+	 * LANGUAGE TABLE
+	 ***********************************************/
+	const languageTable = {
+	    en: {
+	        navTitle: "Survey",
+	        surveyInstruction: "Please complete the survey below",
+	        submitButton: "Submit Survey",
+	        noQuestions:
+	        "No questions available. Please create a survey on the admin page first.",
+	        validationError: "Please fill out all required questions.",
+	        surveyResults: "Survey Results",
+	        submitSuccess: "Submit Successful",
+	        uploadImage: "Upload Image",
+	        extraInfoPlaceholder: "Please enter additional info",
+	        invalidImageAlert: "Please select a valid image file.",
+	        tableId: "Table Number",
+	        storeName: "Store Name",
+	        date: "Date"
+	    },
+	    zh: {
+	        navTitle: "問卷調查",
+	        surveyInstruction: "請完成以下問卷",
+	        submitButton: "提交問卷",
+	        noQuestions: "目前沒有可用的問題。請先在管理頁面創建問卷。",
+	        validationError: "請填寫所有必填問題。",
+	        surveyResults: "問卷結果",
+	        submitSuccess: "提交成功",
+	        uploadImage: "上傳圖片",
+	        extraInfoPlaceholder: "請輸入額外資訊",
+	        invalidImageAlert: "請選擇有效的圖片檔案。",
+	        tableId: "桌號",
+	        storeName: "店名",
+	        date: "日期"
+	    },
+	    jp: {
+	        navTitle: "アンケート",
+	        surveyInstruction: "以下のアンケートにご記入ください",
+	        submitButton: "アンケートを提出する",
+	        noQuestions:
+	        "利用可能な質問はありません。管理ページでアンケートを作成してください。",
+	        validationError: "必須項目にすべて記入してください。",
+	        surveyResults: "アンケート結果",
+	        submitSuccess: "送信成功",
+	        uploadImage: "画像をアップロード",
+	        extraInfoPlaceholder: "追加情報を入力してください",
+	        invalidImageAlert: "有効な画像ファイルを選択してください。",
+	        tableId: "テーブル番号",
+	        storeName: "店舗名",
+	        date: "日付"
+	    },
+	};
+
+	/***********************************************
+	 * GLOBAL VARIABLES
+	 ***********************************************/
+	let loadedSurveyItems = []; // can have items: {type:'question'} or {type:'group'}
+	let endpointUrl = "";
+	let currentSurvey; // the current survey
+	let currentLanguage = localStorage.getItem("selectedLanguage") || "zh";
+	let uploadedImageLinks = []; // store image data URLs
+
+	window.onload = async function () {
+	    // Retrieve from localStorage, or server
+
+	    // Get the query string from the URL (e.g., "?id=123&name=John")
+	    const queryString = window.location.search;
+
+	    // Create a URLSearchParams instance
+	    const urlParams = new URLSearchParams(queryString);
+
+	    // Get the value of a specific parameter (e.g., "id")
+	    const id = urlParams.get("id");
+	    console.log("ID:", id);
+
+	    let survey;
+	    if (id) {
+	        survey = await fetchSurvey(id);
+	    }
+
+	    if (survey) {
+	        let tmp = typeof survey == "string" ? JSON.parse(survey) : survey;
+	        if (Array.isArray(tmp)) {
+	            global.gid = tmp[0].gid;
+	            tmp = tmp[0].content;
+	        }
+	        if (tmp) {
+	            currentSurvey = tmp;
+	            currentSurvey.surveyId = id;
+	            loadedSurveyItems = tmp.surveyItems;
+	            endpointUrl = tmp.endpointUrl;
+	        }
+	    }
+
+	    if (currentSurvey?.surveyTitle) {
+	        document.getElementById("nav-title").textContent = currentSurvey?.surveyTitle;
+	    }
+
+	    // If survey has a bannerImage, update the hero container background
+	    const heroContainer = document.querySelector('.hero-container');
+	    if (currentSurvey && currentSurvey.bannerImage) {
+
+	        if (heroContainer) {
+	            heroContainer.style.background = `url("${currentSurvey.bannerImage}") center/cover no-repeat`;
+	        }
+	    } else {
+	        heroContainer.style.height = 0;
+	    }
+
+	    // If none found, show a message
+	    if (!loadedSurveyItems || loadedSurveyItems.length === 0) {
+	        document.getElementById("survey-questions").innerHTML =
+`<p>${languageTable[currentLanguage].noQuestions}</p>`;
+	    } else {
+	        renderSurvey();
+	    }
+
+	    // Language selection
+	    // document.getElementById("language-selector").value = currentLanguage;
+	    // applyLanguage(currentLanguage);
+
+	    // Initialize Materialize select
+	    const elems = document.querySelectorAll("select");
+	    M.FormSelect.init(elems);
+	};
+
+	/***********************************************
+	 * CHANGE LANGUAGE
+	 ***********************************************/
+	function changeLanguage() {
+	    const selector = document.getElementById("language-selector");
+	    currentLanguage = selector.value;
+	    localStorage.setItem("selectedLanguage", currentLanguage);
+	    applyLanguage(currentLanguage);
+
+	    // Re-render if we have items
+	    if (loadedSurveyItems && loadedSurveyItems.length > 0) {
+	        renderSurvey();
+	    }
+	}
+
+	function applyLanguage(lang) {
+	    if (!currentSurvey.surveyTitle) {
+	        document.getElementById("nav-title").textContent =
+	            languageTable[lang].navTitle;
+	    }
+	    document.getElementById("survey-instruction").textContent =
+	        languageTable[lang].surveyInstruction;
+	    document.getElementById("submit-btn").textContent =
+	        languageTable[lang].submitButton;
+	}
+
+	/***********************************************
+	 * RENDER SURVEY
+	 ***********************************************/
+	function renderSurvey() {
+	    const surveyContainer = document.getElementById("survey-questions");
+	    surveyContainer.innerHTML = "";
+
+	    if (!loadedSurveyItems || loadedSurveyItems.length === 0) {
+	        surveyContainer.innerHTML =
+`<p>${languageTable[currentLanguage].noQuestions}</p>`;
+	        return;
+	    }
+
+	    loadedSurveyItems.forEach((item, index) => {
+	        if (item.type === "question") {
+	            // Render a top-level question
+	            const qElement = renderSingleQuestion(item, index);
+	            surveyContainer.appendChild(qElement);
+	        } else if (item.type === "group") {
+	            // Render a group container
+	            const groupDiv = document.createElement("div");
+	            groupDiv.className = "card-panel group-container";
+	            groupDiv.dataset.groupIndex = index;
+
+	            // Group Title
+	            if (item.groupTitle) {
+	                const gTitle = document.createElement("div");
+	                gTitle.className = "group-title";
+	                gTitle.textContent = item.groupTitle;
+	                groupDiv.appendChild(gTitle);
+	            }
+
+	            // Sub-questions container
+	            const subQContainer = document.createElement("div");
+	            subQContainer.className = "sub-questions-wrapper";
+	            groupDiv.appendChild(subQContainer);
+
+	            // For each sub-question
+	            if (item.subQuestions && item.subQuestions.length > 0) {
+	                item.subQuestions.forEach((subQ, subIndex) => {
+	                    const subQElement = renderSingleQuestion(
+	                            subQ,
+`${index}_${subIndex}`,
+	                            true);
+	                    subQContainer.appendChild(subQElement);
+	                });
+	            }
+
+	            surveyContainer.appendChild(groupDiv);
+	        }
+	    });
+
+	    // Initialize any datepickers
+	    const datepickers = document.querySelectorAll(".datepicker");
+	    M.Datepicker.init(datepickers);
+
+	    // Attach input event listeners so that group visibility can update dynamically
+	    attachInputEventListeners();
+	    updateGroupVisibility(); // run an initial check
+
+	    // Update progress bar after rendering
+	    updateProgressBar();
+	}
+
+	/**
+	 * Render a single question. "qIndex" can be an integer (for top-level)
+	 * or "groupIndex_subIndex" for sub-questions. If "isSub" is true,
+	 * add sub-question styling.
+	 */
+	function renderSingleQuestion(questionObj, qIndex, isSub = false) {
+	    const questionDiv = document.createElement("div");
+	    questionDiv.className = isSub ? "card-panel sub-question" : "card-panel";
+	    questionDiv.dataset.qIndex = qIndex; // e.g. "2", or "1_0"
+
+	    const label = document.createElement("h6");
+	    label.textContent =
+	        questionObj.questionText + (questionObj.required ? " *" : "");
+	    questionDiv.appendChild(label);
+
+	    if (
+	        questionObj.questionType === "text" ||
+	        questionObj.questionType === "date") {
+	        const input = document.createElement("input");
+	        input.type = "text";
+	        input.name = `question_${qIndex}`;
+	        input.className =
+	            questionObj.questionType === "date"
+	             ? "datepicker input-field"
+	             : "input-field";
+	        questionDiv.appendChild(input);
+
+	    } else if (questionObj.questionType === "radio") {
+	        const containerDiv = document.createElement("div");
+	        if (questionObj.compack) {
+	            containerDiv.style.display = "flex";
+	            containerDiv.style.flexWrap = "wrap";
+	            containerDiv.style.gap = "1rem";
+	            containerDiv.style.marginTop = "1rem";
+	        }
+
+	        (questionObj.options || []).forEach((opt, optIndex) => {
+	            // If opt is an object, extract properties; otherwise, use defaults.
+	            let optionText = typeof opt === "object" ? opt.text : opt;
+	            let hasExtra = typeof opt === "object" ? opt.hasTextInput : false;
+
+	            const optionDiv = document.createElement("div");
+	            optionDiv.className = "option-item";
+	            if (!questionObj.compack) {
+	                optionDiv.style.marginBottom = "10px";
+	            }
+
+	            const labelEl = document.createElement("label");
+
+	            const inputEl = document.createElement("input");
+	            inputEl.type = "radio";
+	            inputEl.name = `question_${qIndex}`;
+	            inputEl.value = optionText; // You can also include the index if needed.
+	            inputEl.className = "with-gap";
+	            // FIX: Add data attribute for option index
+	            inputEl.setAttribute("data-opt-index", optIndex);
+	            labelEl.appendChild(inputEl);
+
+	            const span = document.createElement("span");
+	            span.textContent = optionText;
+	            labelEl.appendChild(span);
+
+	            optionDiv.appendChild(labelEl);
+
+	            // If the option requires extra text input, add a text field.
+	            if (hasExtra) {
+	                const extraInput = document.createElement("input");
+	                extraInput.type = "text";
+	                // Give it a unique name so you can collect its value later.
+	                extraInput.name = `extra_${qIndex}_${optIndex}`;
+	                extraInput.placeholder = languageTable[currentLanguage].extraInfoPlaceholder; // Consider localizing this text.
+	                // For radio questions, you might hide it until the option is selected.
+	                extraInput.style.display = "none";
+	                // Show/hide the extra input based on the radio selection.
+	                inputEl.addEventListener("change", () => {
+	                    // When this radio becomes checked, display its extra input.
+	                    if (inputEl.checked) {
+	                        extraInput.style.display = "block";
+	                    }
+	                });
+	                optionDiv.appendChild(extraInput);
+	            }
+
+	            containerDiv.appendChild(optionDiv);
+	        });
+
+	        questionDiv.appendChild(containerDiv);
+	    } else if (questionObj.questionType === "checkbox") {
+	        const containerDiv = document.createElement("div");
+	        if (questionObj.compack) {
+	            containerDiv.style.display = "flex";
+	            containerDiv.style.flexWrap = "wrap";
+	            containerDiv.style.gap = "1rem";
+	            containerDiv.style.marginTop = "1rem";
+	        }
+
+	        (questionObj.options || []).forEach((opt, optIndex) => {
+	            // If the option is stored as an object, extract its properties.
+	            let optionText,
+	            hasExtra;
+	            if (typeof opt === "object") {
+	                optionText = opt.text;
+	                hasExtra = opt.hasTextInput;
+	            } else {
+	                optionText = opt;
+	                hasExtra = false;
+	            }
+
+	            const optionDiv = document.createElement("div");
+	            optionDiv.className = "option-item";
+	            if (!questionObj.compack) {
+	                optionDiv.style.marginBottom = "10px";
+	            }
+
+	            // Create the label and checkbox input.
+	            const labelEl = document.createElement("label");
+	            const inputEl = document.createElement("input");
+	            inputEl.type = "checkbox";
+	            inputEl.name = `question_${qIndex}`;
+	            inputEl.value = optionText;
+	            inputEl.className = "filled-in";
+	            // FIX: Add data-opt-index attribute to checkbox inputs
+	            inputEl.setAttribute("data-opt-index", optIndex);
+	            labelEl.appendChild(inputEl);
+
+	            // Create the span that displays the option text.
+	            const span = document.createElement("span");
+	            span.textContent = optionText;
+	            labelEl.appendChild(span);
+	            optionDiv.appendChild(labelEl);
+
+	            // If this option should have an extra text input...
+	            if (hasExtra) {
+	                const extraInput = document.createElement("input");
+	                extraInput.type = "text";
+	                extraInput.name = `extra_${qIndex}_${optIndex}`;
+	                extraInput.placeholder = languageTable[currentLanguage].extraInfoPlaceholder; // Consider localization.
+	                // Hide the extra input by default.
+	                extraInput.style.display = "none";
+
+	                // Show the extra input when the checkbox is checked, hide it when unchecked.
+	                inputEl.addEventListener("change", () => {
+	                    extraInput.style.display = inputEl.checked ? "block" : "none";
+	                });
+
+	                optionDiv.appendChild(extraInput);
+	            }
+
+	            containerDiv.appendChild(optionDiv);
+	        });
+	        questionDiv.appendChild(containerDiv);
+	    } else if (questionObj.questionType === "longtext") {
+	        const textarea = document.createElement("textarea");
+	        textarea.name = `question_${qIndex}`;
+	        textarea.className = "materialize-textarea";
+	        questionDiv.appendChild(textarea);
+	    } else if (questionObj.questionType === "uploadImage") {
+	        const fileFieldDiv = document.createElement("div");
+	        fileFieldDiv.className = "file-field input-field";
+	        fileFieldDiv.style.paddingBottom = "2em";
+
+	        const btnDiv = document.createElement("div");
+	        btnDiv.className = "btn blue";
+	        btnDiv.style.position = "relative"; // ensure the button is positioned relative for the overlay
+
+	        const spanEl = document.createElement("span");
+	        spanEl.textContent = languageTable[currentLanguage].uploadImage;
+	        btnDiv.appendChild(spanEl);
+
+	        const inputEl = document.createElement("input");
+	        inputEl.type = "file";
+	        inputEl.accept = "image/*";
+	        inputEl.onchange = function (e) {
+	            handleSingleImageUpload(e, `question_${qIndex}`);
+	        };
+	        // Make the file input cover the entire button
+	        inputEl.style.position = "absolute";
+	        inputEl.style.top = "0";
+	        inputEl.style.left = "0";
+	        inputEl.style.width = "100%";
+	        inputEl.style.height = "100%";
+	        inputEl.style.opacity = "0";
+	        btnDiv.appendChild(inputEl);
+	        fileFieldDiv.appendChild(btnDiv);
+
+	        questionDiv.appendChild(fileFieldDiv);
+
+	        const previewDiv = document.createElement("div");
+	        previewDiv.className = "uploaded-images";
+	        previewDiv.id = "uploaded-images-" + qIndex;
+	        questionDiv.appendChild(previewDiv);
+
+	        const hiddenInput = document.createElement("input");
+	        hiddenInput.type = "hidden";
+	        hiddenInput.name = `question_${qIndex}`;
+	        hiddenInput.value = "";
+	        questionDiv.appendChild(hiddenInput);
+	    } else if (questionObj.questionType === "stars") {
+	        const starContainer = document.createElement("div");
+	        starContainer.className = "stars-container";
+
+	        // hidden input
+	        const hiddenInput = document.createElement("input");
+	        hiddenInput.type = "hidden";
+	        hiddenInput.name = `question_${qIndex}`;
+	        hiddenInput.value = "0"; // default "no star" selected
+	        questionDiv.appendChild(hiddenInput);
+
+	        const maxStars = questionObj.maxStars || 5;
+	        for (let i = 1; i <= maxStars; i++) {
+	            const starIcon = document.createElement("i");
+	            starIcon.className = "material-icons";
+	            starIcon.textContent = "star";
+	            starIcon.onclick = () => {
+	                setStarRating(starContainer, i, maxStars);
+	                hiddenInput.value = String(i);
+	                hiddenInput.dispatchEvent(new Event("change")); // Dispatch change event
+	            };
+	            starContainer.appendChild(starIcon);
+	        }
+	        questionDiv.appendChild(starContainer);
+	    }
+
+	    return questionDiv;
+	}
+
+	/***********************************************
+	 * DYNAMIC GROUP VISIBILITY
+	 ***********************************************/
+	function attachInputEventListeners() {
+	    // For every input/textarea/select, attach a 'change' or 'input' event
+	    const allFields = document.querySelectorAll(
+	            "#survey-form input, #survey-form textarea, #survey-form select");
+	    allFields.forEach((field) => {
+	        field.addEventListener("change", () => {
+	            updateGroupVisibility();
+	            updateProgressBar();
+	        });
+	    });
+	}
+
+	function updateGroupVisibility() {
+	    const currentAnswers = collectAnswers();
+	    loadedSurveyItems.forEach((item, index) => {
+	        if (item.type === "group") {
+	            const groupDiv = document.querySelector(
+`[data-group-index="${index}"]`);
+	            if (!groupDiv)
+	                return;
+
+	            const {
+	                anchorQuestionId,
+	                anchorValuesToShow
+	            } = item;
+	            // If no anchor is set => show the group
+	            if (!anchorQuestionId) {
+	                groupDiv.style.display = "block";
+	                return;
+	            }
+
+	            // Find the anchor question's answer
+	            const anchorIndex = findQuestionIndexById(anchorQuestionId);
+	            let anchorAnswer = null;
+	            if (anchorIndex != null) {
+	                anchorAnswer = currentAnswers[`question_${anchorIndex}`] || null;
+	            }
+
+	            // Evaluate
+	            let isVisible = false;
+	            if (!anchorValuesToShow || anchorValuesToShow.length === 0) {
+	                // If no specific trigger => always show
+	                isVisible = true;
+	            } else if (Array.isArray(anchorAnswer)) {
+	                // Multiple checkboxes
+	                const intersection = anchorAnswer.filter((val) =>
+	                        anchorValuesToShow.includes(val));
+	                if (intersection.length > 0)
+	                    isVisible = true;
+	            } else {
+	                // Single value (radio / text / star rating)
+	                if (anchorAnswer && anchorValuesToShow.includes(anchorAnswer)) {
+	                    isVisible = true;
+	                }
+	            }
+
+	            groupDiv.style.display = isVisible ? "block" : "none";
+	        }
+	    });
+	}
+
+	function findQuestionIndexById(qId) {
+	    // Search top-level items or group sub-questions
+	    for (let i = 0; i < loadedSurveyItems.length; i++) {
+	        const item = loadedSurveyItems[i];
+	        if (item.type === "question") {
+	            if (item.id === qId)
+	                return i; // top-level index
+	        } else if (item.type === "group") {
+	            const subQs = item.subQuestions || [];
+	            for (let j = 0; j < subQs.length; j++) {
+	                if (subQs[j].id === qId) {
+	                    // return "groupIndex_subIndex" format
+	                    return `${i}_${j}`;
+	                }
+	            }
+	        }
+	    }
+	    return null;
+	}
+
+	/***********************************************
+	 * COLLECT ANSWERS
+	 ***********************************************/
+	function collectAnswers() {
+	    const form = document.getElementById("survey-form");
+	    const formData = new FormData(form);
+	    const answers = {};
+
+	    formData.forEach((value, key) => {
+	        // If the key already exists, it's a checkbox => array
+	        if (answers[key]) {
+	            if (!Array.isArray(answers[key])) {
+	                answers[key] = [answers[key]];
+	            }
+	            answers[key].push(value);
+	        } else {
+	            answers[key] = value;
+	        }
+	    });
+
+	    return answers;
+	}
+
+	/***********************************************
+	 * CHECK GROUP VISIBILITY
+	 ***********************************************/
+	function checkGroupVisibility(groupObj) {
+	    // Re-check anchor logic
+	    const {
+	        anchorQuestionId,
+	        anchorValuesToShow
+	    } = groupObj;
+	    if (!anchorQuestionId)
+	        return true;
+
+	    const answersObj = collectAnswers();
+	    const anchorIndex = findQuestionIndexById(anchorQuestionId);
+	    if (anchorIndex == null)
+	        return false;
+
+	    const anchorAnswer = answersObj[`question_${anchorIndex}`];
+	    if (!anchorValuesToShow || anchorValuesToShow.length === 0) {
+	        return true;
+	    }
+	    if (Array.isArray(anchorAnswer)) {
+	        const intersection = anchorAnswer.filter((val) =>
+	                anchorValuesToShow.includes(val));
+	        return intersection.length > 0;
+	    }
+	    return anchorAnswer && anchorValuesToShow.includes(anchorAnswer);
+	}
+
+	/***********************************************
+	 * STAR RATING
+	 ***********************************************/
+	function setStarRating(container, rating, maxStars) {
+	    const stars = container.querySelectorAll("i.material-icons");
+	    stars.forEach((star, idx) => {
+	        if (idx < rating) {
+	            star.classList.add("selected");
+	        } else {
+	            star.classList.remove("selected");
+	        }
+	    });
+	}
+
+	/***********************************************
+	 * PROGRESS BAR UPDATE
+	 ***********************************************/
+	function updateProgressBar() {
+	    // Count total required questions (visible ones)
+	    let totalRequired = 0;
+	    let answeredRequired = 0;
+
+	    const answersObj = collectAnswers();
+
+	    // Iterate through survey items...
+	    loadedSurveyItems.forEach((item, index) => {
+	        if (item.type === "question") {
+	            if (item.required) {
+	                totalRequired++;
+	                const qAnswer = answersObj[`question_${index}`];
+	                if (isQuestionAnswered(item, qAnswer)) {
+	                    answeredRequired++;
+	                }
+	            }
+	        } else if (item.type === "group") {
+	            const groupVisible = checkGroupVisibility(item);
+	            if (!groupVisible)
+	                return;
+	            (item.subQuestions || []).forEach((subQ, subIndex) => {
+	                if (subQ.required) {
+	                    totalRequired++;
+	                    const qKey = `question_${index}_${subIndex}`;
+	                    const qAnswer = answersObj[qKey];
+	                    if (isQuestionAnswered(subQ, qAnswer)) {
+	                        answeredRequired++;
+	                    }
+	                }
+	            });
+	        }
+	    });
+
+	    let percentage = 0;
+	    if (totalRequired > 0) {
+	        percentage = Math.round((answeredRequired / totalRequired) * 100);
+	    }
+
+	    // Update the progress bar width
+	    const progressBar = document.getElementById("progress-bar");
+	    progressBar.style.width = percentage + "%";
+
+	    // Update the text indicator
+	    const progressNumber = document.getElementById("progress-number");
+	    if (progressNumber) {
+	        progressNumber.textContent = percentage + "%";
+	    }
+	}
+
+	function isQuestionAnswered(questionObj, answer) {
+	    if (!answer)
+	        return false;
+	    if (questionObj.questionType === "checkbox") {
+	        return Array.isArray(answer) && answer.length > 0;
+	    } else if (questionObj.questionType === "stars") {
+	        // '0' means no star selected
+	        return answer !== "0";
+	    } else {
+	        return String(answer).trim() !== "";
+	    }
+	}
+
+	/***********************************************
+	 * SUBMIT HANDLER
+	 ***********************************************/
+	async function handleSubmit(event) {
+	    event.preventDefault();
+	    const resultData = [];
+	    let allValid = true;
+
+	    // Clear invalid highlights
+	    document.querySelectorAll(".invalid-question").forEach((elem) => {
+	        elem.classList.remove("invalid-question");
+	    });
+
+	    // Collect current answers
+	    const answersObj = collectAnswers();
+
+	    // After collecting answers with collectAnswers():
+	    const extraInputs = document.querySelectorAll('input[name^="extra_"]');
+	    extraInputs.forEach(input => {
+	        // You can combine the key with the main answer.
+	        // For example, store it in answersObj with the same key.
+	        answersObj[input.name] = input.value;
+	    });
+
+	    // Validate top-level questions & groups
+	    loadedSurveyItems.forEach((item, index) => {
+	        if (item.type === "question") {
+	            let qAnswer = answersObj[`question_${index}`];
+
+	            if (item.questionType === "radio") {
+	                // Handle radio questions using data-opt-index
+	                const checkedRadio = document.querySelector(
+`input[name="question_${index}"]:checked`);
+	                if (checkedRadio) {
+	                    const selectedOptIndex = checkedRadio.getAttribute("data-opt-index");
+	                    const extraInput = document.querySelector(
+`input[name="extra_${index}_${selectedOptIndex}"]`);
+	                    if (extraInput && extraInput.value.trim() !== "") {
+	                        qAnswer = checkedRadio.value + " (" + extraInput.value.trim() + ")";
+	                    } else {
+	                        qAnswer = checkedRadio.value;
+	                    }
+	                } else {
+	                    qAnswer = "";
+	                }
+	            } else if (item.questionType === "checkbox") {
+	                // FIX: For checkboxes, re-read checked inputs and map extra text using data-opt-index
+	                const checkedBoxes = document.querySelectorAll(
+`input[name="question_${index}"]:checked`);
+	                let answersArr = [];
+	                checkedBoxes.forEach((box) => {
+	                    const optIndex = box.getAttribute("data-opt-index");
+	                    let answerText = box.value;
+	                    const extraInput = document.querySelector(
+`input[name="extra_${index}_${optIndex}"]`);
+	                    if (extraInput && extraInput.value.trim() !== "") {
+	                        answerText += " (" + extraInput.value.trim() + ")";
+	                    }
+	                    answersArr.push(answerText);
+	                });
+	                qAnswer = answersArr;
+	            }
+
+	            // Validate this question
+	            if (!validateQuestion(item, index, qAnswer)) {
+	                highlightInvalid(index);
+	                allValid = false;
+	            }
+
+	            resultData.push({
+	                questionId: item.id,
+	                questionType: item.questionType,
+	                question: item.questionText,
+	                answer: qAnswer,
+	            });
+	        } else if (item.type === "group") {
+	            if (checkGroupVisibility(item)) { // added check for group visibility
+	                // ... handle group questions similarly (if needed)
+	                (item.subQuestions || []).forEach((subQ, subIndex) => {
+	                    const qKey = `question_${index}_${subIndex}`;
+	                    let qAnswer = answersObj[qKey];
+
+	                    if (subQ.questionType === "radio") {
+	                        const checkedRadio = document.querySelector(
+`input[name="question_${index}_${subIndex}"]:checked`);
+	                        if (checkedRadio) {
+	                            const selectedOptIndex = checkedRadio.getAttribute("data-opt-index");
+	                            const extraInput = document.querySelector(
+`input[name="extra_${index}_${subIndex}_${selectedOptIndex}"]`);
+	                            if (extraInput && extraInput.value.trim() !== "") {
+	                                qAnswer = checkedRadio.value + " (" + extraInput.value.trim() + ")";
+	                            } else {
+	                                qAnswer = checkedRadio.value;
+	                            }
+	                        } else {
+	                            qAnswer = "";
+	                        }
+	                    } else if (subQ.questionType === "checkbox") {
+	                        // FIX: For checkbox sub-questions, re-read checked inputs from DOM
+	                        const checkedBoxes = document.querySelectorAll(
+`input[name="question_${index}_${subIndex}"]:checked`);
+	                        let answersArr = [];
+	                        checkedBoxes.forEach((box) => {
+	                            const optIndex = box.getAttribute("data-opt-index");
+	                            let answerText = box.value;
+	                            const extraInput = document.querySelector(
+`input[name="extra_${index}_${subIndex}_${optIndex}"]`);
+	                            if (extraInput && extraInput.value.trim() !== "") {
+	                                answerText += " (" + extraInput.value.trim() + ")";
+	                            }
+	                            answersArr.push(answerText);
+	                        });
+	                        qAnswer = answersArr;
+	                    }
+
+	                    if (!validateQuestion(subQ, qKey, qAnswer)) {
+	                        highlightInvalid(qKey);
+	                        allValid = false;
+	                    }
+
+	                    resultData.push({
+	                        questionId: subQ.id,
+	                        questionType: subQ.questionType,
+	                        question: subQ.questionText,
+	                        answer: qAnswer,
+	                    });
+	                });
+	            }
+	        }
+	    });
+
+	    if (!allValid) {
+	        M.toast({
+	            html: languageTable[currentLanguage].validationError,
+	            classes: "red",
+	        });
+	        return;
+	    }
+
+	    // Include uploaded images if any
+	    if (uploadedImageLinks.length > 0) {
+	        resultData.push({
+	            question: "Uploaded Images",
+	            answer: uploadedImageLinks,
+	        });
+	    }
+
+	    // Append extra URL parameters as additional questions
+	    const urlParams = new URLSearchParams(window.location.search);
+	    urlParams.forEach((value, key) => {
+	        if (key !== "id") {
+	            let extraQuestion = {};
+	            // Check for special keys
+	            if (key === "tableId") {
+	                extraQuestion = {
+	                    questionId: "26", // original id for tableId
+	                    questionType: "text",
+	                    question: languageTable[currentLanguage].tableId, // display question for tableId
+	                    answer: value,
+	                };
+	            } else if (key === "storeName") {
+	                extraQuestion = {
+	                    questionId: "25", // original id for storeName
+	                    questionType: "text",
+	                    question: languageTable[currentLanguage].storeName, // display question for storeName
+	                    answer: value,
+	                };
+	            } else if (key === "date") {
+	                extraQuestion = {
+	                    questionId: "27", // original id for date
+	                    questionType: "text",
+	                    question: languageTable[currentLanguage].date, // display question for date
+	                    answer: value,
+	                };
+	            } else {
+	                // Default: use parameter key as the original id and question text
+	                extraQuestion = {
+	                    questionId: key,
+	                    questionType: "text",
+	                    question: key,
+	                    answer: value,
+	                };
+	            }
+	            resultData.push(extraQuestion);
+	        }
+	    });
+	    // --------------------------------------------------------------------------
+
+	    // ----- NEW CODE: Convert original questionId to a unique 4-digit number -----
+	    // Helper function: if the id is numeric, return its numeric value; otherwise, use a hash.
+	    function convertToFourDigit(idStr) {
+	        if (!isNaN(Number(idStr))) {
+	            let num = Number(idStr) % 10000;
+	            return num;
+	        } else {
+	            let hash = 0;
+	            for (let i = 0; i < idStr.length; i++) {
+	                hash = (hash * 31 + idStr.charCodeAt(i)) % 10000;
+	            }
+	            return hash;
+	        }
+	    }
+
+	    const usedIds = new Set();
+	    resultData.forEach((item) => {
+	        let originalIdStr = String(item.questionId);
+	        let candidate = convertToFourDigit(originalIdStr);
+	        // Ensure uniqueness by incrementing if candidate already exists
+	        while (usedIds.has(candidate)) {
+	            candidate = (candidate + 1) % 10000;
+	        }
+	        usedIds.add(candidate);
+	        // Pad candidate to 4 digits (e.g., "0026")
+	        item.questionId = candidate.toString().padStart(4, "0");
+	    });
+	    // --------------------------------------------------------------------------
+
+	    // Display results (for debugging / user feedback)
+	    const resultDiv = document.getElementById("result");
+	    resultDiv.innerHTML = `<h6>${languageTable[currentLanguage].surveyResults}</h6>`;
+	    resultData.forEach((data) => {
+	        let displayAnswer = data.answer;
+	        if (Array.isArray(data.answer)) {
+	            displayAnswer = data.answer.join(", ");
+	        }
+	        resultDiv.innerHTML += `<div class="result-question">${data.question}</div>`;
+	        resultDiv.innerHTML += `<div class="result-answer">${displayAnswer || ""}</div>`;
+	    });
+
+	    console.log("Survey Responses:", resultData);
+
+	    await sendSurveyData(currentSurvey, resultData);
+
+	    // If an endpoint URL was saved, post the resultData to 3rd party server, e.g. fitsoft server
+	    if (endpointUrl) {
+	        // prepare the send out format
+	        let sendData = {
+	            id: undefined, // the counter will be calculated at server side
+	            surveyId: currentSurvey.surveyId,
+	            title: currentSurvey.surveyTitle,
+	            status: currentSurvey.status ? currentSurvey.status : "FINISH",
+	            data: resultData,
+	        };
+	        fetch(endpointUrl + "?gid=" + currentSurvey.storeId, {
+	            method: "POST",
+	            headers: {
+	                "Content-Type": "application/json",
+	            },
+	            body: JSON.stringify(sendData),
+	        })
+	        .then((response) => response.json())
+	        .then((data) => {
+	            console.log("Survey result posted successfully:", data);
+	        })
+	        .catch((error) => {
+	            console.error("Error posting survey result:", error);
+	        });
+	    }
+
+	    // Disable the submit button and show success toast
+	    document.getElementById("submit-button").disabled = true;
+	    M.toast({
+	        html: languageTable[currentLanguage].submitSuccess,
+	        classes: "green",
+	    });
+	}
+
+	/***********************************************
+	 * VALIDATE A SINGLE QUESTION
+	 ***********************************************/
+	function validateQuestion(questionObj, qIndex, answer) {
+	    // If question not required, skip check
+	    if (!questionObj.required)
+	        return true;
+
+	    if (questionObj.questionType === "checkbox") {
+	        // Must have at least one checked
+	        if (!answer || (Array.isArray(answer) && answer.length === 0)) {
+	            return false;
+	        }
+	    } else if (questionObj.questionType === "stars") {
+	        // '0' means no star selected
+	        if (!answer || answer === "0") {
+	            return false;
+	        }
+	    } else {
+	        // everything else => single string
+	        if (!answer || !String(answer).trim()) {
+	            return false;
+	        }
+	    }
+	    return true;
+	}
+
+	/***********************************************
+	 * HIGHLIGHT INVALID
+	 ***********************************************/
+	function highlightInvalid(qIndex) {
+	    const questionDiv = document.querySelector(`[data-q-index="${qIndex}"]`);
+	    if (questionDiv) {
+	        questionDiv.classList.add("invalid-question");
+	    }
+	}
+
+	/***********************************************
+	 * SINGLE IMAGE UPLOAD FOR UPLOADIMAGE QUESTION
+	 ***********************************************/
+	/***********************************************
+	 * SINGLE IMAGE UPLOAD FOR UPLOADIMAGE QUESTION
+	 ***********************************************/
+	function handleSingleImageUpload(e, fieldName) {
+	    const file = e.target.files[0];
+	    if (!file)
+	        return;
+
+	    // Confirm the file is an image
+	    if (!file.type.startsWith("image/")) {
+	        alert(languageTable[currentLanguage].invalidImageAlert);
+	        return;
+	    }
+
+	    // Read the file as a Data URL
+	    const reader = new FileReader();
+	    reader.onload = function (event) {
+	        const img = new Image();
+	        img.onload = function () {
+	            // Create a canvas to compress the image
+	            const canvas = document.createElement("canvas");
+	            const ctx = canvas.getContext("2d");
+
+	            // Optionally, set a maximum width for the compressed image
+	            const maxWidth = 800;
+	            const scale = Math.min(1, maxWidth / img.width);
+	            canvas.width = img.width * scale;
+	            canvas.height = img.height * scale;
+	            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+	            // Convert the canvas to a JPEG Blob (quality 0.8)
+	            canvas.toBlob(function (blob) {
+	                if (!blob) {
+	                    console.error("Compression failed: blob is null.");
+	                    return;
+	                }
+
+	                // Generate a unique key for the image
+	                const imageKey = global.gid + "/image_" + Date.now();
+
+	                // Request a signed URL for uploading to S3 via your local server
+	                fetch(`${SERVER_URL}/presigned-url/put?key=${encodeURIComponent(imageKey)}`)
+	                .then(response => response.json())
+	                .then(data => {
+	                    if (data && data.signedUrl) {
+	                        const signedUrl = data.signedUrl;
+
+	                        // Upload the compressed image to S3 using the signed URL
+	                        fetch(signedUrl, {
+	                            method: "PUT",
+	                            body: blob,
+	                            headers: {
+	                                "Content-Type": "image/jpeg"
+	                            }
+	                        })
+	                        .then(response => {
+	                            if (response.ok) {
+	                                console.log("Image uploaded successfully to S3.");
+	                                // Update the preview image (optional)
+	                                const previewContainer = document.getElementById("uploaded-images-" + fieldName.split("_")[1]);
+	                                if (previewContainer) {
+	                                    previewContainer.innerHTML = "";
+	                                    const previewImg = document.createElement("img");
+	                                    previewImg.src = URL.createObjectURL(blob);
+	                                    previewContainer.appendChild(previewImg);
+	                                }
+	                                // Store the image key (or URL) in the hidden input
+	                                const hiddenInput = document.querySelector(`input[name="${fieldName}"]`);
+	                                if (hiddenInput) {
+	                                    hiddenInput.value = `https://tagfans-survey-image.s3.amazonaws.com/${imageKey}`;
+	                                }
+	                            } else {
+	                                console.error("Failed to upload image to S3. Status:", response.status);
+	                            }
+	                        })
+	                        .catch(error => {
+	                            console.error("Error during image upload:", error);
+	                        });
+	                    } else {
+	                        console.error("Failed to obtain signed URL from server. Response data:", data);
+	                    }
+	                })
+	                .catch(error => {
+	                    console.error("Error fetching signed URL:", error);
+	                });
+	            }, "image/jpeg", 0.8);
+	        };
+	        img.onerror = function () {
+	            console.error("Failed to load image for compression.");
+	        };
+	        img.src = event.target.result;
+	    };
+	    reader.onerror = function () {
+	        console.error("Failed to read file.");
+	    };
+	    reader.readAsDataURL(file);
+	}
+
+	/***********************************************
+	 * fetch and update survey context
+	 ***********************************************/
+      /***********************************************
+       * fetch and update survey context
+       ***********************************************/
+	   async function fetchSurvey(surveySchemaId, callback) {
+      try {
+        let url = "";
+        if (surveySchemaId) {
+          // Get a specific survey schema by its id.
+          url = `${BASE_URL}/api/survey/${surveySchemaId}`;
+        } else {
+          // If no id is provided, fetch all surveys for the current store.
+          url = `${BASE_URL}/api/survey?userId=${localStorage.userId}`;
+        }
+        const response = await fetch(url);
+        const data = await response.json();
+        if (typeof callback === "function") {
+          callback(null, data);
+        }
+        return data;
+      } catch (error) {
+        if (typeof callback === "function") {
+          callback(error);
+        }
+        throw error;
+      }
+    }
+
+    async function updateSurvey(surveySchemaId, content, callback) {
+      try {
+        let response;
+        if (surveySchemaId) {
+          // Update an existing survey schema.
+          response = await fetch(`${BASE_URL}/api/survey/${surveySchemaId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(content),
+          });
+        } else {
+          // Create a new survey schema.
+          response = await fetch(`${BASE_URL}/api/survey`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(content),
+          });
+        }
+        const data = await response.json();
+        if (typeof callback === "function") {
+          callback(null, data);
+        }
+        return data;
+      } catch (error) {
+        if (typeof callback === "function") {
+          callback(error);
+        }
+        throw error;
+      }
+    }
+
+    async function updateSurveyCounter(surveySchemaId, callback) {
+      try {
+        const response = await fetch(`${BASE_URL}/api/survey/${surveySchemaId}/counter`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+        });
+        const data = await response.json();
+        if (typeof callback === "function") {
+          callback(null, data);
+        }
+        return data;
+      } catch (error) {
+        if (typeof callback === "function") {
+          callback(error);
+        }
+        throw error;
+      }
+    }
+
+	// #####################
+	// send survey to mongo DB
+	// Call the function when needed
+	// sendSurveyData();
+
+	const BASE_URL = 'http://b200.tagfans.com:5300';
+	
+	async function sendSurveyData(currentSurvey, resultData) {
+	    let sendData = {
+	        _type: "survey", // Ensure it matches the expected field in the backend
+	        _storeId: null, //@fixme
+	        _channelId: currentSurvey._channelId,
+			surveyId: currentSurvey.surveyId,
+	        title: currentSurvey.surveyTitle,
+	        status: currentSurvey.status ? currentSurvey.status : "FINISH",
+	        data: resultData,
+	    };
+
+	    try {
+	        let response = await fetch(`${BASE_URL}/api/send-data`, {
+	            method: "POST",
+	            headers: {
+	                "Content-Type": "application/json",
+	            },
+	            body: JSON.stringify(sendData),
+	        });
+
+	        let result = await response.json();
+
+	        if (response.ok) {
+	            console.log("Data sent successfully:", result);
+	        } else {
+	            console.error("Error sending data:", result.error);
+	        }
+	    } catch (error) {
+	        console.error("Request failed:", error);
+	    }
+	}
+    </script>
+  </body>
+</html>

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Login</title>
+    <!-- Materialize CSS and icons (if you use them) -->
+    <link
+      href="https://fonts.googleapis.com/icon?family=Material+Icons"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css"
+    />
+    <style>
+      /* Center the login form on the page */
+      #login-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+      }
+    </style>
+  </head>
+  <body class="grey lighten-4">
+    <div id="login-container">
+      <div class="card">
+        <div class="card-content">
+          <span class="card-title">Login</span>
+          <div class="input-field">
+            <input id="login-email" type="email" required />
+            <label for="login-email">Email</label>
+          </div>
+          <div class="input-field">
+            <input id="login-password" type="password" required />
+            <label for="login-password">Password</label>
+          </div>
+        </div>
+        <div class="card-action">
+          <button id="login-btn" class="btn">Login</button>
+          <!-- Optionally add links for registration or forgot password -->
+          <a href="#!" id="register-link">Create Account</a>
+          <a href="#!" id="forgot-link">Forgot Password</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Include Materialize JS and jQuery -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js" defer></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"
+      integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4="
+      crossorigin="anonymous"></script>
+
+    <script>
+      const SERVER_URL = 'https://b200.tagfans.com:5301';
+
+      document.getElementById("login-btn").addEventListener("click", async function () {
+        const email = document.getElementById("login-email").value.trim();
+        const password = document.getElementById("login-password").value.trim();
+
+        if (!email || !password) {
+          M.toast({ html: "Please enter both email and password", displayLength: 2000 });
+          return;
+        }
+
+        try {
+          const response = await fetch(`${SERVER_URL}/api/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password })
+          });
+          const data = await response.json();
+
+          if (!response.ok) {
+            M.toast({ html: data.error || "Login failed", displayLength: 2000 });
+            return;
+          }
+
+          // Save the token and user info to localStorage
+          localStorage.setItem("userToken", data.token);
+          localStorage.setItem("userId", data.userId);
+          localStorage.setItem("userEmail", email);
+
+          // Get the redirect target from the query parameter; default to admin.html
+          const params = new URLSearchParams(window.location.search);
+          const redirectUrl = params.get("redirect") || "admin.html";
+          window.location.href = redirectUrl;
+        } catch (error) {
+          console.error(error);
+          M.toast({ html: "An error occurred during login", displayLength: 2000 });
+        }
+      });
+
+      // Optionally add event listeners for registration and forgot password modals/pages
+      document.getElementById("register-link").addEventListener("click", function() {
+        window.location.href = "register.html?redirect=admin.html";
+      });
+      document.getElementById("forgot-link").addEventListener("click", function() {
+        window.location.href = "forgot.html?redirect=admin.html";
+      });
+    </script>
+  </body>
+</html>
