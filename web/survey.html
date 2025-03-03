@@ -1101,7 +1101,7 @@
 	            return hash;
 	        }
 	    }
-
+		/* we want to use original question id.
 	    const usedIds = new Set();
 	    resultData.forEach((item) => {
 	        let originalIdStr = String(item.questionId);
@@ -1114,6 +1114,7 @@
 	        // Pad candidate to 4 digits (e.g., "0026")
 	        item.questionId = candidate.toString().padStart(4, "0");
 	    });
+		*/
 	    // --------------------------------------------------------------------------
 
 	    // Display results (for debugging / user feedback)

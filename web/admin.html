@@ -3171,33 +3171,45 @@ async function fetchSurveyData() {
   }
 }
 
-// Function to summarize and display the fetched survey data.
 async function summarizeSurveyData(responses) {
-
+  // First, fetch the survey schema
   let surveySchema = await fetchSurvey(CurrentSurveySchemaId);
-
-  // Aggregate answers by questionId
+  // Flatten the survey items into an ordered array of questions.
+  let orderedQuestions = [];
+  surveySchema.surveyItems.forEach(item => {
+    if (item.type === "question") {
+      orderedQuestions.push(item);
+    } else if (item.type === "group" && Array.isArray(item.subQuestions)) {
+      // For groups, add sub-questions in the order they appear.
+      item.subQuestions.forEach(subq => {
+        orderedQuestions.push(subq);
+      });
+    }
+  });
+  
+  // Aggregate responses by questionId.
   const summaryMap = {};
   responses.forEach(response => {
     response.forEach(item => {
       const qid = item.questionId;
       if (!summaryMap[qid]) {
         summaryMap[qid] = {
-          question: item.question,
+          question: item.question, // update to last row to reflect current text
           type: item.questionType,
           answers: []
         };
       }
-      summaryMap[qid].question = item.question;  // update to last row of the question, to prevent question change
-      summaryMap[qid].type = item.questionType;  // update to last row of the type, to prevent type change
+      // Update question and type (in case they change in later responses)
+      summaryMap[qid].question = item.question;
+      summaryMap[qid].type = item.questionType;
       summaryMap[qid].answers.push(item.answer);
     });
   });
-
+  
   const content = document.getElementById("surveyDataContent");
   content.innerHTML = "";
-
-  // Define color arrays for chart bars.
+  
+  // Define color arrays for the charts.
   const backgroundColors = [
     'rgba(255, 99, 132, 0.6)',
     'rgba(54, 162, 235, 0.6)',
@@ -3214,29 +3226,103 @@ async function summarizeSurveyData(responses) {
     'rgba(153, 102, 255, 1)',
     'rgba(255, 159, 64, 1)'
   ];
-
-  // Process each question's summary
-  Object.keys(summaryMap).forEach(qid => {
-    const summary = summaryMap[qid];
+  
+  // Iterate over questions following the schema order.
+  orderedQuestions.forEach(questionSchema => {
+    // Convert question ID to string for consistency.
+    const qid = questionSchema.id.toString();
+    // Use responses if available; otherwise, create an empty summary.
+    let summary = summaryMap[qid] || {
+      question: questionSchema.questionText,
+      type: questionSchema.questionType,
+      answers: []
+    };
+    
+    // Build summary based on the question type.
+    if (questionSchema.questionType === "radio" || questionSchema.questionType === "checkbox") {
+      // For radio/checkbox: use schema options to determine order and include missing options.
+      const options = (questionSchema?.options.map(option => option.text)) || [];
+      let freq = {};
+      options.forEach(opt => { freq[opt] = 0; });
+      summary.answers.forEach(ans => {
+        if (Array.isArray(ans)) {
+          ans.forEach(a => {
+            if (freq[a] !== undefined) {
+              freq[a]++;
+            } else {
+              freq[a] = 1;
+            }
+          });
+        } else {
+          if (freq[ans] !== undefined) {
+            freq[ans]++;
+          } else {
+            freq[ans] = 1;
+          }
+        }
+      });
+      const labels = options;
+      const dataCounts = labels.map(label => freq[label] || 0);
+      createSummaryBlock(questionSchema, summary, labels, dataCounts);
+      
+    } else if (questionSchema.questionType === "stars") {
+      // For stars: create a scale from 1 to maxStars.
+      let maxStars = questionSchema.maxStars || 5;
+      let labels = [];
+      let freq = {};
+      for (let i = 1; i <= maxStars; i++) {
+        labels.push(i.toString());
+        freq[i] = 0;
+      }
+      summary.answers.forEach(ans => {
+        let num = Number(ans);
+        if (num >= 1 && num <= maxStars) {
+          freq[num]++;
+        }
+      });
+      const dataCounts = labels.map(label => freq[label] || 0);
+      createSummaryBlock(questionSchema, summary, labels, dataCounts, true);
+      
+    } else if (questionSchema.questionType === "date") {
+      // For date questions, aggregate unique dates from responses.
+      let freq = {};
+      summary.answers.forEach(ans => {
+        freq[ans] = (freq[ans] || 0) + 1;
+      });
+      // Order dates by natural order.
+      let labels = Object.keys(freq).sort();
+      const dataCounts = labels.map(label => freq[label]);
+      createSummaryBlock(questionSchema, summary, labels, dataCounts);
+      
+    } else if (questionSchema.questionType === "text" || questionSchema.questionType === "longtext") {
+      // For text answers, simply display a note.
+      createSummaryBlock(questionSchema, summary, null, null);
+    }
+  });
+  
+  // Open the full-page overlay.
+  openSurveyDataPage();
+  
+  // Helper function: creates the summary block (chart and/or list) for a question.
+  function createSummaryBlock(questionSchema, summary, labels, dataCounts, isStars = false) {
     const container = document.createElement("div");
     container.className = "question-summary";
-    // Compact styling for each block
     container.style.padding = "1rem";
     container.style.border = "1px solid #ddd";
     container.style.borderRadius = "8px";
     container.style.boxShadow = "0 2px 5px rgba(0,0,0,0.1)";
     container.style.background = "#fff";
-
-    // Header: show question text and type.
+    
+    // Header: question text and type.
     const header = document.createElement("h5");
-    header.textContent = `${summary.question} (${summary.type})`;
+    header.textContent = `${questionSchema.questionText} (${questionSchema.questionType})`;
     header.style.fontSize = "1rem";
     header.style.marginBottom = "0.5rem";
     header.style.color = "#333";
     container.appendChild(header);
-
-    // For text/longtext, skip chart and summary.
-    if (summary.type === "text" || summary.type === "longtext") {
+    
+    // For text/longtext, display note and do not create a chart.
+    if (questionSchema.questionType === "text" || questionSchema.questionType === "longtext") {
       const note = document.createElement("p");
       note.textContent = "文字回答不進行統計摘要。";
       note.style.fontStyle = "italic";
@@ -3245,37 +3331,23 @@ async function summarizeSurveyData(responses) {
       content.appendChild(container);
       return;
     }
-
-    // Calculate frequency distribution.
-    const freq = {};
-    summary.answers.forEach(ans => {
-      if (Array.isArray(ans)) {
-        ans.forEach(a => {
-          freq[a] = (freq[a] || 0) + 1;
-        });
-      } else {
-        freq[ans] = (freq[ans] || 0) + 1;
-      }
-    });
-    const labels = Object.keys(freq);
-    const dataCounts = labels.map(label => freq[label]);
-
+    
     // Create a canvas element for the chart.
     const canvas = document.createElement("canvas");
-    canvas.id = "chart_" + qid;
+    canvas.id = "chart_" + questionSchema.id;
     canvas.style.width = "100%";
     canvas.style.height = "200px";
     canvas.style.marginBottom = "0.5rem";
     container.appendChild(canvas);
-
-    // Delay chart creation to ensure the canvas is in the DOM.
+    
+    // Delay chart creation to ensure canvas is in the DOM.
     setTimeout(() => {
       new Chart(canvas, {
         type: 'bar',
         data: {
           labels: labels,
           datasets: [{
-            label: summary.question,
+            label: questionSchema.questionText,
             data: dataCounts,
             backgroundColor: backgroundColors.slice(0, labels.length),
             borderColor: borderColors.slice(0, labels.length),
@@ -3284,7 +3356,7 @@ async function summarizeSurveyData(responses) {
         },
         options: {
           responsive: false,
-          maintainAspectRatio: true,
+          maintainAspectRatio: false,
           scales: {
             y: {
               beginAtZero: true,
@@ -3303,43 +3375,39 @@ async function summarizeSurveyData(responses) {
               }
             }
           },
-          plugins: {
-            legend: { display: false }
-          }
+          plugins: { legend: { display: false } }
         }
       });
     }, 100);
-
-    // For stars questions, calculate and display average rating.
-    if (summary.type === "stars") {
+    
+    // For stars questions, also calculate and display the average rating.
+    if (questionSchema.questionType === "stars") {
       const total = summary.answers.reduce((sum, ans) => sum + Number(ans), 0);
-      const avg = total / summary.answers.length;
+      const avg = summary.answers.length ? total / summary.answers.length : 0;
       const avgP = document.createElement("p");
       avgP.style.fontWeight = "bold";
       avgP.style.color = "#00796b";
       avgP.textContent = `平均評分: ${avg.toFixed(2)} （共 ${summary.answers.length} 筆回應）`;
       container.appendChild(avgP);
-    } else {
-      // For radio/checkbox/date: show frequency list below the chart.
+    } else if (questionSchema.questionType === "radio" ||
+               questionSchema.questionType === "checkbox" ||
+               questionSchema.questionType === "date") {
+      // Display frequency list below the chart.
       const list = document.createElement("ul");
       list.style.listStyleType = "none";
       list.style.paddingLeft = "0";
       labels.forEach(label => {
         const li = document.createElement("li");
-        li.textContent = `${label}: ${freq[label]} 筆`;
+        li.textContent = `${label}: ${dataCounts[labels.indexOf(label)]} 筆`;
         li.style.padding = "0.25rem 0";
         list.appendChild(li);
       });
       container.appendChild(list);
     }
-
+    
     content.appendChild(container);
-  });
-
-  // Open the full-page overlay.
-  openSurveyDataPage();
+  }
 }
-
 
 
 
