@@ -1394,9 +1394,9 @@
 	async function sendSurveyData(currentSurvey, resultData) {
 	    let sendData = {
 	        _type: "survey", // Ensure it matches the expected field in the backend
+			_typeId: currentSurvey.surveyId, // the prototype's id 
 	        _storeId: null, //@fixme
 	        _channelId: currentSurvey._channelId,
-			surveyId: currentSurvey.surveyId,
 	        title: currentSurvey.surveyTitle,
 	        status: currentSurvey.status ? currentSurvey.status : "FINISH",
 	        data: resultData,

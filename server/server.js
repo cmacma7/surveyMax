@@ -30,7 +30,7 @@ mongoose.connect("mongodb://localhost:27017/chatdb", {
   useUnifiedTopology: true,
 });
 
-// Define a Mongoose schema and model for messages.
+// Message Schema
 const messageSchema = new mongoose.Schema({
   channelId: { type: String, required: true, index: true },
   text: { type: String },
@@ -41,19 +41,7 @@ const messageSchema = new mongoose.Schema({
 const Message = mongoose.model("Message", messageSchema);
 
 
-// Define a Mongoose schema for general data (e.g., surveys)
-// Using { strict: false } allows us to store any additional fields sent in the payload.
-const generalDataSchema = new mongoose.Schema({
-  _id: { type: String, default: () => uuidv4() },
-  _type: { type: String, required: true },
-  _channelId: { type: String },
-  _storeId: { type: String }
-}, { strict: false });
-
-const GeneralData = mongoose.model("GeneralData", generalDataSchema);
-
-
-// Define a Mongoose schema and model for users.
+// User Schema
 const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true, index: true },
   password: { type: String },
@@ -65,14 +53,14 @@ const userSchema = new mongoose.Schema({
 const User = mongoose.model("User", userSchema);
 
 
-// Define a Mongoose schema and model for channelInfo.
+// ChannelInfo schema
 const channelInfoSchema = new mongoose.Schema({
   channelId: { type: String, required: true, unique: true, index: true },
   channelDescription: { type: String },
 });
 const ChannelInfo = mongoose.model("ChannelInfo", channelInfoSchema);
 
-// Define a Mongoose schema and model for adminChannels.
+// AdminChannels schema, the channels that a specific user can admin
 const adminChannelSchema = new mongoose.Schema({
   userId: { type: String, required: true, unique: true, index: true },
   channels: { type: [String], default: [] },
@@ -82,13 +70,25 @@ const adminChannelSchema = new mongoose.Schema({
 const AdminChannel = mongoose.model("AdminChannel", adminChannelSchema);
 
 
+// Data schema. It create a data basing on a prototype. 
+// For example, a survey (_type is 'survey') that filled by a users, base on a survey prototype who's id if _typeId.
+const generalDataSchema = new mongoose.Schema({
+  _id: { type: String, default: () => uuidv4() },
+  _type: { type: String, required: true },
+  _typeId:  { type: String, required: true },   // the _typeId is the corresponding
+  _channelId: { type: String },
+  _storeId: { type: String }
+}, { strict: false });
 
-// Mongoose schema for survey schemas. 
+const GeneralData = mongoose.model("GeneralData", generalDataSchema);
+
+
+// Survey prototype. 
 const surveySchema = new mongoose.Schema({
   _id: { type: String, default: () => uuidv4() },
+  _userId: { type: String, required: true },    // the create user's id
   _storeId: { type: String },
   _channelId: { type: String },
-  _userId: { type: String, required: true },    // the create user's id
   surveyTitle: { type: String },
   bannerImage: { type: String },
   surveyItems: { type: Array, default: [] },
@@ -776,7 +776,7 @@ app.post("/api/send-data", async(req, res) => {
 
     if (payload._type == 'survey') {
       const survey = await SurveySchema.findOne({
-          _id: payload.surveyId
+          _id: payload._typeId
       });
       if (!survey) {
           return res.status(400).json({
@@ -817,17 +817,17 @@ app.post("/api/send-data", async(req, res) => {
 
 // NEW: API endpoint to read general data based on _channelId, _storeId, and _type
 app.get("/api/read-data", async (req, res) => {
-  const { _channelId, _storeId, _type } = req.query;
+  const { _typeId, _storeId, _type } = req.query;
 
   // Ensure at least one filter parameter is provided
-  if (!_channelId && !_storeId && !_type) {
+  if (!_type && !_typeId) {
     return res.status(400).json({ error: "At least one filter parameter is required." });
   }
 
   try {
     // Build the query object dynamically based on provided parameters
     let query = {};
-    if (_channelId) query._channelId = _channelId;
+    if (_typeId) query._typeId = _typeId;
     if (_storeId) query._storeId = _storeId;
     if (_type) query._type = _type;
 
@@ -839,7 +839,8 @@ app.get("/api/read-data", async (req, res) => {
     }
 
     console.log(`Fetched ${results.length} records`);
-    return res.status(200).json({ success: true, data: results });
+    const dataArray = results.map(item => item.data);
+    return res.status(200).json({ success: true, data: dataArray });
 
   } catch (err) {
     console.error("Error fetching general data:", err);

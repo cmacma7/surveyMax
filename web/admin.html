@@ -188,6 +188,55 @@
 		background-color: red !important;
 	  }
 
+
+   /*********************************************
+   * summary page
+   *********************************************/
+   .full-page-overlay {
+      position: fixed;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: #fff;
+      overflow-y: auto;
+      z-index: 10000;
+      transition: left 0.3s ease;
+      box-shadow: 2px 0 5px rgba(0,0,0,0.3);
+    }
+
+    .full-page-overlay.active {
+      left: 0;
+    }
+
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #9e9e9e;
+      color: #fff;
+      box-shadow: 0 0 6px 0px black;
+      position: sticky;
+      top: 0;
+    }
+    .page-header H4 {
+      margin: 0.4em;
+    
+    }
+
+    .close-btn {
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-size: 1.2rem;
+      cursor: pointer;
+    }
+
+    .page-content {
+      padding: 1rem;
+    }
+
+
       /**********************************************
        * RESPONSIVE
        **********************************************/
@@ -535,6 +584,17 @@
   </div>
 </div>
 
+<!-- Full Page Survey Data Summary -->
+<div id="surveyDataPage" class="full-page-overlay">
+  <div class="page-header">
+    <h4>問卷資料摘要</h4>
+    <button class="close-btn" onclick="closeSurveyDataPage()">Close</button>
+  </div>
+  <div id="surveyDataContent" class="page-content">
+    <!-- Fetched survey distribution and summary will be injected here -->
+  </div>
+</div>
+
 
     <!-- SIDEBAR -->
  
@@ -620,6 +680,16 @@
                 <i class="material-icons left">save</i>
                 <span id="generate-text"></span>
               </button>
+
+              <!-- NEW: Fetch Data Button -->
+              <button class="btn grey waves-effect waves-light" id="fetch-data-btn" onclick="fetchSurveyData()">
+                <i class="material-icons left">assessment</i>
+                <span id="fetch-data-text">Survey Data</span>
+              </button>
+
+
+
+
             </div>
           </div>
         </div>
@@ -632,9 +702,8 @@
       defer
     ></script>
 	<script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>		
-	<script type="text/javascript" src="../admin/common.js?v=20"></script>
-	<script type="text/javascript" src="../admin/db.js?v=20"></script>		
-	
+	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 
     <script>
 	
@@ -3057,6 +3126,226 @@ async function handleFinalImport() {
     M.toast({ html: i18n_local[currentLang].importSurveyFailed, displayLength: 2000 });
   }
 }
+
+
+
+
+// fetch survey data using the REST API.
+async function fetchSurveyData() {
+  
+  if (!CurrentSurveySchemaId) {
+    M.toast({ html: "surveyId is required to fetch survey data", displayLength: 3000 });
+    return;
+  }
+  
+  // Build the API URL. In this example, we map channelId to _typeId and use _type=survey.
+  const url = `${BASE_URL}/api/read-data?_typeId=${encodeURIComponent(CurrentSurveySchemaId)}&_type=survey`;
+  try {
+    const response = await fetch(url);
+    const result = await response.json();
+    if (result.error) {
+      M.toast({ html: result.error, displayLength: 3000 });
+      return;
+    }
+    // Call the summary function with the fetched data.
+    summarizeSurveyData(result.data);
+  } catch (err) {
+    console.error("Error fetching survey data:", err);
+    M.toast({ html: "Error fetching survey data", displayLength: 3000 });
+  }
+}
+
+// Function to summarize and display the fetched survey data.
+function summarizeSurveyData(responses) {
+  // Aggregate answers by questionId
+  const summaryMap = {};
+  responses.forEach(response => {
+    response.forEach(item => {
+      const qid = item.questionId;
+      if (!summaryMap[qid]) {
+        summaryMap[qid] = {
+          question: item.question,
+          type: item.questionType,
+          answers: []
+        };
+      }
+      summaryMap[qid].answers.push(item.answer);
+    });
+  });
+
+  const content = document.getElementById("surveyDataContent");
+  content.innerHTML = "";
+
+  // Define an array of colors for the bars.
+  const backgroundColors = [
+    'rgba(255, 99, 132, 0.6)',
+    'rgba(54, 162, 235, 0.6)',
+    'rgba(255, 206, 86, 0.6)',
+    'rgba(75, 192, 192, 0.6)',
+    'rgba(153, 102, 255, 0.6)',
+    'rgba(255, 159, 64, 0.6)'
+  ];
+  const borderColors = [
+    'rgba(255, 99, 132, 1)',
+    'rgba(54, 162, 235, 1)',
+    'rgba(255, 206, 86, 1)',
+    'rgba(75, 192, 192, 1)',
+    'rgba(153, 102, 255, 1)',
+    'rgba(255, 159, 64, 1)'
+  ];
+
+  // Process each question's summary
+  Object.keys(summaryMap).forEach(qid => {
+    const summary = summaryMap[qid];
+    const container = document.createElement("div");
+    container.className = "question-summary";
+    container.style.marginBottom = "1.5rem";
+    container.style.padding = "1rem";
+    container.style.border = "1px solid #ddd";
+    container.style.borderRadius = "8px";
+    container.style.boxShadow = "0 2px 5px rgba(0,0,0,0.1)";
+
+    // Header: show question text and type.
+    const header = document.createElement("h5");
+    header.textContent = `${summary.question} (${summary.type})`;
+    header.style.marginBottom = "0.5rem";
+    header.style.color = "#333";
+    container.appendChild(header);
+
+    // For text/longtext, skip chart and numerical summary.
+    if (summary.type === "text" || summary.type === "longtext") {
+      const note = document.createElement("p");
+      note.textContent = "文字回答不進行統計摘要。";
+      note.style.fontStyle = "italic";
+      note.style.color = "#666";
+      container.appendChild(note);
+      content.appendChild(container);
+      return;
+    }
+
+    // Calculate frequency distribution.
+    const freq = {};
+    summary.answers.forEach(ans => {
+      if (Array.isArray(ans)) {
+        ans.forEach(a => {
+          freq[a] = (freq[a] || 0) + 1;
+        });
+      } else {
+        freq[ans] = (freq[ans] || 0) + 1;
+      }
+    });
+    const labels = Object.keys(freq);
+    const dataCounts = labels.map(label => freq[label]);
+
+    // Create a canvas element for the chart.
+    const canvas = document.createElement("canvas");
+    canvas.id = "chart_" + qid;
+    canvas.style.maxWidth = "600px";
+    canvas.style.height = "300px";
+    canvas.style.marginBottom = "1rem";
+    container.appendChild(canvas);
+
+    // Delay chart creation to ensure the canvas is in the DOM.
+    setTimeout(() => {
+      new Chart(canvas, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: summary.question,
+            data: dataCounts,
+            backgroundColor: backgroundColors.slice(0, labels.length),
+            borderColor: borderColors.slice(0, labels.length),
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: false,
+          maintainAspectRatio: true,
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                precision: 0
+              },
+              title: {
+                display: true,
+                text: "回應數量",
+                font: {
+                  size: 14,
+                  weight: 'bold'
+                }
+              }
+            },
+            x: {
+              title: {
+                display: true,
+                text: "選項",
+                font: {
+                  size: 14,
+                  weight: 'bold'
+                }
+              }
+            }
+          },
+          plugins: {
+            legend: {
+              display: false
+            },
+            title: {
+              display: false
+            }
+          }
+        }
+      });
+    }, 100);
+
+    // For stars questions, calculate and display average rating.
+    if (summary.type === "stars") {
+      const total = summary.answers.reduce((sum, ans) => sum + Number(ans), 0);
+      const avg = total / summary.answers.length;
+      const avgP = document.createElement("p");
+      avgP.style.fontWeight = "bold";
+      avgP.style.color = "#00796b";
+      avgP.textContent = `平均評分: ${avg.toFixed(2)} （共 ${summary.answers.length} 筆回應）`;
+      container.appendChild(avgP);
+    } else {
+      // For radio/checkbox/date: also show frequency list below the chart.
+      const list = document.createElement("ul");
+      list.style.listStyleType = "none";
+      list.style.paddingLeft = "0";
+      labels.forEach(label => {
+        const li = document.createElement("li");
+        li.textContent = `${label}: ${freq[label]} 筆`;
+        li.style.padding = "0.25rem 0";
+        list.appendChild(li);
+      });
+      container.appendChild(list);
+    }
+
+    content.appendChild(container);
+  });
+
+  // Open the full-page overlay.
+  openSurveyDataPage();
+}
+
+
+
+// Functions to open and close the full-page overlay.
+function openSurveyDataPage() {
+  const page = document.getElementById("surveyDataPage");
+  page.classList.add("active");
+}
+
+function closeSurveyDataPage() {
+  const page = document.getElementById("surveyDataPage");
+  page.classList.remove("active");
+}
+
+
+
+
 
      /***********************************************
        * VOICE recognition
