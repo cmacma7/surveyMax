@@ -617,7 +617,7 @@
   </div>
   <div class="modal-footer" style="display: flex; justify-content: flex-end; align-items: center; padding: 10px 20px;">
     <a href="#!" class="modal-close btn-flat"><!-- Cancel text will be updated via setLanguage --></a>
-    <a href="#!" class="btn" onclick="handleFinalImport()"><!-- Import text will be updated via setLanguage --></a>
+    <a href="#!" id="finalImportBtn" class="btn" onclick="handleFinalImport()"><!-- Import text will be updated via setLanguage --></a>
   </div>
 </div>
 
@@ -1187,7 +1187,10 @@
 				const data = await response.json();
 				if (data.schema) {
 				  const schemaString = typeof data.schema === 'object' ? JSON.stringify(data.schema, null, 2) : data.schema;
-				  document.getElementById("popupImportSurveyText").value = schemaString;
+          const textArea = document.getElementById("popupImportSurveyText");
+				  textArea.value = schemaString;
+          textArea.dispatchEvent(new Event("input", { bubbles: true, cancelable: true }));
+
 				  M.toast({
 					html: "Survey schema generated successfully",
 					displayLength: 2000
@@ -1206,7 +1209,7 @@
 				});
 			  } finally {
 				// Re-enable the button and hide the spinner regardless of outcome
-				genBtn.disabled = false;
+				// genBtn.disabled = false;
 				document.getElementById("loadingSpinner").style.display = "none";
 			  }
 			};
@@ -1217,6 +1220,33 @@
 			  generateBtn.disabled = this.value.trim() === "";
 			});
 			
+      /***********************************
+       * import modal listener
+       * *********************************/
+      document.querySelectorAll('input[name="importMode"]').forEach(radio => {
+        radio.addEventListener("change", function() {
+          localStorage.setItem("importMode", this.value);
+          updateImportModePopup(); // make sure the UI updates accordingly
+        });
+      });
+      const jsonTextArea = document.getElementById("popupImportSurveyText");
+      const finalImportBtn = document.getElementById("finalImportBtn");
+
+      // Initially disable if text area is empty:
+        if (jsonTextArea.value.trim() === "") {
+          finalImportBtn.classList.add("disabled");
+        } else {
+          finalImportBtn.classList.remove("disabled");
+        }
+
+        // Update button state on input change:
+        jsonTextArea.addEventListener("input", function () {
+          if (this.value.trim() === "") {
+            finalImportBtn.classList.add("disabled");
+          } else {
+            finalImportBtn.classList.remove("disabled");
+          }
+        });
 
 
           // Handle responsive sidebar on load & resize
@@ -2739,8 +2769,8 @@ function showContextMenu(x, y, items) {
 
 		  let result = await updateSurvey(CurrentSurveySchemaId, surveyOutput);
 		  if (!CurrentSurveySchemaId) {
-			CurrentSurveySchemaId = result?._id;
-			localStorage.CurrentSurveySchemaId = CurrentSurveySchemaId;
+        CurrentSurveySchemaId = result?._id;
+        localStorage.CurrentSurveySchemaId = CurrentSurveySchemaId;
 		  }
 
 		  // Create the URL string
@@ -2858,7 +2888,7 @@ function showSelectSurveyModal(surveys, dismissible = false) {
     // Populate the list
     const surveyList = document.getElementById("surveyList");
     surveyList.innerHTML = ""; // clear any previous items
-
+    const importSurveyBtn = document.getElementById("importSurveyBtn");
     // Add existing surveys to the list
     surveys.forEach((survey) => {
       const li = document.createElement("li");
@@ -2873,12 +2903,23 @@ function showSelectSurveyModal(surveys, dismissible = false) {
       }
       li.dataset.surveyId = survey._id;
 
+      // Pre-select if this survey is the current one.
+      if (survey._id === localStorage.CurrentSurveySchemaId) {
+        li.classList.add("blue", "white-text");
+      }
       // Highlight the clicked item
       li.onclick = function () {
         document.querySelectorAll("#surveyList .collection-item").forEach((item) => {
           item.classList.remove("blue", "white-text");
         });
         li.classList.add("blue", "white-text");
+        
+        // Enable the import button only if the selected survey matches the current one.
+        if (li.dataset.surveyId === localStorage.CurrentSurveySchemaId) {
+          importSurveyBtn.removeAttribute("disabled");
+        } else {
+          importSurveyBtn.setAttribute("disabled", true);
+        }
       };
 
       surveyList.appendChild(li);
@@ -2896,6 +2937,11 @@ function showSelectSurveyModal(surveys, dismissible = false) {
         item.classList.remove("blue", "white-text");
       });
       createNewItem.classList.add("blue", "white-text");
+      if (createNewItem.dataset.surveyId === localStorage.CurrentSurveySchemaId) {
+        importSurveyBtn.removeAttribute("disabled");
+      } else {
+        importSurveyBtn.setAttribute("disabled", true);
+      }
     };
 
     surveyList.appendChild(createNewItem);
@@ -2910,6 +2956,16 @@ function showSelectSurveyModal(surveys, dismissible = false) {
         dismissible: dismissible
       });
     }
+
+
+    const selectedItem = document.querySelector("#surveyList .collection-item.blue");
+    if (selectedItem && selectedItem.dataset.surveyId === localStorage.CurrentSurveySchemaId) {
+      importSurveyBtn.removeAttribute("disabled");
+    } else {
+      importSurveyBtn.setAttribute("disabled", true);
+    }
+
+
     modalInstance.open();
 
     // When user clicks "Confirm", get the selected survey ID
@@ -2918,8 +2974,15 @@ function showSelectSurveyModal(surveys, dismissible = false) {
       const selectedItem = document.querySelector("#surveyList .collection-item.blue");
       if (selectedItem) {
         const selectedId = selectedItem.dataset.surveyId;
-		modalInstance.close();
-		localStorage.CurrentSurveySchemaId = selectedId;
+		    modalInstance.close();
+		    if (selectedId === "create new") {
+          // If "create new" is selected, pop up the import survey modal directly.
+          delete localStorage.CurrentSurveySchemaId;
+          CurrentSurveySchemaId = null;
+          openImportSurveyModal();
+        } else {
+          localStorage.CurrentSurveySchemaId = selectedId;
+        }
         resolve(selectedId);
       } else {
         M.toast({
@@ -3055,7 +3118,9 @@ function openImportSurveyModal() {
     modalInstance = M.Modal.init(modalElem, { dismissible: true });
   }
   // Reset mode to "file" by default.
-  document.querySelector('input[name="importMode"][value="file"]').checked = true;
+  const storedMode = localStorage.getItem("importMode") || "text";
+  document.querySelector('input[name="importMode"][value="' + storedMode + '"]').checked = true;
+
   updateImportModePopup();
   // Clear any previous inputs.
   document.getElementById('popupImportSurveyFile').value = "";
