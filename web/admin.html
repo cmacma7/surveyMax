@@ -162,12 +162,7 @@
         padding: 10px 0;
         box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
       }
-      .sticky-bottom .col.s12 {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        align-items: center;
-      }
+
       .sticky-bottom .col.s12 > * {
         margin-bottom: 10px;
       }
@@ -187,6 +182,31 @@
 	  .recording-btn {
 		background-color: red !important;
 	  }
+
+
+.sticky-bottom .col.s12 {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* On small screens, hide the text in the Survey Data button, showing only the icon */
+@media only screen and (max-width: 600px) {
+  #fetch-data-btn span {
+    display: none;
+  }
+}
+
+/* Left group remains a flex container */
+.left-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+/* Remove float from right-buttons; no additional styling needed */
+.right-buttons {
+  /* This container will naturally move to the far right using justify-content: space-between */
+}
 
 
    /*********************************************
@@ -228,7 +248,7 @@
       position: sticky;
       top: 0;
     }
-    .page-header H4 {
+    .page-header H5 {
       margin: 0.4em;
     
     }
@@ -239,6 +259,7 @@
       color: #fff;
       font-size: 1.2rem;
       cursor: pointer;
+      margin-right: 1em;
     }
 
     .page-content {
@@ -603,8 +624,8 @@
 <!-- Full Page Survey Data Summary -->
 <div id="surveyDataPage" class="full-page-overlay">
   <div class="page-header">
-    <h4>問卷資料摘要</h4>
-    <button class="close-btn" onclick="closeSurveyDataPage()">Close</button>
+    <h5 id="surveyDataTitle">問卷資料摘要</h4>
+    <button id="surveyDataCloseBtn" class="close-btn" onclick="closeSurveyDataPage()">Close</button>
   </div>
   <div id="surveyDataContent" class="page-content">
     <!-- Fetched survey distribution and summary will be injected here -->
@@ -652,60 +673,61 @@
           <!-- Button Row (sticky at bottom) -->
           <div class="row sticky-bottom">
             <div class="col s12">
-              <!-- Add Question -->
-              <button
-                class="btn green waves-effect waves-light"
-                id="add-question-btn"
-                onclick="addQuestion()"
-              >
-                <i class="material-icons left">add</i>
-                <span id="add-question-text"></span>
-              </button>
-
-              <!-- Add Group -->
-              <button
-                class="btn orange waves-effect waves-light"
-                id="add-group-btn"
-                onclick="addGroup()"
-              >
-                <i class="material-icons left">group_work</i>
-                <span id="add-group-text"></span>
-              </button>
-
-              <!-- Undo / Redo -->
-              <button
-                id="undo-btn"
-                class="btn grey waves-effect waves-light"
-              >
-                <i class="material-icons left">undo</i>
-                <span id="undo-text"></span>
-              </button>
-              <button
-                id="redo-btn"
-                class="btn grey waves-effect waves-light"
-              >
-                <i class="material-icons left">redo</i>
-                <span id="redo-text"></span>
-              </button>
-
-              <!-- Generate & Go to Survey -->
-              <button
-                class="btn blue waves-effect waves-light right"
-                onclick="generateSurvey()"
-              >
-                <i class="material-icons left">save</i>
-                <span id="generate-text"></span>
-              </button>
-
-              <!-- NEW: Fetch Data Button -->
-              <button class="btn grey waves-effect waves-light" id="fetch-data-btn" onclick="fetchSurveyData()">
-                <i class="material-icons left">assessment</i>
-                <span id="fetch-data-text">Survey Data</span>
-              </button>
-
-
-
-
+              <!-- Left side buttons -->
+              <div class="left-buttons">
+                <!-- Add Question -->
+                <button
+                  class="btn green waves-effect waves-light"
+                  id="add-question-btn"
+                  onclick="addQuestion()"
+                >
+                  <i class="material-icons left">add</i>
+                  <span id="add-question-text"></span>
+                </button>
+          
+                <!-- Add Group -->
+                <button
+                  class="btn orange waves-effect waves-light"
+                  id="add-group-btn"
+                  onclick="addGroup()"
+                >
+                  <i class="material-icons left">group_work</i>
+                  <span id="add-group-text"></span>
+                </button>
+          
+                <!-- Undo / Redo -->
+                <button
+                  id="undo-btn"
+                  class="btn grey waves-effect waves-light"
+                >
+                  <i class="material-icons left">undo</i>
+                  <span id="undo-text"></span>
+                </button>
+                <button
+                  id="redo-btn"
+                  class="btn grey waves-effect waves-light"
+                >
+                  <i class="material-icons left">redo</i>
+                  <span id="redo-text"></span>
+                </button>
+          
+                <!-- NEW: Fetch Data Button (shows only icon on small screens) -->
+                <button class="btn grey waves-effect waves-light" id="fetch-data-btn" onclick="fetchSurveyData()">
+                  <i class="material-icons left">assessment</i>
+                  <span id="fetch-data-text">Survey Data</span>
+                </button>
+              </div>
+          
+              <!-- Right side button: Generate & Go to Survey -->
+              <div class="right-buttons">
+                <button
+                  class="btn blue waves-effect waves-light"
+                  onclick="generateSurvey()"
+                >
+                  <i class="material-icons left">save</i>
+                  <span id="generate-text"></span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -825,7 +847,9 @@
           // NEW keys for banner image
           bannerImageUrl: "Banner Image URL:",
           bannerImagePlaceholder: "Enter URL for banner image",
-		  extraText: "Extra Text"
+		  extraText: "Extra Text",
+      fetchDataText: "Survey Data",
+      surveyDataSummaryTitle: "Survey Data Summary",
         },
         'zh-TW': {
           navTitle: "問卷管理",
@@ -914,7 +938,9 @@
           // NEW keys for banner image
           bannerImageUrl: "橫幅圖片網址:",
           bannerImagePlaceholder: "輸入橫幅圖片的網址",
-		  extraText: "補充文字"
+		  extraText: "補充文字",
+      fetchDataText: "問卷分析",
+      surveyDataSummaryTitle: "問卷資料摘要",
         },
         'ja-JP': {
           navTitle: "アンケート管理",
@@ -1003,7 +1029,9 @@
           // NEW keys for banner image
           bannerImageUrl: "バナー画像のURL:",
           bannerImagePlaceholder: "バナー画像のURLを入力",
-		  extraText: "追加テキスト"
+		  extraText: "追加テキスト",
+      fetchDataText: "アンケートデータ",
+      surveyDataSummaryTitle: "アンケートデータサマリー",
         },
       };
 
@@ -1434,6 +1462,11 @@ function setLanguage(lang) {
     importModalFooterButtons[0].textContent = i18n_local[lang].cancel;
     importModalFooterButtons[1].textContent = i18n_local[lang].importText;
   }
+
+  document.getElementById("fetch-data-text").textContent = i18n_local[lang].fetchDataText;
+  document.getElementById("surveyDataCloseBtn").textContent = i18n_local[lang].close;
+  document.getElementById("surveyDataTitle").textContent = i18n_local[lang].surveyDataSummaryTitle;
+
   
   // Re-render items if necessary
   renderAllItems();
