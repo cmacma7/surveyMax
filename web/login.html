@@ -2,6 +2,8 @@
 <html>
   <head>
     <meta charset="UTF-8" />
+    <!-- Make the page mobile friendly -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Login</title>
     <!-- Materialize CSS and icons (if you use them) -->
     <link
@@ -20,9 +22,46 @@
         justify-content: center;
         height: 100vh;
       }
+      
+      /* Additional styling for card */
+      .card {
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        min-width: 80%;
+      }
+      
+      /* Styling for language switcher */
+      #lang-switcher {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+      }
+      #lang-switcher button {
+        margin-left: 5px;
+      }
+      
+      /* Arrange bottom elements in 3 lines and center them */
+      .card-action {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+      
+      /* Even distribution for elements inside .card-action if needed */
+      .card-action > * {
+        flex: 1;
+        text-align: center;
+      }
     </style>
   </head>
   <body class="grey lighten-4">
+    <!-- Language Switcher -->
+    <div id="lang-switcher">
+      <button class="btn-flat" onclick="setLanguage('en-US')">English</button>
+      <button class="btn-flat" onclick="setLanguage('zh-TW')">繁體中文</button>
+      <button class="btn-flat" onclick="setLanguage('ja-JP')">日本語</button>
+    </div>
+    
     <div id="login-container">
       <div class="card">
         <div class="card-content">
@@ -34,6 +73,11 @@
           <div class="input-field">
             <input id="login-password" type="password" required />
             <label for="login-password">Password</label>
+            <!-- Add an icon for toggling password visibility -->
+            <i class="material-icons suffix" id="toggle-password" style="cursor: pointer;position: absolute;
+            right: 0.5em;
+            bottom: 0.5em;
+            color: gray;">visibility_off</i>
           </div>
         </div>
         <div class="card-action">
@@ -52,6 +96,74 @@
       crossorigin="anonymous"></script>
 
     <script>
+      // Translations for Traditional Chinese, English, and Japanese
+      const translations = {
+        'en-US': {
+          cardTitle: "Login",
+          emailLabel: "Email",
+          passwordLabel: "Password",
+          loginBtn: "Login",
+          registerLink: "Create Account",
+          forgotLink: "Forgot Password",
+          pleaseEnterBoth: "Please enter both email and password",
+          loginFailed: "Login failed",
+          errorOccurred: "An error occurred during login"
+        },
+        'zh-TW': {
+          cardTitle: "登入",
+          emailLabel: "電子郵件",
+          passwordLabel: "密碼",
+          loginBtn: "登入",
+          registerLink: "建立帳號",
+          forgotLink: "忘記密碼",
+          pleaseEnterBoth: "請輸入電子郵件和密碼",
+          loginFailed: "登入失敗",
+          errorOccurred: "登入時發生錯誤"
+        },
+        'ja-JP': {
+          cardTitle: "ログイン",
+          emailLabel: "メールアドレス",
+          passwordLabel: "パスワード",
+          loginBtn: "ログイン",
+          registerLink: "アカウント作成",
+          forgotLink: "パスワードをお忘れですか",
+          pleaseEnterBoth: "メールアドレスとパスワードの両方を入力してください",
+          loginFailed: "ログインに失敗しました",
+          errorOccurred: "ログイン中にエラーが発生しました"
+        }
+      };
+
+      // Set default language to English or from localStorage
+      let currentLanguage = localStorage.preferredLanguage || 'zh-TW';
+
+      // Function to update text based on selected language
+      function setLanguage(lang) {
+        localStorage.preferredLanguage = currentLanguage = lang;
+        document.querySelector(".card-title").textContent = translations[lang].cardTitle;
+        document.querySelector("label[for='login-email']").textContent = translations[lang].emailLabel;
+        document.querySelector("label[for='login-password']").textContent = translations[lang].passwordLabel;
+        document.getElementById("login-btn").textContent = translations[lang].loginBtn;
+        document.getElementById("register-link").textContent = translations[lang].registerLink;
+        document.getElementById("forgot-link").textContent = translations[lang].forgotLink;
+      }
+
+      // Initialize language on page load
+      document.addEventListener("DOMContentLoaded", function() {
+        setLanguage(currentLanguage);
+      });
+
+      // Toggle password show/hide functionality
+      document.getElementById('toggle-password').addEventListener('click', function() {
+        const passwordInput = document.getElementById('login-password');
+        if (passwordInput.type === "password") {
+          passwordInput.type = "text";
+          this.textContent = "visibility";
+        } else {
+          passwordInput.type = "password";
+          this.textContent = "visibility_off";
+        }
+      });
+
       const SERVER_URL = 'https://b200.tagfans.com:5301';
 
       document.getElementById("login-btn").addEventListener("click", async function () {
@@ -59,7 +171,7 @@
         const password = document.getElementById("login-password").value.trim();
 
         if (!email || !password) {
-          M.toast({ html: "Please enter both email and password", displayLength: 2000 });
+          M.toast({ html: translations[currentLanguage].pleaseEnterBoth, displayLength: 2000 });
           return;
         }
 
@@ -72,7 +184,7 @@
           const data = await response.json();
 
           if (!response.ok) {
-            M.toast({ html: data.error || "Login failed", displayLength: 2000 });
+            M.toast({ html: data.error || translations[currentLanguage].loginFailed, displayLength: 2000 });
             return;
           }
 
@@ -87,7 +199,7 @@
           window.location.href = redirectUrl;
         } catch (error) {
           console.error(error);
-          M.toast({ html: "An error occurred during login", displayLength: 2000 });
+          M.toast({ html: translations[currentLanguage].errorOccurred, displayLength: 2000 });
         }
       });
 

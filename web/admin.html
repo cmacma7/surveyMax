@@ -3076,7 +3076,14 @@ async function switchSurveyById(surveyId) {
 
 function logout() {
 	let res = confirm(i18n_local[currentLang].logoutConfirm);
-	res && commonLogout(function() {location.reload();});
+	if (res) {
+    delete localStorage.userId;
+    delete localStorage.userToken;
+    setTimeout(function(){
+      location.reload();
+    }, 2000)
+    
+  }
 }
 
 function updateNavTitle() {
