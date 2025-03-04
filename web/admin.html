@@ -2039,10 +2039,12 @@ if (anchorQuestionOptions.length === 0) {
 } else {
   anchorQuestionOptions.forEach(option => {
     const optEl = document.createElement("option");
-    optEl.value = option;
-    optEl.text = option;
+    // If the option is an object, use its "text" property; otherwise, use the option directly.
+    const optionText = typeof option === 'object' ? option.text : option;
+    optEl.value = optionText;
+    optEl.text = optionText;
     // Mark the option as selected if it is already in groupObj.anchorValuesToShow
-    if (groupObj.anchorValuesToShow && groupObj.anchorValuesToShow.includes(option)) {
+    if (groupObj.anchorValuesToShow && groupObj.anchorValuesToShow.includes(optionText)) {
       optEl.selected = true;
     }
     anchorValuesSelect.appendChild(optEl);
