@@ -17,6 +17,10 @@ const { SESClient, SendRawEmailCommand } = require("@aws-sdk/client-ses");
 // NEW: Require JSON Web Token package.
 const jwt = require("jsonwebtoken");
 
+
+// used by llm 
+const { Configuration, OpenAIApi } = require('openai');
+
 // load the environment variables from the .env file
 require('dotenv').config();
 
@@ -966,6 +970,118 @@ app.get("/presigned-url/get", async (req, res) => {
 });
 
 
+/********************************************
+ * LLM server
+ *******************************************/
+
+// Initialize OpenAI with your API key
+const configuration = new Configuration({
+  apiKey: process.env.OPENAI_API_KEY
+});
+const openai = new OpenAIApi(configuration);
+
+// REST API endpoint to generate a survey schema
+app.post('/api/generateSurveySchema', async (req, res) => {
+  try {
+    const { description } = req.body;
+    if (!description) {
+      return res.status(400).json({ error: 'Description is required' });
+    }
+
+    // Define a system instruction that explains how to structure the survey JSON.
+    const systemInstruction = `
+#### Survey_Schema JSON
+{
+  "surveyTitle": "string",            // The title of the survey.
+  "storeTitle": "string",             // The title of the store.
+  "storeId": "string or number",      // The ID of the store.
+  "endpointUrl": "string",            // URL to submit or retrieve survey data.
+  "surveyItems": [                    // An ordered list of items in the survey.
+    {
+      "type": "question",             // Item type: "question"
+      "id": "number",                 // A unique ID for this question (usually generated via Date.now())
+      "questionText": "string",       // The text/content of the question.
+      "questionType": "text | radio | checkbox | date | longtext | stars",
+                                      // The type of the question:
+                                      // - "text": Single-line text input.
+                                      // - "radio": Single-select multiple choice.
+                                      // - "checkbox": Multi-select multiple choice.
+                                      // - "date": Date picker.
+                                      // - "longtext": Multi-line text input.
+                                      // - "stars": Star rating input.
+      "required": "boolean",          // Indicates if this question must be answered.
+      "compack": "boolean",           // (Optional) For radio/checkbox types to show compact style.
+      "options": [                    // (Optional) For radio/checkbox questions.
+        "string", "string", "..."
+      ],
+      "maxStars": "number"            // (Optional) Only for "stars" type questions; maximum number of stars.
+    },
+    {
+      "type": "group",                // Item type: "group"
+      "id": "number",                 // A unique ID for this group.
+      "groupTitle": "string",         // The title of the group.
+      "anchorQuestionId": "number or null",
+                                      // (Optional) The ID of the question that controls the visibility of this group.
+      "anchorValuesToShow": [         // (Optional) Array of answer values that, when selected in the anchor question, show this group.
+        "string", "string", "..."
+      ],
+      "subQuestions": [               // An array of sub-questions within this group.
+        {
+          "type": "question",         // Sub-question follows the same structure as a main question.
+          "id": "number",
+          "questionText": "string",
+          "questionType": "text | radio | checkbox | date | longtext | stars",
+          "required": "boolean",
+          "compack": "boolean",
+          "options": [
+            "string", "string", "..."
+          ],
+          "maxStars": "number"
+        }
+        // ... more sub-questions can be added here.
+      ]
+    }
+    // ... more survey items (questions or groups) can be added here.
+  ]
+}
+
+
+####
+base on above JSON definition, please generate a survey for user's request, and please generate the survey in the language that user is using.
+the system should analysis user's request first, then generate a deep and useful survey schema. When responding, please format your output strictly as JSON without additional commentary.
+    `;
+
+    // Create a prompt that combines the system instruction and the user description.
+    const userPrompt = `${description}`;
+
+    // Call OpenAI’s Chat Completion endpoint
+    const completion = await openai.createChatCompletion({
+      model: "gpt-4o-mini-2024-07-18", // or another available model
+      messages: [
+        { role: "system", content: systemInstruction },
+        { role: "user", content: userPrompt }
+      ],
+      temperature: 0.7,
+      max_tokens: 1000,
+    });
+
+    const generatedText = completion.data.choices[0].message.content.trim();
+
+    // Optionally, attempt to parse the generated text as JSON.
+    let generatedSchema;
+    try {
+      generatedSchema = JSON.parse(generatedText);
+    } catch (parseError) {
+      // If parsing fails, send the raw text.
+      generatedSchema = generatedText;
+    }
+
+    res.json({ schema: generatedSchema });
+  } catch (error) {
+    console.error("Error generating survey schema:", error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 
 
