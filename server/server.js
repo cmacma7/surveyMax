@@ -852,6 +852,49 @@ app.get("/api/read-data", async (req, res) => {
   }
 });
 
+
+// DELETE: Remove a user account by userId
+app.delete("/api/user/:userId", async (req, res) => {
+  const { userId } = req.params;
+  try {
+    // Remove user from the users collection
+    const deletedUser = await User.findByIdAndDelete(userId);
+    if (!deletedUser) {
+      return res.status(404).json({ error: "User not found." });
+    }
+
+    // Also remove from AdminChannel collection if present
+    await AdminChannel.findOneAndDelete({ userId });
+
+    console.log(`Deleted user: ${deletedUser.email} (ID: ${userId})`);
+    return res.status(200).json({ message: "User account deleted successfully." });
+  } catch (err) {
+    console.error("Error deleting user:", err);
+    return res.status(500).json({ error: "Internal server error." });
+  }
+});
+
+// DELETE: Remove a survey schema by ID
+app.delete("/api/survey/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deletedSurvey = await SurveySchema.findByIdAndDelete(id);
+    if (!deletedSurvey) {
+      return res.status(404).json({ error: "Survey not found." });
+    }
+    console.log(`Deleted survey: ${id}`);
+    return res.status(200).json({ message: "Survey schema deleted successfully." });
+  } catch (err) {
+    console.error("Error deleting survey:", err);
+    return res.status(500).json({ error: "Internal server error." });
+  }
+});
+
+
+
+
+
+
 // ***** Survey operations *****
 // GET a specific survey schema by id.
 app.get("/api/survey/:id", async (req, res) => {
@@ -921,9 +964,10 @@ app.patch("/api/survey/:id/counter", async (req, res) => {
 });
 
 
-
-// ***** AWS S3 operations ******
-// Endpoint to generate a presigned URL for PUT (upload)
+/************************************* 
+* AWS S3 operations 
+* Endpoint to generate a presigned URL for PUT (upload)
+*************************************/
 app.get("/presigned-url/put", async (req, res) => {
   const key = req.query.key;
   if (!key) {
