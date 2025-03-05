@@ -1095,12 +1095,18 @@
           
 
           surveys = await fetchSurvey(null);
+
+
           // here we should select a survey to continue, or new one
           let existingData = null;
-
-          if (surveys && surveys.length > 0) {
+          if (!surveys || surveys.length === 0) {
+            // No surveys exist—prompt the user to import one.
+            openImportSurveyModal();
+          }
+          else if (surveys && surveys.length > 0) {
               if (surveys.length === 1) {
                   CurrentSurveySchemaId = surveys[0]._id;
+                  
               } else {
                   // If more than one survey exists, force the user to select one.
                   let selection;
@@ -1108,11 +1114,12 @@
                   if (selection == 'create new')
                       selection = undefined;
                   CurrentSurveySchemaId = selection;
-                  updateNavTitle();
+                 
 
               }
           }
-
+          updateNavTitle();
+          
           if (CurrentSurveySchemaId === "create_new") {
               CurrentSurveySchemaId = undefined;
           } else if (CurrentSurveySchemaId) {
@@ -3191,16 +3198,18 @@ function logout() {
 }
 
 function updateNavTitle() {
-    const navTitleEl = document.getElementById("nav-title");
-    let titleText = "";
-    if (!CurrentSurveySchemaId || CurrentSurveySchemaId === "create new") {
-        titleText = i18n_local[currentLang].newSurvey;
-    } else {
-        titleText = CurrentSurveySchemaId;
-    }
-    // Set the innerHTML to include the icon and the text.
-    navTitleEl.innerHTML = `<span class=''><i class="material-icons left">library_add</i>${i18n_local[currentLang].surveyIdPrefix} (${titleText})</span>`;
+  const navTitleEl = document.getElementById("nav-title");
+  let titleText = "";
+  if (!CurrentSurveySchemaId) {
+    titleText = i18n_local[currentLang].importSurvey; // e.g., "Import Survey"
+  } else if (CurrentSurveySchemaId === "create new") {
+    titleText = i18n_local[currentLang].newSurvey;
+  } else {
+    titleText = CurrentSurveySchemaId;
+  }
+  navTitleEl.innerHTML = `<span class=''><i class="material-icons left">library_add</i>${i18n_local[currentLang].surveyIdPrefix} (${titleText})</span>`;
 }
+
 
 
      /***********************************************
