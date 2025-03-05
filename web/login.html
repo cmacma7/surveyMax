@@ -15,8 +15,8 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css"
     />
     <style>
-      /* Center the login form on the page */
-      #login-container {
+      /* Center the form on the page */
+      .form-container {
         display: flex;
         align-items: center;
         justify-content: center;
@@ -45,11 +45,6 @@
         display: flex;
         flex-direction: column;
         gap: 20px;
-      }
-      
-      /* Even distribution for elements inside .card-action if needed */
-      .card-action > * {
-        flex: 1;
         text-align: center;
       }
     </style>
@@ -61,11 +56,12 @@
       <button class="btn-flat" onclick="setLanguage('zh-TW')">繁體中文</button>
       <button class="btn-flat" onclick="setLanguage('ja-JP')">日本語</button>
     </div>
-    
-    <div id="login-container">
+
+    <!-- Login Container -->
+    <div id="login-container" class="form-container">
       <div class="card">
         <div class="card-content">
-          <span class="card-title">Login</span>
+          <span class="card-title" id="login-title">Login</span>
           <div class="input-field">
             <input id="login-email" type="email" required />
             <label for="login-email">Email</label>
@@ -74,17 +70,84 @@
             <input id="login-password" type="password" required />
             <label for="login-password">Password</label>
             <!-- Add an icon for toggling password visibility -->
-            <i class="material-icons suffix" id="toggle-password" style="cursor: pointer;position: absolute;
-            right: 0.5em;
-            bottom: 0.5em;
-            color: gray;">visibility_off</i>
+            <i class="material-icons suffix" id="toggle-password" style="cursor: pointer; position: absolute; right: 0.5em; bottom: 0.5em; color: gray;">visibility_off</i>
           </div>
         </div>
         <div class="card-action">
           <button id="login-btn" class="btn">Login</button>
-          <!-- Optionally add links for registration or forgot password -->
+          <!-- Links to open register or forgot sections -->
           <a href="#!" id="register-link">Create Account</a>
           <a href="#!" id="forgot-link">Forgot Password</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Register Container (hidden by default) -->
+    <div id="register-container" class="form-container" style="display: none;">
+      <div class="card">
+        <div class="card-content">
+          <span class="card-title" id="register-title">Register</span>
+          <!-- Registration Step 1: Enter Email -->
+          <div id="register-step1">
+            <div class="input-field">
+              <input id="register-email" type="email" required />
+              <label for="register-email">Email</label>
+            </div>
+            <button id="register-btn" class="btn">Register</button>
+          </div>
+          <!-- Registration Step 2: Enter Verification Token and Password -->
+          <div id="register-step2" style="display: none;">
+            <div class="input-field">
+              <input id="verification-token" type="text" required />
+              <label for="verification-token">Verification Token</label>
+            </div>
+            <div class="input-field">
+              <input id="register-password" type="password" required />
+              <label for="register-password">Password</label>
+              <!-- Icon for toggling password visibility -->
+              <i class="material-icons suffix" id="toggle-reg-password" style="cursor: pointer; position: absolute; right: 0.5em; bottom: 0.5em; color: gray;">visibility_off</i>
+            </div>
+            <button id="verify-btn" class="btn">Verify Email</button>
+          </div>
+        </div>
+        <div class="card-action">
+          <!-- Link to go back to Login -->
+          <a href="#!" id="back-login-from-register">Back to Login</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Forgot Password Container (hidden by default) -->
+    <div id="forgot-container" class="form-container" style="display: none;">
+      <div class="card">
+        <div class="card-content">
+          <span class="card-title" id="forgot-title">Forgot Password</span>
+          <!-- Forgot Password Step 1: Enter Email -->
+          <div id="forgot-step1">
+            <div class="input-field">
+              <input id="forgot-email" type="email" required />
+              <label for="forgot-email">Email</label>
+            </div>
+            <button id="request-reset-btn" class="btn">Send Reset Email</button>
+          </div>
+          <!-- Forgot Password Step 2: Enter Reset Token and New Password -->
+          <div id="forgot-step2" style="display: none;">
+            <div class="input-field">
+              <input id="reset-token" type="text" required />
+              <label for="reset-token">Reset Token</label>
+            </div>
+            <div class="input-field">
+              <input id="new-password" type="password" required />
+              <label for="new-password">New Password</label>
+              <!-- Icon for toggling password visibility -->
+              <i class="material-icons suffix" id="toggle-new-password" style="cursor: pointer; position: absolute; right: 0.5em; bottom: 0.5em; color: gray;">visibility_off</i>
+            </div>
+            <button id="reset-password-btn" class="btn">Reset Password</button>
+          </div>
+        </div>
+        <div class="card-action">
+          <!-- Link to go back to Login -->
+          <a href="#!" id="back-login-from-forgot">Back to Login</a>
         </div>
       </div>
     </div>
@@ -92,12 +155,11 @@
     <!-- Include Materialize JS and jQuery -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js" defer></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"
-      integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4="
-      crossorigin="anonymous"></script>
+      integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
 
     <script>
-      // Translations for Traditional Chinese, English, and Japanese
-      const translations = {
+      // --- TRANSLATIONS ---
+      const translationsLogin = {
         'en-US': {
           cardTitle: "Login",
           emailLabel: "Email",
@@ -133,18 +195,131 @@
         }
       };
 
-      // Set default language to English or from localStorage
+      const translationsRegister = {
+        'en-US': {
+          cardTitle: "Register",
+          emailLabel: "Email",
+          verificationTokenLabel: "Verification Token",
+          passwordLabel: "Password",
+          registerBtn: "Register",
+          verifyBtn: "Verify Email",
+          backToLogin: "Back to Login",
+          pleaseEnterEmail: "Please enter email",
+          verificationSent: "Verification email sent. Please check your email.",
+          pleaseEnterTokenAndPassword: "Please enter token and password",
+          verificationFailed: "Verification failed",
+          errorOccurred: "An error occurred during registration"
+        },
+        'zh-TW': {
+          cardTitle: "註冊",
+          emailLabel: "電子郵件",
+          verificationTokenLabel: "驗證代碼",
+          passwordLabel: "密碼",
+          registerBtn: "註冊",
+          verifyBtn: "驗證電子郵件",
+          backToLogin: "返回登入",
+          pleaseEnterEmail: "請輸入電子郵件",
+          verificationSent: "驗證郵件已發送。請檢查您的郵件。",
+          pleaseEnterTokenAndPassword: "請輸入驗證代碼和密碼",
+          verificationFailed: "驗證失敗",
+          errorOccurred: "註冊過程中發生錯誤"
+        },
+        'ja-JP': {
+          cardTitle: "アカウント作成",
+          emailLabel: "メールアドレス",
+          verificationTokenLabel: "認証トークン",
+          passwordLabel: "パスワード",
+          registerBtn: "登録",
+          verifyBtn: "メールを認証する",
+          backToLogin: "ログインに戻る",
+          pleaseEnterEmail: "メールアドレスを入力してください",
+          verificationSent: "認証メールが送信されました。メールを確認してください。",
+          pleaseEnterTokenAndPassword: "トークンとパスワードを入力してください",
+          verificationFailed: "認証に失敗しました",
+          errorOccurred: "登録中にエラーが発生しました"
+        }
+      };
+
+      const translationsForgot = {
+        'en-US': {
+          cardTitle: "Forgot Password",
+          emailLabel: "Email",
+          resetTokenLabel: "Reset Token",
+          newPasswordLabel: "New Password",
+          requestResetBtn: "Send Reset Email",
+          resetPasswordBtn: "Reset Password",
+          backToLogin: "Back to Login",
+          pleaseEnterEmail: "Please enter email",
+          resetEmailSent: "Password reset email sent. Please check your email.",
+          pleaseEnterTokenAndNewPassword: "Please enter token and new password",
+          resetFailed: "Reset password failed",
+          errorOccurred: "An error occurred during password reset"
+        },
+        'zh-TW': {
+          cardTitle: "忘記密碼",
+          emailLabel: "電子郵件",
+          resetTokenLabel: "重設代碼",
+          newPasswordLabel: "新密碼",
+          requestResetBtn: "發送重設郵件",
+          resetPasswordBtn: "重設密碼",
+          backToLogin: "返回登入",
+          pleaseEnterEmail: "請輸入電子郵件",
+          resetEmailSent: "重設郵件已發送。請檢查您的郵件。",
+          pleaseEnterTokenAndNewPassword: "請輸入重設代碼和新密碼",
+          resetFailed: "重設密碼失敗",
+          errorOccurred: "重設密碼時發生錯誤"
+        },
+        'ja-JP': {
+          cardTitle: "パスワードをお忘れですか",
+          emailLabel: "メールアドレス",
+          resetTokenLabel: "リセットトークン",
+          newPasswordLabel: "新しいパスワード",
+          requestResetBtn: "リセットメールを送信",
+          resetPasswordBtn: "パスワードをリセット",
+          backToLogin: "ログインに戻る",
+          pleaseEnterEmail: "メールアドレスを入力してください",
+          resetEmailSent: "リセットメールが送信されました。メールを確認してください。",
+          pleaseEnterTokenAndNewPassword: "トークンと新しいパスワードを入力してください",
+          resetFailed: "パスワードのリセットに失敗しました",
+          errorOccurred: "パスワードリセット中にエラーが発生しました"
+        }
+      };
+
+      // Set default language from localStorage or default to 'zh-TW'
       let currentLanguage = localStorage.preferredLanguage || 'zh-TW';
 
-      // Function to update text based on selected language
+      // --- SET LANGUAGE FUNCTION ---
       function setLanguage(lang) {
         localStorage.preferredLanguage = currentLanguage = lang;
-        document.querySelector(".card-title").textContent = translations[lang].cardTitle;
-        document.querySelector("label[for='login-email']").textContent = translations[lang].emailLabel;
-        document.querySelector("label[for='login-password']").textContent = translations[lang].passwordLabel;
-        document.getElementById("login-btn").textContent = translations[lang].loginBtn;
-        document.getElementById("register-link").textContent = translations[lang].registerLink;
-        document.getElementById("forgot-link").textContent = translations[lang].forgotLink;
+        // Login translations
+        if (document.getElementById("login-title")) {
+          document.getElementById("login-title").textContent = translationsLogin[lang].cardTitle;
+          document.querySelector("label[for='login-email']").textContent = translationsLogin[lang].emailLabel;
+          document.querySelector("label[for='login-password']").textContent = translationsLogin[lang].passwordLabel;
+          document.getElementById("login-btn").textContent = translationsLogin[lang].loginBtn;
+          document.getElementById("register-link").textContent = translationsLogin[lang].registerLink;
+          document.getElementById("forgot-link").textContent = translationsLogin[lang].forgotLink;
+        }
+        // Register translations
+        if (document.getElementById("register-title")) {
+          document.getElementById("register-title").textContent = translationsRegister[lang].cardTitle;
+          document.querySelector("label[for='register-email']").textContent = translationsRegister[lang].emailLabel;
+          document.querySelector("label[for='verification-token']").textContent = translationsRegister[lang].verificationTokenLabel;
+          document.querySelector("label[for='register-password']").textContent = translationsRegister[lang].passwordLabel;
+          document.getElementById("register-btn").textContent = translationsRegister[lang].registerBtn;
+          document.getElementById("verify-btn").textContent = translationsRegister[lang].verifyBtn;
+          document.getElementById("back-login-from-register").textContent = translationsRegister[lang].backToLogin;
+        }
+        // Forgot translations
+        if (document.getElementById("forgot-title")) {
+          document.getElementById("forgot-title").textContent = translationsForgot[lang].cardTitle;
+          document.querySelector("label[for='forgot-email']").textContent = translationsForgot[lang].emailLabel;
+          document.querySelector("label[for='reset-token']").textContent = translationsForgot[lang].resetTokenLabel;
+          document.querySelector("label[for='new-password']").textContent = translationsForgot[lang].newPasswordLabel;
+          document.getElementById("request-reset-btn").textContent = translationsForgot[lang].requestResetBtn;
+          document.getElementById("reset-password-btn").textContent = translationsForgot[lang].resetPasswordBtn;
+          document.getElementById("back-login-from-forgot").textContent = translationsForgot[lang].backToLogin;
+        }
       }
 
       // Initialize language on page load
@@ -152,9 +327,29 @@
         setLanguage(currentLanguage);
       });
 
-      // Toggle password show/hide functionality
+      // --- TOGGLE PASSWORD VISIBILITY ---
       document.getElementById('toggle-password').addEventListener('click', function() {
         const passwordInput = document.getElementById('login-password');
+        if (passwordInput.type === "password") {
+          passwordInput.type = "text";
+          this.textContent = "visibility";
+        } else {
+          passwordInput.type = "password";
+          this.textContent = "visibility_off";
+        }
+      });
+      document.getElementById('toggle-reg-password').addEventListener('click', function() {
+        const passwordInput = document.getElementById('register-password');
+        if (passwordInput.type === "password") {
+          passwordInput.type = "text";
+          this.textContent = "visibility";
+        } else {
+          passwordInput.type = "password";
+          this.textContent = "visibility_off";
+        }
+      });
+      document.getElementById('toggle-new-password').addEventListener('click', function() {
+        const passwordInput = document.getElementById('new-password');
         if (passwordInput.type === "password") {
           passwordInput.type = "text";
           this.textContent = "visibility";
@@ -166,12 +361,41 @@
 
       const SERVER_URL = 'https://b200.tagfans.com:5301';
 
+      // --- SWITCH BETWEEN SECTIONS ---
+      document.getElementById("register-link").addEventListener("click", function() {
+        document.getElementById("login-container").style.display = "none";
+        document.getElementById("register-container").style.display = "flex";
+      });
+      document.getElementById("forgot-link").addEventListener("click", function() {
+        document.getElementById("login-container").style.display = "none";
+        document.getElementById("forgot-container").style.display = "flex";
+      });
+      document.getElementById("back-login-from-register").addEventListener("click", function() {
+        document.getElementById("register-container").style.display = "none";
+        document.getElementById("register-step1").style.display = "block";
+        document.getElementById("register-step2").style.display = "none";
+        document.getElementById("register-email").value = "";
+        document.getElementById("verification-token").value = "";
+        document.getElementById("register-password").value = "";
+        document.getElementById("login-container").style.display = "flex";
+      });
+      document.getElementById("back-login-from-forgot").addEventListener("click", function() {
+        document.getElementById("forgot-container").style.display = "none";
+        document.getElementById("forgot-step1").style.display = "block";
+        document.getElementById("forgot-step2").style.display = "none";
+        document.getElementById("forgot-email").value = "";
+        document.getElementById("reset-token").value = "";
+        document.getElementById("new-password").value = "";
+        document.getElementById("login-container").style.display = "flex";
+      });
+
+      // --- LOGIN HANDLER ---
       document.getElementById("login-btn").addEventListener("click", async function () {
         const email = document.getElementById("login-email").value.trim();
         const password = document.getElementById("login-password").value.trim();
 
         if (!email || !password) {
-          M.toast({ html: translations[currentLanguage].pleaseEnterBoth, displayLength: 2000 });
+          M.toast({ html: translationsLogin[currentLanguage].pleaseEnterBoth, displayLength: 2000 });
           return;
         }
 
@@ -184,7 +408,7 @@
           const data = await response.json();
 
           if (!response.ok) {
-            M.toast({ html: data.error || translations[currentLanguage].loginFailed, displayLength: 2000 });
+            M.toast({ html: data.error || translationsLogin[currentLanguage].loginFailed, displayLength: 2000 });
             return;
           }
 
@@ -199,16 +423,122 @@
           window.location.href = redirectUrl;
         } catch (error) {
           console.error(error);
-          M.toast({ html: translations[currentLanguage].errorOccurred, displayLength: 2000 });
+          M.toast({ html: translationsLogin[currentLanguage].errorOccurred, displayLength: 2000 });
         }
       });
 
-      // Optionally add event listeners for registration and forgot password modals/pages
-      document.getElementById("register-link").addEventListener("click", function() {
-        window.location.href = "register.html?redirect=admin.html";
+      // --- REGISTER HANDLERS ---
+      // Step 1: Register
+      document.getElementById("register-btn").addEventListener("click", async function () {
+        const email = document.getElementById("register-email").value.trim();
+        if (!email) {
+          M.toast({ html: translationsRegister[currentLanguage].pleaseEnterEmail, displayLength: 2000 });
+          return;
+        }
+        try {
+          const response = await fetch(`${SERVER_URL}/api/register`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email })
+          });
+          const data = await response.json();
+          if (!response.ok) {
+            M.toast({ html: data.error || translationsRegister[currentLanguage].verificationFailed, displayLength: 2000 });
+            return;
+          }
+          M.toast({ html: translationsRegister[currentLanguage].verificationSent, displayLength: 2000 });
+          // Move to step 2
+          document.getElementById("register-step1").style.display = "none";
+          document.getElementById("register-step2").style.display = "block";
+        } catch (error) {
+          console.error(error);
+          M.toast({ html: translationsRegister[currentLanguage].errorOccurred, displayLength: 2000 });
+        }
       });
-      document.getElementById("forgot-link").addEventListener("click", function() {
-        window.location.href = "forgot.html?redirect=admin.html";
+
+      // Step 2: Verify Email and set Password
+      document.getElementById("verify-btn").addEventListener("click", async function () {
+        const token = document.getElementById("verification-token").value.trim();
+        const password = document.getElementById("register-password").value.trim();
+        if (!token || !password) {
+          M.toast({ html: translationsRegister[currentLanguage].pleaseEnterTokenAndPassword, displayLength: 2000 });
+          return;
+        }
+        try {
+          const response = await fetch(`${SERVER_URL}/api/verify-email`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token, password })
+          });
+          const data = await response.json();
+          if (!response.ok) {
+            M.toast({ html: data.error || translationsRegister[currentLanguage].verificationFailed, displayLength: 2000 });
+            return;
+          }
+          M.toast({ html: "Success: Email verified and password set. Please login.", displayLength: 2000 });
+          // After verification, return to login screen
+          document.getElementById("back-login-from-register").click();
+        } catch (error) {
+          console.error(error);
+          M.toast({ html: translationsRegister[currentLanguage].errorOccurred, displayLength: 2000 });
+        }
+      });
+
+      // --- FORGOT PASSWORD HANDLERS ---
+      // Step 1: Request reset email
+      document.getElementById("request-reset-btn").addEventListener("click", async function () {
+        const email = document.getElementById("forgot-email").value.trim();
+        if (!email) {
+          M.toast({ html: translationsForgot[currentLanguage].pleaseEnterEmail, displayLength: 2000 });
+          return;
+        }
+        try {
+          const response = await fetch(`${SERVER_URL}/api/forgot-password`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email })
+          });
+          const data = await response.json();
+          if (!response.ok) {
+            M.toast({ html: data.error || translationsForgot[currentLanguage].resetFailed, displayLength: 2000 });
+            return;
+          }
+          M.toast({ html: translationsForgot[currentLanguage].resetEmailSent, displayLength: 2000 });
+          // Move to step 2
+          document.getElementById("forgot-step1").style.display = "none";
+          document.getElementById("forgot-step2").style.display = "block";
+        } catch (error) {
+          console.error(error);
+          M.toast({ html: translationsForgot[currentLanguage].errorOccurred, displayLength: 2000 });
+        }
+      });
+
+      // Step 2: Reset password
+      document.getElementById("reset-password-btn").addEventListener("click", async function () {
+        const token = document.getElementById("reset-token").value.trim();
+        const newPassword = document.getElementById("new-password").value.trim();
+        if (!token || !newPassword) {
+          M.toast({ html: translationsForgot[currentLanguage].pleaseEnterTokenAndNewPassword, displayLength: 2000 });
+          return;
+        }
+        try {
+          const response = await fetch(`${SERVER_URL}/api/reset-password`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token, newPassword })
+          });
+          const data = await response.json();
+          if (!response.ok) {
+            M.toast({ html: data.error || translationsForgot[currentLanguage].resetFailed, displayLength: 2000 });
+            return;
+          }
+          M.toast({ html: "Success: Password has been reset. Please login.", displayLength: 2000 });
+          // After reset, return to login screen
+          document.getElementById("back-login-from-forgot").click();
+        } catch (error) {
+          console.error(error);
+          M.toast({ html: translationsForgot[currentLanguage].errorOccurred, displayLength: 2000 });
+        }
       });
     </script>
   </body>
