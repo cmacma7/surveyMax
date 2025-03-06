@@ -16,6 +16,7 @@ const crypto = require("crypto");
 const { SESClient, SendRawEmailCommand } = require("@aws-sdk/client-ses");
 // NEW: Require JSON Web Token package.
 const jwt = require("jsonwebtoken");
+const { VM } = require('vm2');
 
 
 // used by llm 
@@ -96,7 +97,14 @@ const surveySchema = new mongoose.Schema({
   surveyTitle: { type: String },
   bannerImage: { type: String },
   surveyItems: { type: Array, default: [] },
-  counter: { type: Number, default: 0 }
+  counter: { type: Number, default: 0 },
+  eventTriggers: [{
+    name: String,
+    conditionType: String, // "starThreshold", "answerMatch", "timeBased"
+    parameters: mongoose.Schema.Types.Mixed,
+    script: String,
+    createdAt: { type: Date, default: Date.now }
+  }]
 }, { timestamps: true });
 
 const SurveySchema = mongoose.model("SurveySchema", surveySchema);
@@ -596,51 +604,8 @@ app.post("/api/add-channel-admin", async (req, res) => {
   }
 });
 
-// NEW: Endpoint to list all channels that a user can admin.
-app.post("/api/list-admin", async (req, res) => {
-  let { userId, email } = req.body;
-  if (!userId && !email) {
-    return res.status(400).json({ error: "Either userId or email is required." });
-  }
-  try {
-    if (!userId && email) {
-      const user = await User.findOne({ email });
-      if (!user) {
-        return res.status(400).json({ error: "User not found with provided email." });
-      }
-      userId = user._id;
-    }
-    const adminDoc = await AdminChannel.findOne({ userId });
-    if (!adminDoc || adminDoc.channels.length === 0) {
-      return res.status(200).json({ channels: [] });
-    }
-    // Get channel info from channelInfo collection.
-    const channels = await ChannelInfo.find({ channelId: { $in: adminDoc.channels } });
-    return res.status(200).json({ channels });
-  } catch (err) {
-    console.error("Error in listAdmin:", err);
-    return res.status(500).json({ error: "Internal server error." });
-  }
-});
 
-// Socket.IO event handlers.
-io.on("connection", (socket) => {
-  console.log("User connected:", socket.id);
-
-  // Listen for joinRoom event
-  socket.on("joinRoom", (channelId) => {
-    socket.join(channelId);
-    console.log(`Socket ${socket.id} joined room ${channelId}`);
-  });
-
-  // When a message is sent from a client.
-  socket.on("sendMessage", async (message) => {
-    const { channelId } = message;
-    if (!channelId) {
-      console.error("Message does not contain channelId", message);
-      return;
-    }
-
+async function sendAndNotify(socket, channelId, message){
     // Save the message to MongoDB
     try {
       await Message.create(message)
@@ -650,7 +615,10 @@ io.on("connection", (socket) => {
     }
 
     // Broadcast the message only to the room (excluding sender)
-    socket.to(channelId).emit("receiveMessage", message);
+    if (socket)
+      socket.to(channelId).emit("receiveMessage", message);
+    else 
+      io.to(channelId).emit("receiveMessage", message);
     console.log(`Broadcast message to room ${channelId}`);
 
     // Prepare remote push notifications for registered devices (if needed)
@@ -683,6 +651,59 @@ io.on("connection", (socket) => {
         console.error(error);
       }
     }
+
+
+}
+
+
+
+// NEW: Endpoint to list all channels that a user can admin.
+app.post("/api/list-admin", async (req, res) => {
+  let { userId, email } = req.body;
+  if (!userId && !email) {
+    return res.status(400).json({ error: "Either userId or email is required." });
+  }
+  try {
+    if (!userId && email) {
+      const user = await User.findOne({ email });
+      if (!user) {
+        return res.status(400).json({ error: "User not found with provided email." });
+      }
+      userId = user._id;
+    }
+    const adminDoc = await AdminChannel.findOne({ userId });
+    console.log(adminDoc);
+    if (!adminDoc || adminDoc.channels.length === 0) {
+      return res.status(200).json({ channels: [] });
+    }
+    // Get channel info from channelInfo collection.
+    const channels = await ChannelInfo.find({ channelId: { $in: adminDoc.channels } });
+    return res.status(200).json({ channels });
+  } catch (err) {
+    console.error("Error in listAdmin:", err);
+    return res.status(500).json({ error: "Internal server error." });
+  }
+});
+
+// Socket.IO event handlers.
+io.on("connection", (socket) => {
+  console.log("User connected:", socket.id);
+
+  // Listen for joinRoom event
+  socket.on("joinRoom", (channelId) => {
+    socket.join(channelId);
+    console.log(`Socket ${socket.id} joined room ${channelId}`);
+  });
+
+  // When a message is sent from a client.
+  socket.on("sendMessage", async (message) => {
+    const { channelId } = message;
+    if (!channelId) {
+      console.error("Message does not contain channelId", message);
+      return;
+    }
+
+    sendAndNotify(socket, channelId, message);
   });
 
   socket.on("disconnect", () => {
@@ -769,55 +790,104 @@ app.post("/api/send-message", async (req, res) => {
 
 
 // NEW: API endpoint to handle general data submissions (e.g., surveys)
-app.post("/api/send-data", async(req, res) => {
-    // The client must send data with at least a _type and a _channelId field.
-    const payload = req.body;
-    if (!payload._type) {
-        return res.status(400).json({
-            error: "_type field is required."
-        });
-    }
+app.post("/api/send-data", async (req, res) => {
+  const payload = req.body;
+  if (!payload._type) {
+    return res.status(400).json({ error: "_type field is required." });
+  }
 
-    if (payload._type == 'survey') {
-      const survey = await SurveySchema.findOne({
-          _id: payload._typeId
-      });
-      if (!survey) {
-          return res.status(400).json({
-              error: "Invalid survey id."
-          });
+  if (payload._type === 'survey') {
+    const survey = await SurveySchema.findOne({ _id: payload._typeId });
+    if (!survey) {
+      return res.status(400).json({ error: "Invalid survey id." });
+    }
+  }
+
+  // Always generate a new unique _id for the document.
+  payload._id = uuidv4();
+
+  try {
+    const newData = new GeneralData(payload);
+    await newData.save();
+    //console.log(`Saved ${payload._type} data with id ${payload._id}`);
+
+    // If _typeId is provided, also send a message to that channel.
+    // console.log(payload);
+    if (payload._channelId) {
+
+        // test whether we should send notification
+      if (payload._type === 'survey') {
+        const survey = await SurveySchema.findById(payload._typeId);
+        // console.log(survey);
+        if (survey.eventTriggers?.length > 0) {
+          for (const trigger of survey.eventTriggers) {
+            const vm = new VM({
+              timeout: 1000,
+              sandbox: {
+                surveyData: payload,
+                fetchHistoricalData: async () => {
+                  return GeneralData.find({ _typeId: payload._typeId });
+                }
+              }
+            });
+            
+            try {
+              const checkCondition = vm.run(trigger.script);
+              console.log('****',payload);
+              const result = await checkCondition(payload);
+              if (result) {
+                // Trigger your event handling here
+                console.log('Event triggered:', result);
+                const message = {
+                  text: result,
+                  user: { _id: "system" },
+                  channelId: payload._channelId,
+                  createdAt: new Date().toISOString(),
+                  _id: uuidv4(),
+                };
+
+                sendAndNotify(null, message.channelId, message);
+                
+
+
+
+              }
+            } catch (err) {
+              console.error('Error executing trigger:', err);
+            }
+          }
+        }
       }
-    }
-    // NEW: Check if the provided _channelId exists in ChannelInfo
-    /*
-    const channel = await ChannelInfo.findOne({
-        channelId: payload._channelId
-    });
-    if (!channel) {
-        return res.status(400).json({
-            error: "Invalid channel id."
-        });
-    }
-    */
-    // Always generate a new unique _id for the document,
-    // even if an _id was provided by the client.
-    payload._id = uuidv4();
 
-    try {
-        const newData = new GeneralData(payload);
-        await newData.save();
-        console.log(`Saved ${payload._type} data with id ${payload._id}`);
-        return res.status(200).json({
-            success: true,
-            data: newData
-        });
-    } catch (err) {
-        console.error("Error saving general data:", err);
-        return res.status(500).json({
-            error: "Internal server error."
-        });
+
+      /*  // below is the simple got data and send logic
+      const message = {
+        text: `New ${payload._type} data submitted.`,
+        user: { _id: "system" },
+        channelId: payload._channelId,
+        createdAt: new Date().toISOString(),
+        _id: uuidv4(),
+      };
+
+      try {
+        await Message.create(message);
+        console.log(`Stored message in channel ${message.channelId}:`, message);
+      } catch (err) {
+        console.error("Error saving message from send-data:", err);
+      }
+
+      io.to(message.channelId).emit("receiveMessage", message);
+      console.log(`Broadcast message to room ${message.channelId}`);
+      */
     }
+
+    return res.status(200).json({ success: true, data: newData });
+  } catch (err) {
+    console.error("Error saving general data:", err);
+    return res.status(500).json({ error: "Internal server error." });
+  }
 });
+
 
 // NEW: API endpoint to read general data based on _channelId, _storeId, and _type
 app.get("/api/read-data", async (req, res) => {
@@ -962,6 +1032,61 @@ app.patch("/api/survey/:id/counter", async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
+
+
+/************************************
+ * Survey Event Trigger functions
+ */
+app.post("/api/survey/:id/triggers", async (req, res) => {
+  try {
+    const survey = await SurveySchema.findByIdAndUpdate(
+      req.params.id,
+      { $push: { eventTriggers: req.body } },
+      { new: true }
+    );
+    res.json(survey.eventTriggers);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get("/api/survey/:id/triggers", async (req, res) => {
+  try {
+    const survey = await SurveySchema.findById(req.params.id);
+    res.json(survey.eventTriggers || []);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete("/api/survey/:surveyId/triggers/:triggerId", async (req, res) => {
+  try {
+    const survey = await SurveySchema.findById(req.params.surveyId);
+    if (!survey) {
+      return res.status(404).json({ error: "Survey not found" });
+    }
+    
+    // Remove the trigger by filtering it out
+    const triggerId = req.params.triggerId;
+    const originalLength = survey.eventTriggers.length;
+    survey.eventTriggers = survey.eventTriggers.filter(trigger => {
+      // Ensure trigger._id is a string (or convert if necessary)
+      return trigger._id.toString() !== triggerId;
+    });
+    
+    if (survey.eventTriggers.length === originalLength) {
+      return res.status(404).json({ error: "Trigger not found" });
+    }
+
+    await survey.save();
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Error deleting trigger:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 
 
 /************************************* 

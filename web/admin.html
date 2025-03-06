@@ -633,6 +633,58 @@
   </div>
 </div>
 
+
+<!-- Survey Event Triggers Modal -->
+<div id="eventTriggersModal" class="modal">
+  <div class="modal-content">
+    <h4>Event Triggers</h4>
+    <div id="triggersList"></div>
+    <div class="row">
+      <div class="input-field col s12">
+        <select id="triggerType">
+          <option value="starThreshold">Star Rating Threshold</option>
+          <option value="answerMatch">Specific Answer</option>
+          <option value="timeBased">Time-based Condition</option>
+        </select>
+        <label>Trigger Type</label>
+      </div>
+    </div>
+    <div id="triggerConfig">
+      <!-- Star Rating Config -->
+      <div class="trigger-config" data-type="starThreshold">
+        <div class="row">
+          <div class="input-field col s6">
+            <input type="number" id="starThreshold" step="0.1">
+            <label>Threshold (stars)</label>
+          </div>
+          <div class="input-field col s6">
+            <input type="number" id="starPercentage">
+            <label>Percentage (%)</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Answer Match Config -->
+      <div class="trigger-config" data-type="answerMatch">
+        <div class="row">
+          <div class="input-field col s6">
+            <select id="targetQuestion"></select>
+            <label>Question</label>
+          </div>
+          <div class="input-field col s6">
+            <input type="text" id="targetAnswer">
+            <label>Expected Answer</label>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn green" onclick="saveTrigger()">Save Trigger</button>
+    </div>
+  </div>
+</div>
+
+
 <!-- Full Page Survey Data Summary -->
 <div id="surveyDataPage" class="full-page-overlay">
   <div class="page-header">
@@ -730,6 +782,12 @@
                 </button>
               </div>
           
+              
+              <button class="btn grey waves-effect waves-light" onclick="showEventTriggers()">
+                <i class="material-icons left">notifications</i>
+                <span>Event Triggers</span>
+              </button>
+
               <!-- Right side button: Generate & Go to Survey -->
               <div class="right-buttons">
                 <button
@@ -1119,7 +1177,7 @@
               }
           }
           updateNavTitle();
-          
+
           if (CurrentSurveySchemaId === "create_new") {
               CurrentSurveySchemaId = undefined;
           } else if (CurrentSurveySchemaId) {
@@ -1339,7 +1397,14 @@
           });
 
 
-
+          const modalElem = document.getElementById('eventTriggersModal');
+          M.Modal.init(modalElem, {
+            onOpenStart: () => {
+              // When modal opens, initialize the select elements
+              M.FormSelect.init(document.querySelectorAll('select'));
+              loadTriggerConfig();
+            }
+          });
 
 
 
@@ -3641,6 +3706,248 @@ function closeSurveyDataPage() {
   const page = document.getElementById("surveyDataPage");
   page.classList.remove("active");
 }
+
+
+
+
+/*******************************************
+ * Survey Event trigger funtions 
+ */
+let currentTriggers = [];
+
+async function showEventTriggers() {
+  // Open the modal
+  const modal = M.Modal.getInstance(document.getElementById('eventTriggersModal'));
+  modal.open();
+
+  // Load triggers if we have a survey selected
+  if (CurrentSurveySchemaId) {
+    try {
+      const response = await fetch(`${BASE_URL}/api/survey/${CurrentSurveySchemaId}/triggers`);
+      currentTriggers = await response.json();
+      renderTriggersList();
+    } catch (error) {
+      console.error('Error loading triggers:', error);
+      M.toast({ html: 'Failed to load triggers', classes: 'red' });
+    }
+  }
+}
+
+function renderTriggersList() {
+  const container = document.getElementById('triggersList');
+  container.innerHTML = currentTriggers.map(trigger => `
+    <div class="card-panel">
+      <h6>${trigger.name}</h6>
+      <p>Type: ${trigger.conditionType}</p>
+      <pre>${trigger.script}</pre>
+      <button class="btn red" onclick="deleteTrigger('${trigger._id}')">Delete</button>
+    </div>
+  `).join('');
+}
+
+async function saveTrigger() {
+  const type = document.getElementById('triggerType').value;
+  let script, params = {};
+
+  if (type === 'starThreshold') {
+    params = {
+      threshold: parseFloat(document.getElementById('starThreshold').value),
+      percentage: parseFloat(document.getElementById('starPercentage').value)
+    };
+    script = generateStarThresholdScript(params);
+  } else if (type === 'answerMatch') {
+    params = {
+      questionId: document.getElementById('targetQuestion').value,
+      answer: document.getElementById('targetAnswer').value
+    };
+    script = generateAnswerMatchScript(params);
+  }
+
+  const response = await fetch(`${BASE_URL}/api/survey/${CurrentSurveySchemaId}/triggers`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: `Trigger ${currentTriggers.length + 1}`,
+      conditionType: type,
+      parameters: params,
+      script: script
+    })
+  });
+  
+  currentTriggers = await response.json();
+  renderTriggersList();
+}
+
+
+async function deleteTrigger(triggerId) {
+
+  const response = await fetch(`${BASE_URL}/api/survey/${CurrentSurveySchemaId}/triggers/${triggerId}`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      
+    })
+  });
+  
+  let result = await response.json();
+  if (result?.success){
+    currentTriggers = currentTriggers.filter(item => item._id !== triggerId);
+  }
+  renderTriggersList();
+}
+
+
+
+function generateStarThresholdScript(params) {
+  return `
+    const threshold = ${params.threshold};
+    const requiredPercentage = ${params.percentage};
+
+    (function() {
+      return async function checkCondition(surveyData) {
+        const starQuestions = surveyData.data.filter(q => 
+          q.questionType === 'stars' && q.answer < threshold
+        );
+        
+        const percentage = (starQuestions.length / surveyData.data.length) * 100;
+        if (percentage >= requiredPercentage) {
+          return \`Low star ratings detected: \${percentage.toFixed(1)}% of questions below \${threshold} stars\`;
+        }
+        return null;
+      };
+    })();
+  `;
+}
+
+
+function generateAnswerMatchScript(params) {
+  return `
+    (function() {
+      async function checkCondition(surveyData) {
+        const targetQuestion = surveyData.data.find(q => 
+          q.id === '${params.questionId}' || q._id === '${params.questionId}'
+        );
+      
+        if (targetQuestion && targetQuestion.answer === '${params.answer}') {
+          return \`Condition met: Question '\${targetQuestion.questionText}' answered with '\${targetQuestion.answer}'\`;
+        }
+        return null;
+      }
+      
+      return checkCondition;
+    })();
+  `;
+}
+
+
+
+
+
+function loadTriggerConfig() {
+  // Clear previous config
+  const configContainer = document.getElementById('triggerConfig');
+  configContainer.innerHTML = '';
+
+  // Add configuration panels for each trigger type
+  const triggerTypes = {
+    starThreshold: `
+      <div class="row">
+        <div class="input-field col s6">
+          <input type="number" id="starThreshold" step="0.1" min="1" max="5">
+          <label>Threshold (stars)</label>
+        </div>
+        <div class="input-field col s6">
+          <input type="number" id="starPercentage" min="0" max="100">
+          <label>Percentage (%)</label>
+        </div>
+      </div>
+    `,
+    answerMatch: `
+      <div class="row">
+        <div class="input-field col s6">
+          <select id="targetQuestion"></select>
+          <label>Question</label>
+        </div>
+        <div class="input-field col s6">
+          <input type="text" id="targetAnswer">
+          <label>Expected Answer</label>
+        </div>
+      </div>
+    `,
+    timeBased: `
+      <div class="row">
+        <div class="input-field col s6">
+          <input type="number" id="timeWindow" min="1">
+          <label>Time Window (hours)</label>
+        </div>
+        <div class="input-field col s6">
+          <input type="number" id="minimumCount">
+          <label>Minimum Count</label>
+        </div>
+      </div>
+    `
+  };
+
+  // Add the config panels to the modal
+  for (const [type, html] of Object.entries(triggerTypes)) {
+    const div = document.createElement('div');
+    div.className = 'trigger-config';
+    div.dataset.type = type;
+    div.innerHTML = html;
+    configContainer.appendChild(div);
+  }
+
+  // Initialize Materialize components
+  M.FormSelect.init(document.querySelectorAll('select'));
+  M.updateTextFields();
+}
+
+// Add this to handle trigger type changes
+document.getElementById('triggerType').addEventListener('change', function() {
+  const selectedType = this.value;
+  const configPanels = document.querySelectorAll('.trigger-config');
+  
+  configPanels.forEach(panel => {
+    if (panel.dataset.type === selectedType) {
+      panel.style.display = 'block';
+    } else {
+      panel.style.display = 'none';
+    }
+  });
+  
+  // If answer match is selected, populate questions
+  if (selectedType === 'answerMatch') {
+    populateQuestionSelect();
+  }
+});
+
+async function populateQuestionSelect() {
+  const select = document.getElementById('targetQuestion');
+  select.innerHTML = '<option value="" disabled selected>Select a question</option>';
+  
+  if (CurrentSurveySchemaId) {
+    try {
+      const response = await fetch(`${BASE_URL}/api/survey/${CurrentSurveySchemaId}`);
+      const survey = await response.json();
+      
+      survey.surveyItems.forEach(item => {
+        if (item.type === 'question') {
+          const option = document.createElement('option');
+          option.value = item.id;
+          option.textContent = item.questionText || `Question ${item.id}`;
+          select.appendChild(option);
+        }
+      });
+      
+      M.FormSelect.init(select);
+    } catch (error) {
+      console.error('Error loading questions:', error);
+      M.toast({ html: 'Failed to load questions', classes: 'red' });
+    }
+  }
+}
+
+
 
 
 
