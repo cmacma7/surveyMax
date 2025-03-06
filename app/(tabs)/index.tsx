@@ -116,19 +116,28 @@ const ChatScreen: React.FC<any> = ({ route, navigation }) => {
 
   useEffect(() => {
     async function initPushNotifications() {
-      const token = await registerForPushNotificationsAsync();
-      if (token) {
-        // Send the token along with userId to your backend.
-        fetch(`${SERVER_URL}/api/register-push-token`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId, token }),
-        })
-          .then((res) => res.json())
-          .then((data) => console.log("Token registration response:", data))
-          .catch((err) => console.error(err));
+      const storedPushToken = await AsyncStorage.getItem("pushToken");
+      if (!storedPushToken) {
+        const token = await registerForPushNotificationsAsync();
+        if (token) {
+          await AsyncStorage.setItem("pushToken", token);
+          // Send the token along with userId to your backend.
+          fetch(`${SERVER_URL}/api/register-push-token`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ userId, token }),
+          })
+            .then((res) => res.json())
+            .then((data) =>
+              console.log("Token registration response:", data)
+            )
+            .catch((err) => console.error(err));
+        }
+      } else {
+        console.log("Push token already registered:", storedPushToken);
       }
     }
+
     initPushNotifications();
 
     notificationListener.current = Notifications.addNotificationReceivedListener(

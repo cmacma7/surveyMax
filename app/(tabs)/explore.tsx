@@ -98,6 +98,29 @@ export default function TabTwoScreen() {
       <ThemedView style={{ padding: 20 }}>
         <ThemedText
           onPress={async () => {
+            try {
+              const pushToken = await AsyncStorage.getItem("pushToken");
+              const userId = await AsyncStorage.getItem("userId");
+              if (pushToken && userId) {
+                const response = await fetch(`${SERVER_URL}/api/logout`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ userId, token: pushToken }),
+                });
+                if (!response.ok) {
+                  // Handle non-OK responses (e.g., server errors)
+                  console.error("Logout API failed with status:", response.status);
+                  Alert.alert("Logout Error", "Failed to logout from the server. Please try again.");
+                  return; // Stop the logout process if API call failed.
+                }
+                await AsyncStorage.removeItem("pushToken");
+              }
+            } catch (error) {
+              console.error("Error during logout API call:", error);
+              Alert.alert("Logout Error", "An error occurred while logging out. Please try again.");
+              return;
+            }
+            // Clear local tokens and navigate to login.
             await AsyncStorage.removeItem("userToken");
             await AsyncStorage.removeItem("userId");
             router.push("/login");
@@ -105,8 +128,8 @@ export default function TabTwoScreen() {
           style={{ color: 'red', textAlign: 'center', paddingVertical: 10 }}
         >
           Logout
-        </ThemedText>
-      </ThemedView>
+      </ThemedText>
+    </ThemedView>
     </ParallaxScrollView>
   );
 }

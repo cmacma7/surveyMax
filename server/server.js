@@ -389,6 +389,36 @@ app.post("/api/login", async (req, res) => {
   }
 });
 
+
+// NEW: API endpoint for user logout.
+// Expects { userId, token } in the request body.
+// Removes the specified push token from the user's AdminChannel record.
+app.post("/api/logout", async (req, res) => {
+  const { userId, token } = req.body;
+  if (!userId || !token) {
+    return res.status(400).json({ error: "userId and token are required." });
+  }
+  try {
+    // Remove the provided push token from the user's pushTokens array
+    const updatedAdmin = await AdminChannel.findOneAndUpdate(
+      { userId },
+      { $pull: { pushTokens: token } },
+      { new: true }
+    );
+    
+    if (!updatedAdmin) {
+      return res.status(404).json({ error: "User not found or no push tokens to remove." });
+    }
+    
+    console.log(`Removed push token ${token} for user ${userId}`);
+    return res.status(200).json({ success: true, message: "Logout successful" });
+  } catch (err) {
+    console.error("Error during logout:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+
 // NEW: API endpoint for forgot password.
 // Expects { email } in the request body and sends a reset email.
 app.post("/api/forgot-password", async (req, res) => {
