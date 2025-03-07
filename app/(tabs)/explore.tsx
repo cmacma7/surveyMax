@@ -1,4 +1,5 @@
-import { StyleSheet, Image, Platform } from 'react-native';
+import React, { useState } from 'react';
+import { StyleSheet, Image, Platform, View, Button, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 
@@ -12,8 +13,17 @@ import { IconSymbol } from '@/components/ui/IconSymbol';
 const SERVER_URL = 'https://b200.tagfans.com:5301';
 // const SERVER_URL = 'http://192.168.100.125:5300';
 
+import { t, setLanguage } from "./translations";
+
 export default function TabTwoScreen() {
   const router = useRouter();
+  const [lang, setLang] = useState("en");
+
+  const updateLanguage = (newLang: string) => {
+    setLanguage(newLang);
+    setLang(newLang);
+  };
+
   return (
     <ParallaxScrollView
       headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
@@ -26,76 +36,69 @@ export default function TabTwoScreen() {
         />
       }>
       <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Explore</ThemedText>
+        <ThemedText type="title">{t('explore')}</ThemedText>
       </ThemedView>
-      <ThemedText>This app includes example code to help you get started.</ThemedText>
-      <Collapsible title="File-based routing">
+      <ThemedText>{t('exploreDescription')}</ThemedText>
+      <Collapsible title={t('fileBasedRouting')}>
         <ThemedText>
-          This app has two screens:{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/explore.tsx</ThemedText>
+          {t('fileBasedRoutingDescription')}
         </ThemedText>
         <ThemedText>
-          The layout file in <ThemedText type="defaultSemiBold">app/(tabs)/_layout.tsx</ThemedText>{' '}
-          sets up the tab navigator.
+          {t('layoutFileDescription')}
         </ThemedText>
         <ExternalLink href="https://docs.expo.dev/router/introduction">
-          <ThemedText type="link">Learn more</ThemedText>
+          <ThemedText type="link">{t('learnMore')}</ThemedText>
         </ExternalLink>
       </Collapsible>
-      <Collapsible title="Android, iOS, and web support">
+      <Collapsible title={t('platformSupport')}>
         <ThemedText>
-          You can open this project on Android, iOS, and the web. To open the web version, press{' '}
-          <ThemedText type="defaultSemiBold">w</ThemedText> in the terminal running this project.
+          {t('platformSupportDescription')}
         </ThemedText>
       </Collapsible>
-      <Collapsible title="Images">
+      <Collapsible title={t('images')}>
         <ThemedText>
-          For static images, you can use the <ThemedText type="defaultSemiBold">@2x</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">@3x</ThemedText> suffixes to provide files for
-          different screen densities
+          {t('imagesDescription')}
         </ThemedText>
         <Image source={require('@/assets/images/react-logo.png')} style={{ alignSelf: 'center' }} />
         <ExternalLink href="https://reactnative.dev/docs/images">
-          <ThemedText type="link">Learn more</ThemedText>
+          <ThemedText type="link">{t('learnMore')}</ThemedText>
         </ExternalLink>
       </Collapsible>
-      <Collapsible title="Custom fonts">
+      <Collapsible title={t('customFonts')}>
         <ThemedText>
-          Open <ThemedText type="defaultSemiBold">app/_layout.tsx</ThemedText> to see how to load{' '}
-          <ThemedText style={{ fontFamily: 'SpaceMono' }}>
-            custom fonts such as this one.
-          </ThemedText>
+          {t('customFontsDescription')}
         </ThemedText>
         <ExternalLink href="https://docs.expo.dev/versions/latest/sdk/font">
-          <ThemedText type="link">Learn more</ThemedText>
+          <ThemedText type="link">{t('learnMore')}</ThemedText>
         </ExternalLink>
       </Collapsible>
-      <Collapsible title="Light and dark mode components">
+      <Collapsible title={t('lightDarkMode')}>
         <ThemedText>
-          This template has light and dark mode support. The{' '}
-          <ThemedText type="defaultSemiBold">useColorScheme()</ThemedText> hook lets you inspect
-          what the user's current color scheme is, and so you can adjust UI colors accordingly.
+          {t('lightDarkModeDescription')}
         </ThemedText>
         <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-          <ThemedText type="link">Learn more</ThemedText>
+          <ThemedText type="link">{t('learnMore')}</ThemedText>
         </ExternalLink>
       </Collapsible>
-      <Collapsible title="Animations">
+      <Collapsible title={t('animations')}>
         <ThemedText>
-          This template includes an example of an animated component. The{' '}
-          <ThemedText type="defaultSemiBold">components/HelloWave.tsx</ThemedText> component uses
-          the powerful <ThemedText type="defaultSemiBold">react-native-reanimated</ThemedText>{' '}
-          library to create a waving hand animation.
+          {t('animationsDescription')}
         </ThemedText>
         {Platform.select({
           ios: (
             <ThemedText>
-              The <ThemedText type="defaultSemiBold">components/ParallaxScrollView.tsx</ThemedText>{' '}
-              component provides a parallax effect for the header image.
+              {t('parallaxScrollViewDescription')}
             </ThemedText>
           ),
         })}
+      </Collapsible>
+      <Collapsible title={t('languageSettings')}>
+        <ThemedText>{t('chooseLanguage')}</ThemedText>
+        <View style={styles.languageContainer}>
+          <Button title="English" onPress={() => updateLanguage("en")} />
+          <Button title="中文" onPress={() => updateLanguage("zh")} />
+          <Button title="日本語" onPress={() => updateLanguage("ja")} />
+        </View>
       </Collapsible>
       {/* NEW: Logout button added here */}
       <ThemedView style={{ padding: 20 }}>
@@ -113,14 +116,14 @@ export default function TabTwoScreen() {
                 if (!response.ok) {
                   // Handle non-OK responses (e.g., server errors)
                   console.error("Logout API failed with status:", response.status);
-                  Alert.alert("Logout Error", "Failed to logout from the server. Please try again.");
+                  Alert.alert(t('logoutErrorTitle'), t('failedLogoutMessage'));
                   return; // Stop the logout process if API call failed.
                 }
                 await AsyncStorage.removeItem("pushToken");
               }
             } catch (error) {
               console.error("Error during logout API call:", error);
-              Alert.alert("Logout Error", "An error occurred while logging out. Please try again.");
+              Alert.alert(t('logoutErrorTitle'), t('logoutErrorMessage'));
               return;
             }
             // Clear local tokens and navigate to login.
@@ -130,7 +133,7 @@ export default function TabTwoScreen() {
           }}
           style={{ color: 'red', textAlign: 'center', paddingVertical: 10 }}
         >
-          Logout
+          {t('logout')}
       </ThemedText>
     </ThemedView>
     </ParallaxScrollView>
@@ -147,5 +150,10 @@ const styles = StyleSheet.create({
   titleContainer: {
     flexDirection: 'row',
     gap: 8,
+  },
+  languageContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginVertical: 10,
   },
 });

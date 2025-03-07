@@ -32,6 +32,8 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 // NEW: Import AsyncStorage for token persistence.
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+import { t } from "./translations";
+
 // Configure the notification handler.
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -57,13 +59,13 @@ async function registerForPushNotificationsAsync() {
       finalStatus = status;
     }
     if (finalStatus !== "granted") {
-      alert("Failed to get push token for push notifications!");
+      alert(t('failedPushToken'));
       return;
     }
     token = (await Notifications.getExpoPushTokenAsync()).data;
     console.log("Expo Push Token:", token);
   } else {
-    alert("Must use a physical device for Push Notifications");
+    alert(t('mustUsePhysicalDevice'));
   }
   if (Platform.OS === "android") {
     await Notifications.setNotificationChannelAsync("default", {
@@ -235,7 +237,7 @@ const ChatScreen: React.FC<any> = ({ route, navigation }) => {
         messages={messages}
         onSend={onSend}
         user={{ _id: userId }}
-        placeholder="Type a message..."
+        placeholder={t('typeMessage')}
         renderActions={renderCustomActions}
         textInputProps={{
           multiline: true,
@@ -400,7 +402,7 @@ const ChatroomListScreen: React.FC<any> = ({ navigation, route }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>Available Chatrooms</Text>
+      <Text style={styles.title}>{t('availableChatrooms')}</Text>
       <FlatList
         data={chatrooms}
         keyExtractor={(item) => item.id}
@@ -423,7 +425,7 @@ const LoginScreen: React.FC<any> = ({ navigation }) => {
   // On success, store the token and userId so that the user remains logged in.
   const handleLogin = async () => {
     if (email.trim() === "" || password.trim() === "") {
-      Alert.alert("Error", "Please enter both email and password");
+      Alert.alert(t('Error'), t('pleaseEnterEmailPassword'));
       return;
     }
     try {
@@ -434,7 +436,7 @@ const LoginScreen: React.FC<any> = ({ navigation }) => {
       });
       const data = await response.json();
       if (!response.ok) {
-        Alert.alert("Error", data.error || "Login failed");
+        Alert.alert(t('Error'), data.error || t('loginFailed'));
         return;
       }
       // Store token and userId so user doesn't need to login next time.
@@ -445,7 +447,7 @@ const LoginScreen: React.FC<any> = ({ navigation }) => {
       navigation.navigate("ChatroomList", { userId: data.userId });
     } catch (err) {
       console.error(err);
-      Alert.alert("Error", "An error occurred during login.");
+      Alert.alert(t('Error'), t('loginError'));
     }
   };
 
@@ -458,9 +460,9 @@ const LoginScreen: React.FC<any> = ({ navigation }) => {
         keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 20}
       >
         <View style={styles.loginContainer}>
-          <Text style={styles.title}>Login</Text>
+          <Text style={styles.title}>{t('login')}</Text>
           <TextInput
-            placeholder="Email"
+            placeholder={t('email')}
             value={email}
             onChangeText={setEmail}
             style={styles.input}
@@ -468,21 +470,21 @@ const LoginScreen: React.FC<any> = ({ navigation }) => {
             keyboardType="email-address"
           />
           <TextInput
-            placeholder="Password"
+            placeholder={t('password')}
             value={password}
             onChangeText={setPassword}
             style={styles.input}
             secureTextEntry
           />
-          <Button title="Login" onPress={handleLogin} />
+          <Button title={t('login')} onPress={handleLogin} />
         {/* New: Buttons to navigate to Register and Forgot Password screens */}
           <View style={{ marginTop: 10 }}>
             <Button
-              title="Create Account"
+              title={t('createAccount')}
               onPress={() => navigation.navigate("Register")}
             />
             <Button
-              title="Forgot Password"
+              title={t('forgotPassword')}
               onPress={() => navigation.navigate("ForgotPassword")}
             />
           </View>
@@ -501,7 +503,7 @@ const RegisterScreen: React.FC<any> = ({ navigation }) => {
 
   const handleRegister = async () => {
     if (email.trim() === "") {
-      Alert.alert("Error", "Please enter email");
+      Alert.alert(t('Error'), t('pleaseEnterEmail'));
       return;
     }
     try {
@@ -512,20 +514,20 @@ const RegisterScreen: React.FC<any> = ({ navigation }) => {
       });
       const data = await response.json();
       if (!response.ok) {
-        Alert.alert("Error", data.error || "Registration failed");
+        Alert.alert(t('Error'), data.error || t('registrationFailed'));
         return;
       }
-      Alert.alert("Success", "Verification email sent. Please check your email.");
+      Alert.alert(t('Success'), t('verificationEmailSent'));
       setStep(2);
     } catch (err) {
       console.error(err);
-      Alert.alert("Error", "An error occurred during registration.");
+      Alert.alert(t('Error'), t('registrationError'));
     }
   };
 
   const handleVerify = async () => {
     if (token.trim() === "" || password.trim() === "") {
-      Alert.alert("Error", "Please enter token and password");
+      Alert.alert(t('Error'), t('pleaseEnterTokenPassword'));
       return;
     }
     try {
@@ -536,51 +538,51 @@ const RegisterScreen: React.FC<any> = ({ navigation }) => {
       });
       const data = await response.json();
       if (!response.ok) {
-        Alert.alert("Error", data.error || "Verification failed");
+        Alert.alert(t('Error'), data.error || t('verificationFailed'));
         return;
       }
-      Alert.alert("Success", "Email verified and password set. Please login.");
+      Alert.alert(t('Success'), t('emailVerified'));
       navigation.navigate("Login");
     } catch (err) {
       console.error(err);
-      Alert.alert("Error", "An error occurred during email verification.");
+      Alert.alert(t('Error'), t('emailVerificationError'));
     }
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.loginContainer}>
-        <Text style={styles.title}>Register</Text>
+        <Text style={styles.title}>{t('register')}</Text>
         {step === 1 && (
           <>
             <TextInput
-              placeholder="Email"
+              placeholder={t('email')}
               value={email}
               onChangeText={setEmail}
               style={styles.input}
               autoCapitalize="none"
               keyboardType="email-address"
             />
-            <Button title="Register" onPress={handleRegister} />
+            <Button title={t('register')} onPress={handleRegister} />
           </>
         )}
         {step === 2 && (
           <>
             <TextInput
-              placeholder="Verification Token"
+              placeholder={t('verificationToken')}
               value={token}
               onChangeText={setToken}
               style={styles.input}
               autoCapitalize="none"
             />
             <TextInput
-              placeholder="Password"
+              placeholder={t('password')}
               value={password}
               onChangeText={setPassword}
               style={styles.input}
               secureTextEntry
             />
-            <Button title="Verify Email" onPress={handleVerify} />
+            <Button title={t('verifyEmail')} onPress={handleVerify} />
           </>
         )}
       </View>
@@ -597,7 +599,7 @@ const ForgotPasswordScreen: React.FC<any> = ({ navigation }) => {
 
   const handleRequestReset = async () => {
     if (email.trim() === "") {
-      Alert.alert("Error", "Please enter email");
+      Alert.alert(t('Error'), t('pleaseEnterEmail'));
       return;
     }
     try {
@@ -608,20 +610,20 @@ const ForgotPasswordScreen: React.FC<any> = ({ navigation }) => {
       });
       const data = await response.json();
       if (!response.ok) {
-        Alert.alert("Error", data.error || "Failed to send reset email");
+        Alert.alert(t('Error'), data.error || t('failedSendResetEmail'));
         return;
       }
-      Alert.alert("Success", "Password reset email sent. Please check your email.");
+      Alert.alert(t('Success'), t('resetEmailSent'));
       setStep(2);
     } catch (err) {
       console.error(err);
-      Alert.alert("Error", "An error occurred while requesting password reset.");
+      Alert.alert(t('Error'), t('forgotPasswordError'));
     }
   };
 
   const handleResetPassword = async () => {
     if (token.trim() === "" || newPassword.trim() === "") {
-      Alert.alert("Error", "Please enter token and new password");
+      Alert.alert(t('Error'), t('pleaseEnterTokenNewPassword'));
       return;
     }
     try {
@@ -632,51 +634,51 @@ const ForgotPasswordScreen: React.FC<any> = ({ navigation }) => {
       });
       const data = await response.json();
       if (!response.ok) {
-        Alert.alert("Error", data.error || "Reset password failed");
+        Alert.alert(t('Error'), data.error || t('resetPasswordFailed'));
         return;
       }
-      Alert.alert("Success", "Password has been reset. Please login.");
+      Alert.alert(t('Success'), t('passwordResetSuccess'));
       navigation.navigate("Login");
     } catch (err) {
       console.error(err);
-      Alert.alert("Error", "An error occurred during password reset.");
+      Alert.alert(t('Error'), t('resetPasswordError'));
     }
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.loginContainer}>
-        <Text style={styles.title}>Forgot Password</Text>
+        <Text style={styles.title}>{t('forgotPassword')}</Text>
         {step === 1 && (
           <>
             <TextInput
-              placeholder="Email"
+              placeholder={t('email')}
               value={email}
               onChangeText={setEmail}
               style={styles.input}
               autoCapitalize="none"
               keyboardType="email-address"
             />
-            <Button title="Send Reset Email" onPress={handleRequestReset} />
+            <Button title={t('sendResetEmail')} onPress={handleRequestReset} />
           </>
         )}
         {step === 2 && (
           <>
             <TextInput
-              placeholder="Reset Token"
+              placeholder={t('resetToken')}
               value={token}
               onChangeText={setToken}
               style={styles.input}
               autoCapitalize="none"
             />
             <TextInput
-              placeholder="New Password"
+              placeholder={t('newPassword')}
               value={newPassword}
               onChangeText={setNewPassword}
               style={styles.input}
               secureTextEntry
             />
-            <Button title="Reset Password" onPress={handleResetPassword} />
+            <Button title={t('resetPassword')} onPress={handleResetPassword} />
           </>
         )}
       </View>
@@ -691,7 +693,7 @@ const AddChatRoomScreen: React.FC<any> = ({ navigation, route }) => {
 
   const handleAddChatRoom = async () => {
     if (channelName.trim() === "") {
-      Alert.alert("Error", "Please enter a chat room name.");
+      Alert.alert(t('Error'), t('pleaseEnterChatRoomName'));
       return;
     }
     try {
@@ -703,7 +705,7 @@ const AddChatRoomScreen: React.FC<any> = ({ navigation, route }) => {
       });
       const data = await response.json();
       if (!response.ok) {
-        Alert.alert("Error", data.error || "Failed to create chat room");
+        Alert.alert(t('Error'), data.error || t('createChatRoomFailed'));
         return;
       }
       const newChannel = data.channel;
@@ -716,28 +718,28 @@ const AddChatRoomScreen: React.FC<any> = ({ navigation, route }) => {
       });
       const adminData = await adminResponse.json();
       if (!adminResponse.ok) {
-        Alert.alert("Error", adminData.error || "Failed to add chat room to admin list");
+        Alert.alert(t('Error'), adminData.error || t('addChatRoomAdminFailed'));
         return;
       }
-      Alert.alert("Success", "Chat room created successfully.");
+      Alert.alert(t('Success'), t('chatRoomCreated'));
       navigation.goBack();
     } catch (error) {
       console.error(error);
-      Alert.alert("Error", "An error occurred while creating the chat room.");
+      Alert.alert(t('Error'), t('chatRoomCreationError'));
     }
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.loginContainer}>
-        <Text style={styles.title}>Add Chat Room</Text>
+        <Text style={styles.title}>{t('addChatRoom')}</Text>
         <TextInput
-          placeholder="Enter chat room name"
+          placeholder={t('enterChatRoomName')}
           value={channelName}
           onChangeText={setChannelName}
           style={styles.input}
         />
-        <Button title="Create Chat Room" onPress={handleAddChatRoom} />
+        <Button title={t('createChatRoom')} onPress={handleAddChatRoom} />
       </View>
     </SafeAreaView>
   );
@@ -753,7 +755,7 @@ const ChatRoomSettingsScreen: React.FC<any> = ({ route, navigation }) => {
 
   const handleChangeName = async () => {
     if (newName.trim() === "") {
-      Alert.alert("Error", "Please enter a valid channel name.");
+      Alert.alert(t('Error'), t('pleaseEnterValidChannelName'));
       return;
     }
     try {
@@ -764,20 +766,20 @@ const ChatRoomSettingsScreen: React.FC<any> = ({ route, navigation }) => {
       });
       const data = await response.json();
       if (!response.ok) {
-        Alert.alert("Error", data.error || "Failed to update channel name");
+        Alert.alert(t('Error'), data.error || t('updateChannelNameFailed'));
         return;
       }
-      Alert.alert("Success", "Channel name updated.");
+      Alert.alert(t('Success'), t('channelNameUpdated'));
       navigation.setParams({ chatroomName: newName });
     } catch (error) {
       console.error(error);
-      Alert.alert("Error", "An error occurred while updating channel name.");
+      Alert.alert(t('Error'), t('updateChannelNameError'));
     }
   };
 
   const handleInviteUser = async () => {
     if (inviteEmail.trim() === "") {
-      Alert.alert("Error", "Please enter an email to invite.");
+      Alert.alert(t('Error'), t('pleaseEnterEmailToInvite'));
       return;
     }
     try {
@@ -788,20 +790,20 @@ const ChatRoomSettingsScreen: React.FC<any> = ({ route, navigation }) => {
       });
       const data = await response.json();
       if (!response.ok) {
-        Alert.alert("Error", data.error || "Failed to invite user");
+        Alert.alert(t('Error'), data.error || t('inviteUserFailed'));
         return;
       }
-      Alert.alert("Success", "User invited successfully.");
+      Alert.alert(t('Success'), t('userInvited'));
       setInviteEmail("");
     } catch (error) {
       console.error(error);
-      Alert.alert("Error", "An error occurred while inviting user.");
+      Alert.alert(t('Error'), t('inviteUserError'));
     }
   };
 
   const handleRemoveUser = async () => {
     if (removeEmail.trim() === "") {
-      Alert.alert("Error", "Please enter an email to remove.");
+      Alert.alert(t('Error'), t('pleaseEnterEmailToRemove'));
       return;
     }
     try {
@@ -812,54 +814,54 @@ const ChatRoomSettingsScreen: React.FC<any> = ({ route, navigation }) => {
       });
       const data = await response.json();
       if (!response.ok) {
-        Alert.alert("Error", data.error || "Failed to remove user");
+        Alert.alert(t('Error'), data.error || t('removeUserFailed'));
         return;
       }
-      Alert.alert("Success", "User removed successfully.");
+      Alert.alert(t('Success'), t('userRemoved'));
       setRemoveEmail("");
     } catch (error) {
       console.error(error);
-      Alert.alert("Error", "An error occurred while removing user.");
+      Alert.alert(t('Error'), t('removeUserError'));
     }
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={{ padding: 20 }}>
-        <Text style={styles.title}>Chat Room Settings</Text>
+        <Text style={styles.title}>{t('chatRoomSettings')}</Text>
         {/* Change Channel Name */}
-        <Text style={{ marginTop: 10 }}>Change Channel Name</Text>
+        <Text style={{ marginTop: 10 }}>{t('changeChannelName')}</Text>
         <TextInput
-          placeholder="New Channel Name"
+          placeholder={t('newChannelName')}
           value={newName}
           onChangeText={setNewName}
           style={styles.input}
         />
-        <Button title="Update Name" onPress={handleChangeName} />
+        <Button title={t('updateName')} onPress={handleChangeName} />
 
         {/* Invite User */}
-        <Text style={{ marginTop: 20 }}>Invite User</Text>
+        <Text style={{ marginTop: 20 }}>{t('inviteUser')}</Text>
         <TextInput
-          placeholder="User Email"
+          placeholder={t('userEmail')}
           value={inviteEmail}
           onChangeText={setInviteEmail}
           style={styles.input}
           autoCapitalize="none"
           keyboardType="email-address"
         />
-        <Button title="Invite" onPress={handleInviteUser} />
+        <Button title={t('invite')} onPress={handleInviteUser} />
 
         {/* Remove User */}
-        <Text style={{ marginTop: 20 }}>Remove User</Text>
+        <Text style={{ marginTop: 20 }}>{t('removeUser')}</Text>
         <TextInput
-          placeholder="User Email"
+          placeholder={t('userEmail')}
           value={removeEmail}
           onChangeText={setRemoveEmail}
           style={styles.input}
           autoCapitalize="none"
           keyboardType="email-address"
         />
-        <Button title="Remove" onPress={handleRemoveUser} />
+        <Button title={t('remove')} onPress={handleRemoveUser} />
       </View>
     </SafeAreaView>
   );
@@ -890,7 +892,7 @@ const App: React.FC = () => {
   if (!initialRoute) {
     return (
       <View style={styles.container}>
-        <Text style={{ textAlign: "center", marginTop: 50 }}>Loading...</Text>
+        <Text style={{ textAlign: "center", marginTop: 50 }}>{t('loading')}</Text>
       </View>
     );
   }
@@ -914,10 +916,10 @@ const App: React.FC = () => {
           options={({ route }) => ({ title: route.params.chatroomName })}
         />
         {/* New screens for registration, forgot password, add chat room, and chat room settings */}
-        <Stack.Screen name="Register" component={RegisterScreen} options={{ title: "Register" }} />
-        <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} options={{ title: "Forgot Password" }} />
-        <Stack.Screen name="AddChatRoom" component={AddChatRoomScreen} options={{ title: "Add Chat Room" }} />
-        <Stack.Screen name="ChatRoomSettings" component={ChatRoomSettingsScreen} options={{ title: "Settings" }} />
+        <Stack.Screen name="Register" component={RegisterScreen} options={{ title: t('register') }} />
+        <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} options={{ title: t('forgotPassword') }} />
+        <Stack.Screen name="AddChatRoom" component={AddChatRoomScreen} options={{ title: t('addChatRoom') }} />
+        <Stack.Screen name="ChatRoomSettings" component={ChatRoomSettingsScreen} options={{ title: t('chatRoomSettings') }} />
       </Stack.Navigator>
   );
 };
