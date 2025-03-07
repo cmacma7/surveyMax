@@ -1,5 +1,5 @@
 import "react-native-get-random-values";
-import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
+import React, { useState, useEffect, useRef, useLayoutEffect, useMemo } from "react";
 import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
@@ -274,6 +274,7 @@ const ChatroomListScreen: React.FC<any> = ({ navigation, route }) => {
   // Modified: If route.params is undefined, try to load userId from AsyncStorage.
   const [storedUserId, setStoredUserId] = useState<string | null>(null);
   const [storedUserEmail, setStoredUserEmail] = useState<string | null>(null);
+  
   useEffect(() => {
     if (route.params) {
       if (route.params.userId) setStoredUserId(route.params.userId);
@@ -288,8 +289,11 @@ const ChatroomListScreen: React.FC<any> = ({ navigation, route }) => {
     }
   }, [route.params]);
 
+  const userIdentifier = useMemo(() => storedUserId || storedUserEmail, [storedUserId, storedUserEmail]);
+
+
   // Use userId if available; otherwise, fallback to email.
-  const userIdentifier = storedUserId || storedUserEmail;
+   
   const [chatrooms, setChatrooms] = useState<{ id: string; name: string }[]>([]);
 
   // NEW: Set headerRight with add chat room icon.
@@ -311,7 +315,7 @@ const ChatroomListScreen: React.FC<any> = ({ navigation, route }) => {
 
   const fetchChatrooms = async () => {
     if (!userIdentifier) {
-      console.error("No userId or email found.");
+      console.log("No userId or email found.");
       return;
     }
     setRefreshing(true); // Start refreshing
@@ -349,16 +353,19 @@ const ChatroomListScreen: React.FC<any> = ({ navigation, route }) => {
 
   useEffect(() => {
     fetchChatrooms();
-  }, [storedUserId, storedUserEmail]);
+  }, [userIdentifier]);
 
   useFocusEffect(
     React.useCallback(() => {
       fetchChatrooms();
-    }, [storedUserId, storedUserEmail])
+    }, [userIdentifier])
   );
 
   // Additionally, set up a socket listener to handle real-time updates:
   useEffect(() => {
+    if (!userIdentifier) {
+      return;
+    }
     const handleChatroomsUpdated = () => {
       fetchChatrooms();
     };
@@ -366,7 +373,7 @@ const ChatroomListScreen: React.FC<any> = ({ navigation, route }) => {
     return () => {
       socket.off("chatroomsUpdated", handleChatroomsUpdated);
     };
-  }, []);
+  }, [userIdentifier]);
 
 
   // Once chatrooms are fetched, join all rooms.
