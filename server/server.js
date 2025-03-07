@@ -563,11 +563,13 @@ app.post("/api/update-channel", async (req, res) => {
     if (deleteChannel === "Yes") {
       await ChannelInfo.findOneAndDelete({ channelId });
       console.log(`Channel ${channelId} deleted.`);
+      //io.emit("chatroomsUpdated");
       return res.status(200).json({ message: "Channel deleted." });
     } else {
       const update = { channelDescription };
       const options = { upsert: true, new: true, setDefaultsOnInsert: true };
       const channel = await ChannelInfo.findOneAndUpdate({ channelId }, update, options);
+      //io.emit("chatroomsUpdated");
       console.log(`Channel ${channelId} updated/created:`, channel);
       return res.status(200).json({ message: "Channel updated/created.", channel });
     }
@@ -609,6 +611,7 @@ app.post("/api/add-channel-admin", async (req, res) => {
       }
     }
     await adminDoc.save();
+    //io.emit("chatroomsUpdated");
     return res.status(200).json({ message: "Admin channels updated.", adminChannels: adminDoc });
   } catch (err) {
     console.error("Error in addChannelAdmin:", err);
