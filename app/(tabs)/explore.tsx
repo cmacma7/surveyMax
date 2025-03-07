@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, Image, Platform, View, Button, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
@@ -17,11 +17,30 @@ import { t, setLanguage } from "./translations";
 
 export default function TabTwoScreen() {
   const router = useRouter();
-  const [lang, setLang] = useState("en");
+  const [lang, setLang] = useState("zh");
+
+  useEffect(() => {
+    AsyncStorage.getItem("language").then((storedLang) => {
+      if (storedLang) {
+        setLanguage(storedLang);
+        setLang(storedLang);
+      } else {
+        // Default to Chinese if no language saved
+        setLanguage("zh");
+        setLang("zh");
+        AsyncStorage.setItem("language", "zh");
+      }
+    }).catch((err) => {
+      console.error("Failed to load language", err);
+    });
+  }, []);
 
   const updateLanguage = (newLang: string) => {
     setLanguage(newLang);
     setLang(newLang);
+    AsyncStorage.setItem("language", newLang).catch((err) => {
+      console.error("Failed to save language", err);
+    });
   };
 
   return (
