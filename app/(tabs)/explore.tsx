@@ -9,6 +9,9 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 
+const SERVER_URL = 'https://b200.tagfans.com:5301';
+// const SERVER_URL = 'http://192.168.100.125:5300';
+
 export default function TabTwoScreen() {
   const router = useRouter();
   return (
