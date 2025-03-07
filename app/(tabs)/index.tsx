@@ -1,5 +1,6 @@
 import "react-native-get-random-values";
 import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
   Text,
@@ -344,6 +345,24 @@ const ChatroomListScreen: React.FC<any> = ({ navigation, route }) => {
   useEffect(() => {
     fetchChatrooms();
   }, [storedUserId, storedUserEmail]);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchChatrooms();
+    }, [storedUserId, storedUserEmail])
+  );
+
+  // Additionally, set up a socket listener to handle real-time updates:
+  useEffect(() => {
+    const handleChatroomsUpdated = () => {
+      fetchChatrooms();
+    };
+    socket.on("chatroomsUpdated", handleChatroomsUpdated);
+    return () => {
+      socket.off("chatroomsUpdated", handleChatroomsUpdated);
+    };
+  }, []);
+
 
   // Once chatrooms are fetched, join all rooms.
   useEffect(() => {
