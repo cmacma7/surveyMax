@@ -307,11 +307,14 @@ const ChatroomListScreen: React.FC<any> = ({ navigation, route }) => {
   }, [navigation, userIdentifier]);
 
   // Sample implementation to fetch chatrooms from listAdmin endpoint.
+  const [refreshing, setRefreshing] = useState(false);
+
   const fetchChatrooms = async () => {
     if (!userIdentifier) {
       console.error("No userId or email found.");
       return;
     }
+    setRefreshing(true); // Start refreshing
     let payload = {};
     if (storedUserId) {
       payload["userId"] = storedUserId;
@@ -339,6 +342,8 @@ const ChatroomListScreen: React.FC<any> = ({ navigation, route }) => {
       }
     } catch (err) {
       console.error(err);
+    } finally {
+      setRefreshing(false); // End refreshing
     }
   };
 
@@ -394,6 +399,8 @@ const ChatroomListScreen: React.FC<any> = ({ navigation, route }) => {
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
         contentContainerStyle={styles.chatroomList}
+        onRefresh={fetchChatrooms}      // Trigger refresh when pulling down
+        refreshing={refreshing}          // Bind to the refreshing state        
       />
     </SafeAreaView>
   );
