@@ -18,13 +18,11 @@ const { SESClient, SendRawEmailCommand } = require("@aws-sdk/client-ses");
 const jwt = require("jsonwebtoken");
 const { VM } = require('vm2');
 
-
 // used by llm 
 const { Configuration, OpenAIApi } = require('openai');
 
 // load the environment variables from the .env file
 require('dotenv').config();
-
 
 // API server base URL:  This is used by email verifier for the link that user can click to verify email 
 const BASE_URL = 'http://b200.tagfans.com:5300';
@@ -45,7 +43,6 @@ const messageSchema = new mongoose.Schema({
 });
 const Message = mongoose.model("Message", messageSchema);
 
-
 // User Schema
 const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true, index: true },
@@ -56,7 +53,6 @@ const userSchema = new mongoose.Schema({
   resetPasswordExpires: { type: Date },
 });
 const User = mongoose.model("User", userSchema);
-
 
 // ChannelInfo schema
 const channelInfoSchema = new mongoose.Schema({
@@ -74,7 +70,6 @@ const adminChannelSchema = new mongoose.Schema({
 });
 const AdminChannel = mongoose.model("AdminChannel", adminChannelSchema);
 
-
 // Data schema. It create a data basing on a prototype. 
 // For example, a survey (_type is 'survey') that filled by a users, base on a survey prototype who's id if _typeId.
 const generalDataSchema = new mongoose.Schema({
@@ -86,7 +81,6 @@ const generalDataSchema = new mongoose.Schema({
 }, { strict: false });
 
 const GeneralData = mongoose.model("GeneralData", generalDataSchema);
-
 
 // Survey prototype. 
 const surveySchema = new mongoose.Schema({
@@ -108,10 +102,6 @@ const surveySchema = new mongoose.Schema({
 }, { timestamps: true });
 
 const SurveySchema = mongoose.model("SurveySchema", surveySchema);
-
-
-
-
 
 // NEW: Create a transporter for sending emails using Amazon SES.
 // Make sure to set AWS_SES_ACCESS_KEY, AWS_SES_SECRET_KEY, AWS_SES_REGION,
@@ -147,11 +137,8 @@ const io = new Server(server, {
   maxHttpBufferSize: 1e8, // 100 MB in bytes
 });
 
-
-
 // Initialize Expo SDK client.
 let expo = new Expo();
-
 
 // ########### AWS S3 ################
 
@@ -167,9 +154,6 @@ const s3Client = new S3Client({
 // Your S3 bucket name (set this in your .env file or here directly)
 const bucketName = process.env.AWS_S3_BUCKET_NAME;
 console.log(bucketName);
-
-
-
 
 // ********** API Endpoints **********
 // ***********************************
@@ -331,7 +315,6 @@ app.get("/verify-email", (req, res) => {
   res.send(html);
 });
 
-
 // Expects { token, password } in the request body.
 app.post("/api/verify-email", async (req, res) => {
   const { token, password } = req.body;
@@ -389,7 +372,6 @@ app.post("/api/login", async (req, res) => {
   }
 });
 
-
 // NEW: API endpoint for user logout.
 // Expects { userId, token } in the request body.
 // Removes the specified push token from the user's AdminChannel record.
@@ -414,10 +396,9 @@ app.post("/api/logout", async (req, res) => {
     return res.status(200).json({ success: true, message: "Logout successful" });
   } catch (err) {
     console.error("Error during logout:", err);
-    return res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error." });
   }
 });
-
 
 // NEW: API endpoint for forgot password.
 // Expects { email } in the request body and sends a reset email.
@@ -542,7 +523,6 @@ app.get("/reset-password", (req, res) => {
   res.send(html);
 });
 
-
 // Expects { token, newPassword } in the request body.
 app.post("/api/reset-password", async (req, res) => {
   const { token, newPassword } = req.body;
@@ -571,11 +551,13 @@ app.post("/api/reset-password", async (req, res) => {
   }
 });
 
-// NEW: Endpoint to update or delete a channel in channelInfo.
+// NEW: API endpoint to update or delete a channel in channelInfo.
 app.post("/api/update-channel", async (req, res) => {
-  const { channelId, channelDescription, deleteChannel } = req.body;
+  // NEW: If channelId is not provided, generate a new one.
+  let { channelId, channelDescription, deleteChannel } = req.body;
   if (!channelId) {
-    return res.status(400).json({ error: "channelId is required." });
+    channelId = uuidv4();
+    req.body.channelId = channelId;
   }
   try {
     if (deleteChannel === "Yes") {
@@ -595,7 +577,7 @@ app.post("/api/update-channel", async (req, res) => {
   }
 });
 
-// NEW: Endpoint to add or remove a channel from a user's admin channels.
+// NEW: API endpoint to add or remove a channel from a user's admin channels.
 app.post("/api/add-channel-admin", async (req, res) => {
   let { channelId, userId, email, deleteAdmin } = req.body;
   if (!channelId) {
@@ -633,7 +615,6 @@ app.post("/api/add-channel-admin", async (req, res) => {
     return res.status(500).json({ error: "Internal server error." });
   }
 });
-
 
 async function sendAndNotify(socket, channelId, message){
     // Save the message to MongoDB
@@ -681,13 +662,9 @@ async function sendAndNotify(socket, channelId, message){
         console.error(error);
       }
     }
-
-
 }
 
-
-
-// NEW: Endpoint to list all channels that a user can admin.
+// NEW: API endpoint to list all channels that a user can admin.
 app.post("/api/list-admin", async (req, res) => {
   let { userId, email } = req.body;
   if (!userId && !email) {
@@ -818,7 +795,6 @@ app.post("/api/send-message", async (req, res) => {
   });
 });
 
-
 // NEW: API endpoint to handle general data submissions (e.g., surveys)
 app.post("/api/send-data", async (req, res) => {
   const payload = req.body;
@@ -877,10 +853,6 @@ app.post("/api/send-data", async (req, res) => {
                 };
 
                 sendAndNotify(null, message.channelId, message);
-                
-
-
-
               }
             } catch (err) {
               console.error('Error executing trigger:', err);
@@ -888,27 +860,6 @@ app.post("/api/send-data", async (req, res) => {
           }
         }
       }
-
-
-      /*  // below is the simple got data and send logic
-      const message = {
-        text: `New ${payload._type} data submitted.`,
-        user: { _id: "system" },
-        channelId: payload._channelId,
-        createdAt: new Date().toISOString(),
-        _id: uuidv4(),
-      };
-
-      try {
-        await Message.create(message);
-        console.log(`Stored message in channel ${message.channelId}:`, message);
-      } catch (err) {
-        console.error("Error saving message from send-data:", err);
-      }
-
-      io.to(message.channelId).emit("receiveMessage", message);
-      console.log(`Broadcast message to room ${message.channelId}`);
-      */
     }
 
     return res.status(200).json({ success: true, data: newData });
@@ -917,7 +868,6 @@ app.post("/api/send-data", async (req, res) => {
     return res.status(500).json({ error: "Internal server error." });
   }
 });
-
 
 // NEW: API endpoint to read general data based on _channelId, _storeId, and _type
 app.get("/api/read-data", async (req, res) => {
@@ -951,7 +901,6 @@ app.get("/api/read-data", async (req, res) => {
     return res.status(500).json({ error: "Internal server error." });
   }
 });
-
 
 // DELETE: Remove a user account by userId
 app.delete("/api/user/:userId", async (req, res) => {
@@ -989,11 +938,6 @@ app.delete("/api/survey/:id", async (req, res) => {
     return res.status(500).json({ error: "Internal server error." });
   }
 });
-
-
-
-
-
 
 // ***** Survey operations *****
 // GET a specific survey schema by id.
@@ -1063,7 +1007,6 @@ app.patch("/api/survey/:id/counter", async (req, res) => {
   }
 });
 
-
 /************************************
  * Survey Event Trigger functions
  */
@@ -1116,9 +1059,6 @@ app.delete("/api/survey/:surveyId/triggers/:triggerId", async (req, res) => {
   }
 });
 
-
-
-
 /************************************* 
 * AWS S3 operations 
 * Endpoint to generate a presigned URL for PUT (upload)
@@ -1167,7 +1107,6 @@ app.get("/presigned-url/get", async (req, res) => {
     res.status(500).json({ error: "Error generating presigned URL", details: error.message });
   }
 });
-
 
 /********************************************
  * LLM server
@@ -1281,19 +1220,6 @@ the system should analysis user's request first, then generate a deep and useful
     res.status(500).json({ error: 'Internal server error' });
   }
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 // Start the server.
 server.listen(5300, () => {

@@ -1,5 +1,5 @@
 import "react-native-get-random-values";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
 import {
   View,
   Text,
@@ -83,7 +83,6 @@ const ChatScreen: React.FC<any> = ({ route, navigation }) => {
   // Refs for notification listeners.
   const notificationListener = useRef<Notifications.Subscription>();
   const responseListener = useRef<Notifications.Subscription>();
-
 
   useEffect(() => {
     console.log("Entered ChatRoom:", chatroomName, "ID:", chatroomId);
@@ -206,6 +205,22 @@ const ChatScreen: React.FC<any> = ({ route, navigation }) => {
     </TouchableOpacity>
   );
 
+  // NEW: Add settings icon at top right of chat screen for channel settings.
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <TouchableOpacity
+          onPress={() =>
+            navigation.navigate("ChatRoomSettings", { chatroomId, chatroomName, userId })
+          }
+          style={{ marginRight: 10 }}
+        >
+          <Icon name="settings" size={28} color="#007AFF" />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation, chatroomId, chatroomName, userId]);
+
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
@@ -214,7 +229,7 @@ const ChatScreen: React.FC<any> = ({ route, navigation }) => {
         keyboardVerticalOffset={-1000} // this will push up the chat area
       >
       
-      // Inside your ChatScreen component's return statement:
+      {/* Inside your ChatScreen component's return statement: */}
       <GiftedChat
         messages={messages}
         onSend={onSend}
@@ -276,7 +291,21 @@ const ChatroomListScreen: React.FC<any> = ({ navigation, route }) => {
   const userIdentifier = storedUserId || storedUserEmail;
   const [chatrooms, setChatrooms] = useState<{ id: string; name: string }[]>([]);
 
-// Sample implementation to fetch chatrooms from listAdmin endpoint.
+  // NEW: Set headerRight with add chat room icon.
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <TouchableOpacity
+          onPress={() => navigation.navigate("AddChatRoom", { userId: userIdentifier })}
+          style={{ marginRight: 10 }}
+        >
+          <Icon name="add" size={28} color="#007AFF" />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation, userIdentifier]);
+
+  // Sample implementation to fetch chatrooms from listAdmin endpoint.
   const fetchChatrooms = async () => {
     if (!userIdentifier) {
       console.error("No userId or email found.");
@@ -311,7 +340,6 @@ const ChatroomListScreen: React.FC<any> = ({ navigation, route }) => {
       console.error(err);
     }
   };
-
 
   useEffect(() => {
     fetchChatrooms();
@@ -623,6 +651,187 @@ const ForgotPasswordScreen: React.FC<any> = ({ navigation }) => {
   );
 };
 
+// ------------------ AddChatRoomScreen ------------------
+// NEW: Screen to add a new chat room (channel)
+const AddChatRoomScreen: React.FC<any> = ({ navigation, route }) => {
+  const [channelName, setChannelName] = useState("");
+
+  const handleAddChatRoom = async () => {
+    if (channelName.trim() === "") {
+      Alert.alert("Error", "Please enter a chat room name.");
+      return;
+    }
+    try {
+      // Call /api/update-channel without channelId so server generates a new one.
+      const response = await fetch(`${SERVER_URL}/api/update-channel`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ channelDescription: channelName }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        Alert.alert("Error", data.error || "Failed to create chat room");
+        return;
+      }
+      const newChannel = data.channel;
+      // Call /api/add-channel-admin to add the new channel to the user's admin list.
+      const userId = route.params?.userId;
+      const adminResponse = await fetch(`${SERVER_URL}/api/add-channel-admin`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ channelId: newChannel.channelId, userId }),
+      });
+      const adminData = await adminResponse.json();
+      if (!adminResponse.ok) {
+        Alert.alert("Error", adminData.error || "Failed to add chat room to admin list");
+        return;
+      }
+      Alert.alert("Success", "Chat room created successfully.");
+      navigation.goBack();
+    } catch (error) {
+      console.error(error);
+      Alert.alert("Error", "An error occurred while creating the chat room.");
+    }
+  };
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <View style={styles.loginContainer}>
+        <Text style={styles.title}>Add Chat Room</Text>
+        <TextInput
+          placeholder="Enter chat room name"
+          value={channelName}
+          onChangeText={setChannelName}
+          style={styles.input}
+        />
+        <Button title="Create Chat Room" onPress={handleAddChatRoom} />
+      </View>
+    </SafeAreaView>
+  );
+};
+
+// ------------------ ChatRoomSettingsScreen ------------------
+// NEW: Screen for chat room settings: change channel name, invite and remove users.
+const ChatRoomSettingsScreen: React.FC<any> = ({ route, navigation }) => {
+  const { chatroomId, chatroomName } = route.params;
+  const [newName, setNewName] = useState(chatroomName);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [removeEmail, setRemoveEmail] = useState("");
+
+  const handleChangeName = async () => {
+    if (newName.trim() === "") {
+      Alert.alert("Error", "Please enter a valid channel name.");
+      return;
+    }
+    try {
+      const response = await fetch(`${SERVER_URL}/api/update-channel`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ channelId: chatroomId, channelDescription: newName }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        Alert.alert("Error", data.error || "Failed to update channel name");
+        return;
+      }
+      Alert.alert("Success", "Channel name updated.");
+      navigation.setParams({ chatroomName: newName });
+    } catch (error) {
+      console.error(error);
+      Alert.alert("Error", "An error occurred while updating channel name.");
+    }
+  };
+
+  const handleInviteUser = async () => {
+    if (inviteEmail.trim() === "") {
+      Alert.alert("Error", "Please enter an email to invite.");
+      return;
+    }
+    try {
+      const response = await fetch(`${SERVER_URL}/api/add-channel-admin`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ channelId: chatroomId, email: inviteEmail }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        Alert.alert("Error", data.error || "Failed to invite user");
+        return;
+      }
+      Alert.alert("Success", "User invited successfully.");
+      setInviteEmail("");
+    } catch (error) {
+      console.error(error);
+      Alert.alert("Error", "An error occurred while inviting user.");
+    }
+  };
+
+  const handleRemoveUser = async () => {
+    if (removeEmail.trim() === "") {
+      Alert.alert("Error", "Please enter an email to remove.");
+      return;
+    }
+    try {
+      const response = await fetch(`${SERVER_URL}/api/add-channel-admin`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ channelId: chatroomId, email: removeEmail, deleteAdmin: "Yes" }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        Alert.alert("Error", data.error || "Failed to remove user");
+        return;
+      }
+      Alert.alert("Success", "User removed successfully.");
+      setRemoveEmail("");
+    } catch (error) {
+      console.error(error);
+      Alert.alert("Error", "An error occurred while removing user.");
+    }
+  };
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <View style={{ padding: 20 }}>
+        <Text style={styles.title}>Chat Room Settings</Text>
+        {/* Change Channel Name */}
+        <Text style={{ marginTop: 10 }}>Change Channel Name</Text>
+        <TextInput
+          placeholder="New Channel Name"
+          value={newName}
+          onChangeText={setNewName}
+          style={styles.input}
+        />
+        <Button title="Update Name" onPress={handleChangeName} />
+
+        {/* Invite User */}
+        <Text style={{ marginTop: 20 }}>Invite User</Text>
+        <TextInput
+          placeholder="User Email"
+          value={inviteEmail}
+          onChangeText={setInviteEmail}
+          style={styles.input}
+          autoCapitalize="none"
+          keyboardType="email-address"
+        />
+        <Button title="Invite" onPress={handleInviteUser} />
+
+        {/* Remove User */}
+        <Text style={{ marginTop: 20 }}>Remove User</Text>
+        <TextInput
+          placeholder="User Email"
+          value={removeEmail}
+          onChangeText={setRemoveEmail}
+          style={styles.input}
+          autoCapitalize="none"
+          keyboardType="email-address"
+        />
+        <Button title="Remove" onPress={handleRemoveUser} />
+      </View>
+    </SafeAreaView>
+  );
+};
+
 // ------------------ Navigation Setup ------------------
 const Stack = createNativeStackNavigator();
 
@@ -630,7 +839,6 @@ const App: React.FC = () => {
   // Check AsyncStorage to determine initial route so user stays logged in.
   const [initialRoute, setInitialRoute] = useState<string | null>(null);
   const [storedUserId, setStoredUserId] = useState<string | null>(null);
-  
   
   useEffect(() => {
     const checkLogin = async () => {
@@ -672,9 +880,11 @@ const App: React.FC = () => {
           component={ChatScreen}
           options={({ route }) => ({ title: route.params.chatroomName })}
         />
-        {/* New screens for registration and forgot password */}
+        {/* New screens for registration, forgot password, add chat room, and chat room settings */}
         <Stack.Screen name="Register" component={RegisterScreen} options={{ title: "Register" }} />
         <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} options={{ title: "Forgot Password" }} />
+        <Stack.Screen name="AddChatRoom" component={AddChatRoomScreen} options={{ title: "Add Chat Room" }} />
+        <Stack.Screen name="ChatRoomSettings" component={ChatRoomSettingsScreen} options={{ title: "Settings" }} />
       </Stack.Navigator>
   );
 };
