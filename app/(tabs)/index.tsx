@@ -34,17 +34,17 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 // NEW: Import AsyncStorage for token persistence.
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import { t } from "./translations";
+
 
 
 AsyncStorage.getItem("language").then((storedLang) => {
       if (storedLang) {
         setLanguage(storedLang);
-        setLang(storedLang);
+       
       } else {
         // Default to Chinese if no language saved
         setLanguage("zh");
-        setLang("zh");
+      
         AsyncStorage.setItem("language", "zh");
       }
     }).catch((err) => {
