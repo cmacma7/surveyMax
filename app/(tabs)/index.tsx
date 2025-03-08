@@ -18,6 +18,8 @@ import {
 
 const SERVER_URL = 'https://b200.tagfans.com:5301';
 // const SERVER_URL = 'http://192.168.100.125:5300';
+import { t, setLanguage } from "./translations";
+
 
 import { io } from "socket.io-client";
 const socket = io(SERVER_URL);
@@ -34,6 +36,23 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { t } from "./translations";
 
+
+AsyncStorage.getItem("language").then((storedLang) => {
+      if (storedLang) {
+        setLanguage(storedLang);
+        setLang(storedLang);
+      } else {
+        // Default to Chinese if no language saved
+        setLanguage("zh");
+        setLang("zh");
+        AsyncStorage.setItem("language", "zh");
+      }
+    }).catch((err) => {
+      console.error("Failed to load language", err);
+    });
+
+
+
 // Configure the notification handler.
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -42,6 +61,7 @@ Notifications.setNotificationHandler({
     shouldSetBadge: false,
   }),
 });
+
 
 // Helper function to register for push notifications.
 async function registerForPushNotificationsAsync() {
