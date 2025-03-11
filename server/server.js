@@ -222,15 +222,25 @@ app.post("/api/register-push-token", authenticateToken, async (req, res) => {
 // API endpoint to retrieve stored messages for a channel. (Protected)
 app.get("/api/messages/:channelId", authenticateToken, async (req, res) => {
   const channelId = req.params.channelId;
+  const after = req.query.after;
+  let filter = { channelId };
+  
+  // If an "after" timestamp is provided, add a condition on createdAt.
+  if (after) {
+    // Ensure "after" is parsed as a Date.
+    filter.createdAt = { $gt: new Date(after) };
+  }
+  
   try {
     // Retrieve messages sorted in ascending order (oldest first)
-    const messages = await Message.find({ channelId }).sort({ createdAt: 1 });
+    const messages = await Message.find(filter).sort({ createdAt: 1 });
     res.status(200).json({ messages });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to fetch messages" });
   }
 });
+
 
 // NEW: API endpoint for user registration. (Public)
 // Expects { email } in the request body. A verification email is sent with a token.
