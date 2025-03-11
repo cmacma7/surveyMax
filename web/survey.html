@@ -1311,15 +1311,16 @@
       /***********************************************
        * fetch and update survey context
        ***********************************************/
-	   async function fetchSurvey(surveySchemaId, callback) {
+	async function fetchSurvey(surveySchemaId, callback) {
       try {
         let url = "";
         if (surveySchemaId) {
           // Get a specific survey schema by its id.
           url = `${BASE_URL}/api/survey/${surveySchemaId}`;
         } else {
-          // If no id is provided, fetch all surveys for the current store.
-          url = `${BASE_URL}/api/survey?userId=${localStorage.userId}`;
+          alert("No Survey ID");
+		  callback&&callback();
+		  return false;
         }
         const response = await fetch(url);
         const data = await response.json();
@@ -1335,36 +1336,6 @@
       }
     }
 
-    async function updateSurvey(surveySchemaId, content, callback) {
-      try {
-        let response;
-        if (surveySchemaId) {
-          // Update an existing survey schema.
-          response = await fetch(`${BASE_URL}/api/survey/${surveySchemaId}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(content),
-          });
-        } else {
-          // Create a new survey schema.
-          response = await fetch(`${BASE_URL}/api/survey`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(content),
-          });
-        }
-        const data = await response.json();
-        if (typeof callback === "function") {
-          callback(null, data);
-        }
-        return data;
-      } catch (error) {
-        if (typeof callback === "function") {
-          callback(error);
-        }
-        throw error;
-      }
-    }
 
     async function updateSurveyCounter(surveySchemaId, callback) {
       try {
@@ -1413,9 +1384,10 @@
 	        });
 
 	        let result = await response.json();
-
+			
 	        if (response.ok) {
 	            console.log("Data sent successfully:", result);
+				await updateSurveyCounter(currentSurvey.surveyId);
 	        } else {
 	            console.error("Error sending data:", result.error);
 	        }
