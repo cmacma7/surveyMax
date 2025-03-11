@@ -126,15 +126,40 @@ const ChatScreen: React.FC<any> = ({ route, navigation }) => {
     // This ensures that if the ChatScreen is opened directly, the user is in this room.
     socket.emit("joinRoom", chatroomId);
     // Fetch saved/offline messages for this channel.
-    fetch(`${SERVER_URL}/api/messages/${chatroomId}`, {headers:HttpAuthHeader})
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.messages) {
-          console.log("Fetched messages:", data.messages);
-          setMessages(data.messages.reverse());
+
+    async function loadAndFetchMessages() {
+      let localMessages: IMessage[] = [];
+      try {
+        const saved = await AsyncStorage.getItem(`chat_${chatroomId}_messages`);
+        if (saved) {
+          localMessages = JSON.parse(saved);
+          setMessages(localMessages);
         }
-      })
-      .catch((err) => console.error(err));
+      } catch (err) {
+        console.error("Error loading local messages", err);
+      }
+  
+      // Now that we have local messages, determine the timestamp of the last one.
+      const lastMessage = localMessages[0];
+      let url = `${SERVER_URL}/api/messages/${chatroomId}`;
+      if (lastMessage && lastMessage.createdAt) {
+        url += `?after=${encodeURIComponent(lastMessage.createdAt)}`;
+      }
+  
+      try {
+        const res = await fetch(url, { headers: HttpAuthHeader });
+        const data = await res.json();
+        if (data.messages && data.messages.length) {
+          const newMessages = data.messages.reverse();
+          const updatedMessages = GiftedChat.append(localMessages, newMessages);
+          setMessages(updatedMessages);
+          await AsyncStorage.setItem(`chat_${chatroomId}_messages`, JSON.stringify(updatedMessages));
+        }
+      } catch (err) {
+        console.error("Error fetching new messages", err);
+      }
+    }
+    loadAndFetchMessages();
 
     const handleReconnect = () => {
       console.log("Socket reconnected. Rejoining room:", chatroomId);
@@ -148,6 +173,11 @@ const ChatScreen: React.FC<any> = ({ route, navigation }) => {
     };
     
   }, [chatroomId, chatroomName]);
+
+ 
+
+
+
 
   useEffect(() => {
     async function initPushNotifications() {
