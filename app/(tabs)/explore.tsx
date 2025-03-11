@@ -33,6 +33,22 @@ export default function TabTwoScreen() {
     }).catch((err) => {
       console.error("Failed to load language", err);
     });
+
+    const fetchData = async () => {
+      try {
+        const token = await AsyncStorage.getItem("userToken");
+        const userId = await AsyncStorage.getItem("userId");      
+        setData(storedData);
+      } catch (error) {
+        console.error('Error reading AsyncStorage:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+
+
   }, []);
 
   const updateLanguage = (newLang: string) => {
@@ -43,6 +59,7 @@ export default function TabTwoScreen() {
     });
   };
 
+ 
   return (
     <ParallaxScrollView
       headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
@@ -58,22 +75,8 @@ export default function TabTwoScreen() {
         <ThemedText type="title">{t('explore')}</ThemedText>
       </ThemedView>
       <ThemedText>{t('exploreDescription')}</ThemedText>
-      <Collapsible title={t('fileBasedRouting')}>
-        <ThemedText>
-          {t('fileBasedRoutingDescription')}
-        </ThemedText>
-        <ThemedText>
-          {t('layoutFileDescription')}
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/router/introduction">
-          <ThemedText type="link">{t('learnMore')}</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title={t('platformSupport')}>
-        <ThemedText>
-          {t('platformSupportDescription')}
-        </ThemedText>
-      </Collapsible>
+      
+   
       <Collapsible title={t('images')}>
         <ThemedText>
           {t('imagesDescription')}
@@ -91,26 +94,8 @@ export default function TabTwoScreen() {
           <ThemedText type="link">{t('learnMore')}</ThemedText>
         </ExternalLink>
       </Collapsible>
-      <Collapsible title={t('lightDarkMode')}>
-        <ThemedText>
-          {t('lightDarkModeDescription')}
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-          <ThemedText type="link">{t('learnMore')}</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title={t('animations')}>
-        <ThemedText>
-          {t('animationsDescription')}
-        </ThemedText>
-        {Platform.select({
-          ios: (
-            <ThemedText>
-              {t('parallaxScrollViewDescription')}
-            </ThemedText>
-          ),
-        })}
-      </Collapsible>
+      
+      
       <Collapsible title={t('languageSettings')}>
         <ThemedText>{t('chooseLanguage')}</ThemedText>
         <View style={styles.languageContainer}>
