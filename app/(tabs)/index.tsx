@@ -35,7 +35,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 
-
+var HttpAuthHeader = {};
 
 AsyncStorage.getItem("language").then((storedLang) => {
       if (storedLang) {
@@ -61,6 +61,19 @@ Notifications.setNotificationHandler({
     shouldSetBadge: false,
   }),
 });
+
+
+// Helper function to generate the authentication header
+const getAuthHeaders = async () => {
+  const token = await AsyncStorage.getItem("userToken");
+  const userId = await AsyncStorage.getItem("userId");
+  return {
+    "Content-Type": "application/json",
+    "Authorization": `Bearer ${token}`,
+    "x-user-id": userId,
+  };
+};
+
 
 
 // Helper function to register for push notifications.
@@ -113,7 +126,7 @@ const ChatScreen: React.FC<any> = ({ route, navigation }) => {
     // This ensures that if the ChatScreen is opened directly, the user is in this room.
     socket.emit("joinRoom", chatroomId);
     // Fetch saved/offline messages for this channel.
-    fetch(`${SERVER_URL}/api/messages/${chatroomId}`)
+    fetch(`${SERVER_URL}/api/messages/${chatroomId}`, {headers:HttpAuthHeader})
       .then((res) => res.json())
       .then((data) => {
         if (data.messages) {
@@ -146,7 +159,7 @@ const ChatScreen: React.FC<any> = ({ route, navigation }) => {
           // Send the token along with userId to your backend.
           fetch(`${SERVER_URL}/api/register-push-token`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: HttpAuthHeader,
             body: JSON.stringify({ userId, token }),
           })
             .then((res) => res.json())
@@ -347,11 +360,11 @@ const ChatroomListScreen: React.FC<any> = ({ navigation, route }) => {
     } else {
       payload["email"] = storedUserEmail;
     }
-    
+    HttpAuthHeader = await getAuthHeaders();
     try {
       const response = await fetch(`${SERVER_URL}/api/list-admin`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: HttpAuthHeader,
         body: JSON.stringify(payload),
       });
       const data = await response.json();
@@ -463,6 +476,9 @@ const LoginScreen: React.FC<any> = ({ navigation }) => {
       await AsyncStorage.setItem("userToken", data.token);
       await AsyncStorage.setItem("userId", data.userId);
       await AsyncStorage.setItem("userEmail", email);
+
+      HttpAuthHeader = await getAuthHeaders();
+
       // Navigate to the ChatroomList screen and pass the userId.
       navigation.navigate("ChatroomList", { userId: data.userId });
     } catch (err) {
@@ -720,7 +736,7 @@ const AddChatRoomScreen: React.FC<any> = ({ navigation, route }) => {
       // Call /api/update-channel without channelId so server generates a new one.
       const response = await fetch(`${SERVER_URL}/api/update-channel`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: HttpAuthHeader,
         body: JSON.stringify({ channelDescription: channelName }),
       });
       const data = await response.json();
@@ -733,7 +749,7 @@ const AddChatRoomScreen: React.FC<any> = ({ navigation, route }) => {
       const userId = route.params?.userId;
       const adminResponse = await fetch(`${SERVER_URL}/api/add-channel-admin`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: HttpAuthHeader,
         body: JSON.stringify({ channelId: newChannel.channelId, userId }),
       });
       const adminData = await adminResponse.json();
@@ -781,7 +797,7 @@ const ChatRoomSettingsScreen: React.FC<any> = ({ route, navigation }) => {
     try {
       const response = await fetch(`${SERVER_URL}/api/update-channel`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: HttpAuthHeader,
         body: JSON.stringify({ channelId: chatroomId, channelDescription: newName }),
       });
       const data = await response.json();
@@ -805,7 +821,7 @@ const ChatRoomSettingsScreen: React.FC<any> = ({ route, navigation }) => {
     try {
       const response = await fetch(`${SERVER_URL}/api/add-channel-admin`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: HttpAuthHeader,
         body: JSON.stringify({ channelId: chatroomId, email: inviteEmail }),
       });
       const data = await response.json();
@@ -829,7 +845,7 @@ const ChatRoomSettingsScreen: React.FC<any> = ({ route, navigation }) => {
     try {
       const response = await fetch(`${SERVER_URL}/api/add-channel-admin`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: HttpAuthHeader,
         body: JSON.stringify({ channelId: chatroomId, email: removeEmail, deleteAdmin: "Yes" }),
       });
       const data = await response.json();
@@ -902,6 +918,7 @@ const App: React.FC = () => {
       if (token && userId) {
         setStoredUserId(userId);
         setInitialRoute("ChatroomList");
+        HttpAuthHeader = await getAuthHeaders();
       } else {
         setInitialRoute("Login");
       }
