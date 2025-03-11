@@ -818,11 +818,34 @@
   	  const BASE_URL = 'https://b200.tagfans.com:5301';
 	  //  const BASE_URL = 'http://127.0.0.1:5300';
 	
-      // On load, check if userToken exists. If not, redirect to login.html.
-      if (!localStorage.getItem("userToken")) {
-        // Pass the current page as the redirect target
-        window.location.href = "login.html?redirect=admin.html";
-      }
+    // On load, check if userToken exists. If not, redirect to login.html.
+    // Helper function to get URL parameters
+    function getQueryParams() {
+      const params = new URLSearchParams(window.location.search);
+      return {
+        userId: params.get("userId"),
+        userToken: params.get("userToken")
+      };
+    }
+
+    const urlParams = getQueryParams();
+
+    // Global variables for the user credentials for this session
+    let currentUserId, currentUserToken;
+
+    if (urlParams.userId && urlParams.userToken) {
+      // Use credentials from the URL parameters
+      currentUserId = urlParams.userId;
+      currentUserToken = urlParams.userToken;
+    } else if (localStorage.getItem("userId") && localStorage.getItem("userToken")) {
+      // Use credentials from localStorage if they exist
+      currentUserId = localStorage.getItem("userId");
+      currentUserToken = localStorage.getItem("userToken");
+    } else {
+      // No credentials available – redirect to login
+      window.location.href = "login.html?redirect=admin.html";
+    }
+
 
 	
 	
@@ -1377,7 +1400,7 @@
                         return;
                   }
                   // Call the delete user API
-                  const deleteResponse = await fetch(`${BASE_URL}/api/user/${localStorage.userId}`, {
+                  const deleteResponse = await fetch(`${BASE_URL}/api/user/${currentUserId}`, {
                         method: "DELETE"
                   });
                   const deleteData = await deleteResponse.json();
@@ -2911,7 +2934,7 @@ function showContextMenu(x, y, items) {
 			storeTitle: null, //@fixme, need to update
 			storeId: null, //@fimxme, need to update
 			_channelId : channelId,
-      _userId: localStorage.userId
+      _userId: currentUserId
 		  };
 
 		  // Save the complete structure to localStorage
@@ -2966,7 +2989,7 @@ function showContextMenu(x, y, items) {
           url = `${BASE_URL}/api/survey/${surveySchemaId}`;
         } else {
           // If no id is provided, fetch all surveys for the current store.
-          url = `${BASE_URL}/api/survey?userId=${localStorage.userId}`;
+          url = `${BASE_URL}/api/survey?userId=${currentUserId}`;
         }
         const response = await fetch(url);
         const data = await response.json();
