@@ -11,6 +11,7 @@ import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 
 const SERVER_URL = 'https://b200.tagfans.com:5301';
+const SURVEY_ADMIN_URL = 'https://b200.tagfans.com/surveyMax/admin.html';
 // const SERVER_URL = 'http://192.168.100.125:5300';
 
 import { t, setLanguage } from "./translations";
@@ -18,6 +19,8 @@ import { t, setLanguage } from "./translations";
 export default function TabTwoScreen() {
   const router = useRouter();
   const [lang, setLang] = useState("zh");
+  const [userId, setUserId] = useState("");
+  const [userToken, setUserToken] = useState("");
 
   useEffect(() => {
     AsyncStorage.getItem("language").then((storedLang) => {
@@ -37,12 +40,16 @@ export default function TabTwoScreen() {
     const fetchData = async () => {
       try {
         const token = await AsyncStorage.getItem("userToken");
-        const userId = await AsyncStorage.getItem("userId");      
-        setData(storedData);
+        const userId = await AsyncStorage.getItem("userId");
+        if (userId) setUserId(userId);
+        if (token) setUserToken(token);
+        console.log('survey admin url', SURVEY_ADMIN_URL+"?userId="+userId+"&userToken="+userToken)
       } catch (error) {
         console.error('Error reading AsyncStorage:', error);
       } finally {
-        setLoading(false);
+        if (!userId || !userToken) {
+          router.push("/login");
+        }
       }
     };
 
@@ -86,12 +93,12 @@ export default function TabTwoScreen() {
           <ThemedText type="link">{t('learnMore')}</ThemedText>
         </ExternalLink>
       </Collapsible>
-      <Collapsible title={t('customFonts')}>
+      <Collapsible title={t('applications')}>
         <ThemedText>
-          {t('customFontsDescription')}
+          {t('applicationDescription')}
         </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/versions/latest/sdk/font">
-          <ThemedText type="link">{t('learnMore')}</ThemedText>
+        <ExternalLink href={SURVEY_ADMIN_URL+"?userId="+userId+"&userToken="+userToken}>
+          <ThemedText type="link">{t('surveyAdmin')}</ThemedText>
         </ExternalLink>
       </Collapsible>
       

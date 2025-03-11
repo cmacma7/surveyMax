@@ -62,7 +62,6 @@ export const translations = {
       verificationFailed: "Verification failed",
       emailVerified: "Email verified and password set. Please login.",
       emailVerificationError: "An error occurred during email verification.",
-      sendResetEmail: "Send Reset Email",
       resetEmailSent: "Password reset email sent. Please check your email.",
       forgotPasswordError: "An error occurred while requesting password reset.",
       pleaseEnterTokenNewPassword: "Please enter token and new password",
@@ -85,7 +84,10 @@ export const translations = {
       removeUserFailed: "Failed to remove user",
       removeUserError: "An error occurred while removing user.",
       userRemoved: "User removed successfully.",
-      loading: "Loading..."
+      loading: "Loading...",
+      surveyAdmin: "Survey Admin",
+      applicationDescription: "These are the applications you can access.",
+      applications: "Applications",
     },
     zh: {
         languageSettings: "語言設定",
@@ -150,7 +152,6 @@ export const translations = {
       verificationFailed: "驗證失敗",
       emailVerified: "驗證成功，請登入。",
       emailVerificationError: "驗證時發生錯誤。",
-      sendResetEmail: "發送重設郵件",
       resetEmailSent: "重設信已寄出，請檢查您的信箱。",
       forgotPasswordError: "發送重設信時發生錯誤。",
       pleaseEnterTokenNewPassword: "請輸入驗證碼與新密碼",
@@ -173,7 +174,11 @@ export const translations = {
       removeUserFailed: "移除使用者失敗",
       removeUserError: "移除使用者時發生錯誤。",
       userRemoved: "使用者移除成功。",
-      loading: "載入中..."
+      loading: "載入中...",
+      surveyAdmin: "調查管理員",
+      applicationDescription: "這些是您可以存取的應用程式。",
+      applications: "應用程式",
+      
     },
     ja: {
         languageSettings: "言語設定",
@@ -261,7 +266,11 @@ export const translations = {
       removeUserFailed: "ユーザーの削除に失敗しました",
       removeUserError: "ユーザー削除中にエラーが発生しました。",
       userRemoved: "ユーザーの削除に成功しました。",
-      loading: "読み込み中..."
+      loading: "読み込み中...",
+      surveyAdmin: "アンケート管理者",
+      applicationDescription: "これらは、あなたがアクセス可能なアプリケーションです。",
+      applications: "アプリケーション",
+
     },
   };
   
