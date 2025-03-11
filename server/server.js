@@ -8,7 +8,7 @@ const mongoose = require("mongoose");
 const { S3Client, PutObjectCommand, GetObjectCommand } = require("@aws-sdk/client-s3");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 
-//Require additional modules for authentication and email sending.
+// Require additional modules for authentication and email sending.
 const nodemailer = require("nodemailer");
 const bcrypt = require("bcrypt");
 const crypto = require("crypto");
@@ -144,7 +144,7 @@ let expo = new Expo();
 
 // Configure the S3 client using your AWS credentials and region
 const s3Client = new S3Client({
-  region: process.env.AWS_S3_REGION ,
+  region: process.env.AWS_S3_REGION,
   credentials: {
     accessKeyId: process.env.AWS_S3_ACCESS_KEY,
     secretAccessKey: process.env.AWS_S3_SECRET_KEY,
@@ -155,11 +155,50 @@ const s3Client = new S3Client({
 const bucketName = process.env.AWS_S3_BUCKET_NAME;
 console.log(bucketName);
 
-// ********** API Endpoints **********
-// ***********************************
+// ---------------------------------------------------
+// NEW: Authentication Middleware
+// This middleware requires that the request carries a valid JWT token
+// in the Authorization header and that the token's userId matches the provided userId.
+function authenticateToken(req, res, next) {
+  // Extract token from Authorization header (expected format: "Bearer <token>")
+  const authHeader = req.headers['authorization'];
+  if (!authHeader) {
+    return res.status(401).json({ error: "Token required" });
+  }
+  
+  const token = authHeader.split(' ')[1];
+  if (!token) {
+    return res.status(401).json({ error: "Token required" });
+  }
 
-// API endpoint to register a device's push token.
-app.post("/api/register-push-token", async (req, res) => {
+  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(403).json({ error: "Invalid token" });
+    }
+
+    // Extract `userId` from headers
+    const requestUserId = req.headers["x-user-id"];
+    
+    // Validate that the provided `X-User-Id` matches the token's `userId`
+    if (!requestUserId || requestUserId !== decoded.userId) {
+      return res.status(403).json({ error: "User ID mismatch or missing" });
+    }
+
+    // Attach authenticated user info to request
+    req.user = decoded; // `decoded.userId` contains the authenticated user ID
+
+    next(); // Proceed to the next middleware or route handler
+  });
+}
+
+// ---------------------------------------------------
+
+// ********** API Endpoints **********
+
+// Protected endpoints now include the authenticateToken middleware
+
+// API endpoint to register a device's push token. (Protected)
+app.post("/api/register-push-token", authenticateToken, async (req, res) => {
   const { userId, token } = req.body;
   if (!userId || !token) {
     return res.status(400).json({ error: "userId and token are required." });
@@ -180,8 +219,8 @@ app.post("/api/register-push-token", async (req, res) => {
   }
 });
 
-// API endpoint to retrieve stored messages for a channel.
-app.get("/api/messages/:channelId", async (req, res) => {
+// API endpoint to retrieve stored messages for a channel. (Protected)
+app.get("/api/messages/:channelId", authenticateToken, async (req, res) => {
   const channelId = req.params.channelId;
   try {
     // Retrieve messages sorted in ascending order (oldest first)
@@ -193,7 +232,7 @@ app.get("/api/messages/:channelId", async (req, res) => {
   }
 });
 
-// NEW: API endpoint for user registration.
+// NEW: API endpoint for user registration. (Public)
 // Expects { email } in the request body. A verification email is sent with a token.
 app.post("/api/register", async (req, res) => {
   const { email } = req.body;
@@ -227,10 +266,8 @@ app.post("/api/register", async (req, res) => {
 });
 
 // NEW: API endpoint to verify email and set the password.
-
-// GET endpoint to render the email verification page (set password)
+// GET endpoint to render the email verification page (set password) (Public)
 app.get("/verify-email", (req, res) => {
-  // Get the verification token from the query parameters
   const token = req.query.token || "";
   
   // Build an HTML page with a form that allows the user to set a password.
@@ -315,7 +352,7 @@ app.get("/verify-email", (req, res) => {
   res.send(html);
 });
 
-// Expects { token, password } in the request body.
+// Expects { token, password } in the request body. (Public)
 app.post("/api/verify-email", async (req, res) => {
   const { token, password } = req.body;
   if (!token || !password) {
@@ -338,7 +375,7 @@ app.post("/api/verify-email", async (req, res) => {
   }
 });
 
-// NEW: API endpoint for user login.
+// NEW: API endpoint for user login. (Public)
 // Expects { email, password } in the request body.
 app.post("/api/login", async (req, res) => {
   const { email, password } = req.body;
@@ -372,10 +409,10 @@ app.post("/api/login", async (req, res) => {
   }
 });
 
-// NEW: API endpoint for user logout.
+// NEW: API endpoint for user logout. (Protected)
 // Expects { userId, token } in the request body.
 // Removes the specified push token from the user's AdminChannel record.
-app.post("/api/logout", async (req, res) => {
+app.post("/api/logout", authenticateToken, async (req, res) => {
   const { userId, token } = req.body;
   if (!userId || !token) {
     return res.status(400).json({ error: "userId and token are required." });
@@ -400,7 +437,7 @@ app.post("/api/logout", async (req, res) => {
   }
 });
 
-// NEW: API endpoint for forgot password.
+// NEW: API endpoint for forgot password. (Public)
 // Expects { email } in the request body and sends a reset email.
 app.post("/api/forgot-password", async (req, res) => {
   const { email } = req.body;
@@ -417,7 +454,7 @@ app.post("/api/forgot-password", async (req, res) => {
     user.resetPasswordExpires = Date.now() + 3600000; // 1 hour from now
     await user.save();
 
-    const resetUrl = `${BASE_URL}/reset-password?token=${resetToken}`; // http get reset-password
+    const resetUrl = `${BASE_URL}/reset-password?token=${resetToken}`;
     const mailOptions = {
       from: process.env.AWS_SES_EMAIL_FROM,
       to: email,
@@ -434,8 +471,7 @@ app.post("/api/forgot-password", async (req, res) => {
 });
 
 // NEW: API endpoint to reset password.
-
-// This is the http get, to show a page to collect new password, then issue api/reset-password again
+// GET endpoint to render the password reset page (Public)
 app.get("/reset-password", (req, res) => {
   // Get the reset token from the query parameters
   const token = req.query.token || "";
@@ -523,7 +559,7 @@ app.get("/reset-password", (req, res) => {
   res.send(html);
 });
 
-// Expects { token, newPassword } in the request body.
+// Expects { token, newPassword } in the request body. (Public)
 app.post("/api/reset-password", async (req, res) => {
   const { token, newPassword } = req.body;
   console.log(req.body);
@@ -551,8 +587,8 @@ app.post("/api/reset-password", async (req, res) => {
   }
 });
 
-// NEW: API endpoint to update or delete a channel in channelInfo.
-app.post("/api/update-channel", async (req, res) => {
+// NEW: API endpoint to update or delete a channel in channelInfo. (Protected)
+app.post("/api/update-channel", authenticateToken, async (req, res) => {
   // NEW: If channelId is not provided, generate a new one.
   let { channelId, channelDescription, deleteChannel } = req.body;
   if (!channelId) {
@@ -579,8 +615,8 @@ app.post("/api/update-channel", async (req, res) => {
   }
 });
 
-// NEW: API endpoint to add or remove a channel from a user's admin channels.
-app.post("/api/add-channel-admin", async (req, res) => {
+// NEW: API endpoint to add or remove a channel from a user's admin channels. (Protected)
+app.post("/api/add-channel-admin", authenticateToken, async (req, res) => {
   let { channelId, userId, email, deleteAdmin } = req.body;
   if (!channelId) {
     return res.status(400).json({ error: "channelId is required." });
@@ -619,56 +655,10 @@ app.post("/api/add-channel-admin", async (req, res) => {
   }
 });
 
-async function sendAndNotify(socket, channelId, message){
-    // Save the message to MongoDB
-    try {
-      await Message.create(message)
-      console.log(`Stored message in channel ${channelId}:`, message);
-    } catch (err) {
-      console.error("Error saving message:", err);
-    }
 
-    // Broadcast the message only to the room (excluding sender)
-    if (socket)
-      socket.to(channelId).emit("receiveMessage", message);
-    else 
-      io.to(channelId).emit("receiveMessage", message);
-    console.log(`Broadcast message to room ${channelId}`);
 
-    // Prepare remote push notifications for registered devices (if needed)
-    const adminDocs = await AdminChannel.find({ channels: channelId });
-    const messagesToSend = [];
-    adminDocs.forEach(doc => {
-      // Skip sending a push notification to the sender.
-      if (doc.userId === message.user._id) return;
-      // Iterate over each push token for the user.
-      doc.pushTokens.forEach(token => {
-        if (!Expo.isExpoPushToken(token)) {
-          console.error(`Push token ${token} is not a valid Expo push token`);
-          return;
-        }
-        messagesToSend.push({
-          to: token,
-          sound: "default",
-          title: "New Message",
-          body: message.text ? message.text : "You received an image or document",
-          data: { message },
-        });
-      });
-    });
-    const chunks = expo.chunkPushNotifications(messagesToSend);
-    for (const chunk of chunks) {
-      try {
-        const ticketChunk = await expo.sendPushNotificationsAsync(chunk);
-        console.log("Push notification ticket:", ticketChunk);
-      } catch (error) {
-        console.error(error);
-      }
-    }
-}
-
-// NEW: API endpoint to list all channels that a user can admin.
-app.post("/api/list-admin", async (req, res) => {
+// NEW: API endpoint to list all channels that a user can admin. (Protected)
+app.post("/api/list-admin", authenticateToken, async (req, res) => {
   let { userId, email } = req.body;
   if (!userId && !email) {
     return res.status(400).json({ error: "Either userId or email is required." });
@@ -721,24 +711,22 @@ io.on("connection", (socket) => {
   });
 });
 
+// POST /api/send-message endpoint. (Protected)
 /**
  * POST /api/send-message endpoint.
  * Accepts a message payload, fills missing fields,
  * then broadcasts the message to the corresponding room and sends push notifications.
  */
-app.post("/api/send-message", async (req, res) => {
+app.post("/api/send-message", authenticateToken, async (req, res) => {
   let { message } = req.body;
   if (!message.text) {
     if (typeof message === "string") {
       message = { text: message };
     } else {
-      return res
-        .status(400)
-        .json({ error: 'Missing "text" field in the message.' });
+      return res.status(400).json({ error: 'Missing "text" field in the message.' });
     }
   }
 
-  // Ensure message contains channelId. You might want to validate this.
   const finalMessage = {
     text: message.text,
     user: {
@@ -747,14 +735,14 @@ app.post("/api/send-message", async (req, res) => {
           ? message.user._id
           : `user_${Math.random().toString(36).substring(7)}`,
     },
-    channelId: message.channelId, // make sure the channelId is passed
+    channelId: message.channelId,
     createdAt: message.createdAt || new Date().toISOString(),
     _id: message._id || uuidv4(),
   };
 
   // Save the message to MongoDB
   try {
-    await Message.create(finalMessage)
+    await Message.create(finalMessage);
     console.log("Received message from API:", finalMessage);
   } catch (err) {
     console.error("Error saving message:", err);
@@ -798,7 +786,7 @@ app.post("/api/send-message", async (req, res) => {
   });
 });
 
-// NEW: API endpoint to handle general data submissions (e.g., surveys)
+// NEW: API endpoint to handle general data submissions (e.g., surveys). (public)
 app.post("/api/send-data", async (req, res) => {
   const payload = req.body;
   if (!payload._type) {
@@ -842,7 +830,7 @@ app.post("/api/send-data", async (req, res) => {
             
             try {
               const checkCondition = vm.run(trigger.script);
-              console.log('****',payload);
+              console.log('****', payload);
               const result = await checkCondition(payload);
               if (result) {
                 // Trigger your event handling here
@@ -872,8 +860,9 @@ app.post("/api/send-data", async (req, res) => {
   }
 });
 
-// NEW: API endpoint to read general data based on _channelId, _storeId, and _type
-app.get("/api/read-data", async (req, res) => {
+// NEW: API endpoint to read general data. (Protected)
+// API endpoint to read general data based on _channelId, _storeId, and _type
+app.get("/api/read-data", authenticateToken, async (req, res) => {
   const { _typeId, _storeId, _type } = req.query;
 
   // Ensure at least one filter parameter is provided
@@ -905,8 +894,8 @@ app.get("/api/read-data", async (req, res) => {
   }
 });
 
-// DELETE: Remove a user account by userId
-app.delete("/api/user/:userId", async (req, res) => {
+// DELETE: Remove a user account by userId. (Protected)
+app.delete("/api/user/:userId", authenticateToken, async (req, res) => {
   const { userId } = req.params;
   try {
     // Remove user from the users collection
@@ -926,8 +915,8 @@ app.delete("/api/user/:userId", async (req, res) => {
   }
 });
 
-// DELETE: Remove a survey schema by ID
-app.delete("/api/survey/:id", async (req, res) => {
+// DELETE: Remove a survey schema by ID. (Protected)
+app.delete("/api/survey/:id", authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const deletedSurvey = await SurveySchema.findByIdAndDelete(id);
@@ -943,7 +932,7 @@ app.delete("/api/survey/:id", async (req, res) => {
 });
 
 // ***** Survey operations *****
-// GET a specific survey schema by id.
+// GET a specific survey schema by id. (public)
 app.get("/api/survey/:id", async (req, res) => {
   try {
     const survey = await SurveySchema.findById(req.params.id);
@@ -955,12 +944,13 @@ app.get("/api/survey/:id", async (req, res) => {
   }
 });
 
-// GET list of surveys filtered by storeId (optional).
-app.get("/api/survey", async (req, res) => {
+// GET list of surveys filtered by userId (optional). (Protected)
+app.get("/api/survey", authenticateToken, async (req, res) => {
   try {
     const { userId } = req.query;
     let query = {};
     if (userId) query._userId = userId;
+    else return res.json({error:'userId not assigned'});
     const surveys = await SurveySchema.find(query);
     return res.json(surveys);
   } catch(err) {
@@ -969,8 +959,8 @@ app.get("/api/survey", async (req, res) => {
   }
 });
 
-// POST to create a new survey schema.
-app.post("/api/survey", async (req, res) => {
+// POST to create a new survey schema. (Protected)
+app.post("/api/survey", authenticateToken, async (req, res) => {
   try {
     const content = req.body;
     const newSurvey = new SurveySchema(content);
@@ -982,8 +972,8 @@ app.post("/api/survey", async (req, res) => {
   }
 });
 
-// PUT to update an existing survey schema.
-app.put("/api/survey/:id", async (req, res) => {
+// PUT to update an existing survey schema. (Protected)
+app.put("/api/survey/:id", authenticateToken, async (req, res) => {
   try {
     const updatedSurvey = await SurveySchema.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!updatedSurvey) return res.status(404).json({ error: "Survey not found" });
@@ -994,7 +984,7 @@ app.put("/api/survey/:id", async (req, res) => {
   }
 });
 
-// PATCH to increment a counter in the survey schema.
+// PATCH to increment a counter in the survey schema. (public)
 app.patch("/api/survey/:id/counter", async (req, res) => {
   try {
     const updatedSurvey = await SurveySchema.findByIdAndUpdate(
@@ -1010,10 +1000,8 @@ app.patch("/api/survey/:id/counter", async (req, res) => {
   }
 });
 
-/************************************
- * Survey Event Trigger functions
- */
-app.post("/api/survey/:id/triggers", async (req, res) => {
+// POST to add an event trigger to a survey. (Protected)
+app.post("/api/survey/:id/triggers", authenticateToken, async (req, res) => {
   try {
     const survey = await SurveySchema.findByIdAndUpdate(
       req.params.id,
@@ -1026,6 +1014,7 @@ app.post("/api/survey/:id/triggers", async (req, res) => {
   }
 });
 
+// GET to retrieve triggers for a survey. (Public)
 app.get("/api/survey/:id/triggers", async (req, res) => {
   try {
     const survey = await SurveySchema.findById(req.params.id);
@@ -1035,7 +1024,8 @@ app.get("/api/survey/:id/triggers", async (req, res) => {
   }
 });
 
-app.delete("/api/survey/:surveyId/triggers/:triggerId", async (req, res) => {
+// DELETE an event trigger from a survey. (Protected)
+app.delete("/api/survey/:surveyId/triggers/:triggerId", authenticateToken, async (req, res) => {
   try {
     const survey = await SurveySchema.findById(req.params.surveyId);
     if (!survey) {
@@ -1121,8 +1111,8 @@ const configuration = new Configuration({
 });
 const openai = new OpenAIApi(configuration);
 
-// REST API endpoint to generate a survey schema
-app.post('/api/generateSurveySchema', async (req, res) => {
+// REST API endpoint to generate a survey schema. (Protected)
+app.post('/api/generateSurveySchema', authenticateToken, async (req, res) => {
   try {
     const { description } = req.body;
     if (!description) {
@@ -1228,3 +1218,53 @@ the system should analysis user's request first, then generate a deep and useful
 server.listen(5300, () => {
   console.log("Server running on http://localhost:5300");
 });
+
+// ----------------------------------------
+// Helper function used in message and survey data endpoints.
+async function sendAndNotify(socket, channelId, message){
+  // Save the message to MongoDB
+  try {
+    await Message.create(message)
+    console.log(`Stored message in channel ${channelId}:`, message);
+  } catch (err) {
+    console.error("Error saving message:", err);
+  }
+
+  // Broadcast the message only to the room (excluding sender)
+  if (socket)
+    socket.to(channelId).emit("receiveMessage", message);
+  else 
+    io.to(channelId).emit("receiveMessage", message);
+  console.log(`Broadcast message to room ${channelId}`);
+
+  // Prepare remote push notifications for registered devices (if needed)
+  const adminDocs = await AdminChannel.find({ channels: channelId });
+  const messagesToSend = [];
+  adminDocs.forEach(doc => {
+    // Skip sending a push notification to the sender.
+    if (doc.userId === message.user._id) return;
+    // Iterate over each push token for the user.
+    doc.pushTokens.forEach(token => {
+      if (!Expo.isExpoPushToken(token)) {
+        console.error(`Push token ${token} is not a valid Expo push token`);
+        return;
+      }
+      messagesToSend.push({
+        to: token,
+        sound: "default",
+        title: "New Message",
+        body: message.text ? message.text : "You received an image or document",
+        data: { message },
+      });
+    });
+  });
+  const chunks = expo.chunkPushNotifications(messagesToSend);
+  for (const chunk of chunks) {
+    try {
+      const ticketChunk = await expo.sendPushNotificationsAsync(chunk);
+      console.log("Push notification ticket:", ticketChunk);
+    } catch (error) {
+      console.error(error);
+    }
+  }
+}
