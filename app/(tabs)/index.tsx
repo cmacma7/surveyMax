@@ -25,7 +25,8 @@ import CachedImage from '../i18n/cachedImage';
 import { Image } from "react-native";
 
 // Inside ChatScreen component
-import { Modal, ScrollView} from "react-native";
+import { Modal, ScrollView, Animated} from "react-native";
+
 
 
 import { io } from "socket.io-client";
@@ -41,6 +42,8 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 // NEW: Import AsyncStorage for token persistence.
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+
+const { width, height } = Dimensions.get("window");
 
 var HttpAuthHeader = {};
 
@@ -131,6 +134,7 @@ const ChatScreen: React.FC<any> = ({ route, navigation }) => {
   // State to manage full screen view
   const [modalVisible, setModalVisible] = useState(false);
   const [fullScreenImageUri, setFullScreenImageUri] = useState("");
+  const [scaleValue] = useState(new Animated.Value(0.8)); // initial scale value
 
   // Function to open full screen image
   const openFullScreen = (uri) => {
@@ -138,6 +142,20 @@ const ChatScreen: React.FC<any> = ({ route, navigation }) => {
     setModalVisible(true);
   };
 
+
+  // Animate when the modal is visible
+  useEffect(() => {
+    if (modalVisible) {
+      Animated.timing(scaleValue, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      // Reset scale for next time
+      scaleValue.setValue(0.8);
+    }
+  }, [modalVisible, scaleValue]);
 
   useEffect(() => {
     console.log("Entered ChatRoom:", chatroomName, "ID:", chatroomId);
@@ -457,6 +475,7 @@ return (
 
     <Modal visible={modalVisible} transparent={true}>
       <View style={{ flex: 1, backgroundColor: "black" }}>
+        {/* Close button at top left */}
         <TouchableOpacity
           onPress={() => setModalVisible(false)}
           style={{
@@ -476,13 +495,16 @@ return (
             justifyContent: "center",
             alignItems: "center",
           }}
+          style={{ width, height }}
         >
-          <CachedImage
-            style={{ width: "100%", height: "100%" }}
-            source={{ uri: fullScreenImageUri }}
-            resizeMode="contain"
-            chatroomId={chatroomId}
-          />
+          <Animated.View style={{ transform: [{ scale: scaleValue }], width, height }}>
+            <CachedImage
+              style={{ width, height }}
+              source={{ uri: fullScreenImageUri }}
+              resizeMode="contain"
+              chatroomId={chatroomId}
+            />
+          </Animated.View>
         </ScrollView>
       </View>
     </Modal>
