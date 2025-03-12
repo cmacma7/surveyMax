@@ -20,6 +20,9 @@ const SERVER_URL = 'https://b200.tagfans.com:5301';
 // const SERVER_URL = 'http://192.168.100.125:5300';
 import { t, setLanguage } from "../i18n/translations";
 import * as ImageManipulator from 'expo-image-manipulator';
+import CachedImage from '../i18n/cachedImage';
+
+import { Image } from "react-native";
 
 
 import { io } from "socket.io-client";
@@ -351,6 +354,22 @@ const ChatScreen: React.FC<any> = ({ route, navigation }) => {
     });
   }, [navigation, chatroomId, chatroomName, userId]);
 
+
+  const renderCustomImage = (props) => {
+    // Use passed imageStyle or fallback to default dimensions.
+    const defaultImageStyle = { width: 200, height: 150 };
+    const imageStyle = props.imageStyle || defaultImageStyle;
+  
+    return (
+      <CachedImage
+        style={[imageStyle, { borderRadius: 13 }]}
+        source={{ uri: props.currentMessage.image }}
+        resizeMode="contain"
+        chatroomId={chatroomId} // Pass the current chat room id here
+      />
+    );
+  };  
+
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
@@ -382,15 +401,16 @@ const ChatScreen: React.FC<any> = ({ route, navigation }) => {
         renderSend={(props) => (
           <Send {...props}>
             <View style={{ margin: 10 }}>
-                <Icon name="send" size={28} color="#007AFF" />
-              </View>
+              <Icon name="send" size={28} color="#007AFF" />
+            </View>
           </Send>
         )}
         
         listViewProps={{
           contentContainerStyle: styles.contentContainer,
         }}
-        
+        // Add custom image renderer
+        renderMessageImage={renderCustomImage}
       />
       </KeyboardAvoidingView>
      
