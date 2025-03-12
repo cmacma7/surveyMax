@@ -39,6 +39,7 @@ const messageSchema = new mongoose.Schema({
   text: { type: String },
   user: { type: Object, required: true },
   createdAt: { type: Date, default: Date.now },
+  image: { type: String },
   _id: { type: String, default: () => uuidv4() },
 });
 const Message = mongoose.model("Message", messageSchema);
@@ -729,26 +730,25 @@ io.on("connection", (socket) => {
  */
 app.post("/api/send-message", authenticateToken, async (req, res) => {
   let { message } = req.body;
-  if (!message.text) {
+  if ((!message.text || message.text.trim() === "") && !message.image) {
     if (typeof message === "string") {
       message = { text: message };
     } else {
-      return res.status(400).json({ error: 'Missing "text" field in the message.' });
+      return res.status(400).json({ error: 'Missing message content. Provide text or image.' });
     }
   }
 
   const finalMessage = {
-    text: message.text,
+    text: message.text || "", // Default to empty string if text is missing
     user: {
-      _id:
-        message.user && message.user._id
-          ? message.user._id
-          : `user_${Math.random().toString(36).substring(7)}`,
+      _id: (message.user && message.user._id) ? message.user._id : `user_${Math.random().toString(36).substring(7)}`,
     },
     channelId: message.channelId,
     createdAt: message.createdAt || new Date().toISOString(),
     _id: message._id || uuidv4(),
+    image: message.image // Will be undefined if not provided
   };
+  //console.log(finalMessage);
 
   // Save the message to MongoDB
   try {
