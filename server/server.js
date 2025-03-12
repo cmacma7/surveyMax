@@ -419,10 +419,10 @@ app.post("/api/login", async (req, res) => {
   }
 });
 
-// NEW: API endpoint for user logout. (Protected)
+// NEW: API endpoint for user logout. (public)
 // Expects { userId, token } in the request body.
 // Removes the specified push token from the user's AdminChannel record.
-app.post("/api/logout", authenticateToken, async (req, res) => {
+app.post("/api/logout", async (req, res) => {
   const { userId, token } = req.body;
   if (!userId || !token) {
     return res.status(400).json({ error: "userId and token are required." });
