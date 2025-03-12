@@ -462,11 +462,11 @@ return (
           style={{
             position: "absolute",
             top: 40,
-            right: 20,
+            left: 20,
             zIndex: 1,
           }}
         >
-          <Text style={{ color: "white", fontSize: 20 }}>Close</Text>
+          <Icon name="close" size={28} color="#fff" />
         </TouchableOpacity>
         <ScrollView
           maximumZoomScale={3}
