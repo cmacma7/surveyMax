@@ -24,6 +24,9 @@ import CachedImage from '../i18n/cachedImage';
 
 import { Image } from "react-native";
 
+// Inside ChatScreen component
+import { Modal, ScrollView} from "react-native";
+
 
 import { io } from "socket.io-client";
 const socket = io(SERVER_URL);
@@ -123,6 +126,18 @@ const ChatScreen: React.FC<any> = ({ route, navigation }) => {
   // Refs for notification listeners.
   const notificationListener = useRef<Notifications.Subscription>();
   const responseListener = useRef<Notifications.Subscription>();
+
+
+  // State to manage full screen view
+  const [modalVisible, setModalVisible] = useState(false);
+  const [fullScreenImageUri, setFullScreenImageUri] = useState("");
+
+  // Function to open full screen image
+  const openFullScreen = (uri) => {
+    setFullScreenImageUri(uri);
+    setModalVisible(true);
+  };
+
 
   useEffect(() => {
     console.log("Entered ChatRoom:", chatroomName, "ID:", chatroomId);
@@ -378,22 +393,23 @@ const ChatScreen: React.FC<any> = ({ route, navigation }) => {
   }, [navigation, chatroomId, chatroomName, userId]);
 
 
+  // Modify your renderCustomImage function:
   const renderCustomImage = (props) => {
-    // Use passed imageStyle or fallback to default dimensions.
-    const defaultImageStyle = { width: 200, height: 150 };
-    const imageStyle = props.imageStyle || defaultImageStyle;
-  
     return (
-      <CachedImage
-        style={[imageStyle, { borderRadius: 13 }]}
-        source={{ uri: props.currentMessage.image }}
-        resizeMode="contain"
-        chatroomId={chatroomId} // Pass the current chat room id here
-      />
+      <TouchableOpacity onPress={() => openFullScreen(props.currentMessage.image)}>
+        <CachedImage
+          style={[{ width: 200, height: 150, borderRadius: 13 }]}
+          source={{ uri: props.currentMessage.image }}
+          resizeMode="contain"
+          chatroomId={chatroomId}
+        />
+      </TouchableOpacity>
     );
-  };  
+  };
 
-  return (
+// Add the Modal component (e.g., at the bottom of ChatScreen's return statement)
+return (
+  <>
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
         style={{ flex: 1,  marginBottom: 51}} // the keyboard will cover the message input without this
@@ -438,6 +454,39 @@ const ChatScreen: React.FC<any> = ({ route, navigation }) => {
       </KeyboardAvoidingView>
      
     </SafeAreaView>
+
+    <Modal visible={modalVisible} transparent={true}>
+      <View style={{ flex: 1, backgroundColor: "black" }}>
+        <TouchableOpacity
+          onPress={() => setModalVisible(false)}
+          style={{
+            position: "absolute",
+            top: 40,
+            right: 20,
+            zIndex: 1,
+          }}
+        >
+          <Text style={{ color: "white", fontSize: 20 }}>Close</Text>
+        </TouchableOpacity>
+        <ScrollView
+          maximumZoomScale={3}
+          minimumZoomScale={1}
+          contentContainerStyle={{
+            flex: 1,
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <CachedImage
+            style={{ width: "100%", height: "100%" }}
+            source={{ uri: fullScreenImageUri }}
+            resizeMode="contain"
+            chatroomId={chatroomId}
+          />
+        </ScrollView>
+      </View>
+    </Modal>
+  </>
   );
 };
 
