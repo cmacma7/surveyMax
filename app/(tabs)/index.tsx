@@ -19,6 +19,7 @@ import {
 const SERVER_URL = 'https://b200.tagfans.com:5301';
 // const SERVER_URL = 'http://192.168.100.125:5300';
 import { t, setLanguage } from "../i18n/translations";
+import * as ImageManipulator from 'expo-image-manipulator';
 
 
 import { io } from "socket.io-client";
@@ -248,22 +249,85 @@ const ChatScreen: React.FC<any> = ({ route, navigation }) => {
   };
 
   const pickImage = async () => {
+    // Launch image picker to select an image from the device
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
-      base64: true,
     });
-    if (!result.canceled && result.assets?.length) {
-      const imageMessage: IMessage = {
-        _id: Math.random().toString(36),
-        createdAt: new Date(),
-        user: { _id: userId, name: "User" },
-        image: `data:image/jpeg;base64,${result.assets[0].base64}`,
-        channelId: chatroomId, // include channelId for image messages too
-      };
-      onSend([imageMessage]);
+  
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      const asset = result.assets[0];
+      let imageUri = asset.uri;
+  
+      // Resize image if width is greater than 1024 pixels
+      if (asset.width > 1024) {
+        const manipResult = await ImageManipulator.manipulateAsync(
+          asset.uri,
+          [{ resize: { width: 1024 } }], // Resize width to 1024; height auto-adjusts to maintain aspect ratio
+          {
+            compress: 0.7, // Adjust compression as needed (0.0 - 1.0)
+            format: ImageManipulator.SaveFormat.JPEG, // Ensure JPEG format
+          }
+        );
+        imageUri = manipResult.uri;
+      }
+  
+      // Generate a unique key for the image with the chatroom id in the path
+      const imageKey = `chat_images/${chatroomId}/${Date.now()}_${Math.random()
+        .toString(36)
+        .substr(2, 9)}.jpg`;
+  
+      try {
+        // Step 1: Request a presigned URL for uploading the image
+        const presignResponse = await fetch(
+          `${SERVER_URL}/presigned-url/put?key=${encodeURIComponent(imageKey)}`
+        );
+        const presignData = await presignResponse.json();
+        if (!presignResponse.ok || !presignData.signedUrl) {
+          Alert.alert("Error", "Failed to get upload URL");
+          return;
+        }
+        const uploadUrl = presignData.signedUrl;
+  
+        // Step 2: Get the image file as a blob from the local URI
+        const fileResponse = await fetch(imageUri);
+        const blob = await fileResponse.blob();
+  
+        // Step 3: Upload the image blob to S3 using the presigned URL
+        const uploadResponse = await fetch(uploadUrl, {
+          method: "PUT",
+          body: blob,
+          headers: {
+            "Content-Type": "image/jpeg",
+          },
+        });
+        if (!uploadResponse.ok) {
+          Alert.alert("Error", "Image upload failed");
+          return;
+        }
+  
+        // Step 4: Construct the final image URL using the GET endpoint.
+        // Other devices will fetch the image using this URL.
+        const imageUrl = `https://tagfans-survey-image.s3.amazonaws.com/${imageKey}`;
+  
+        // Step 5: Create the chat message object with the image URL
+        const imageMessage = {
+          _id: Math.random().toString(36),
+          createdAt: new Date(),
+          user: { _id: userId, name: "User" },
+          image: imageUrl,
+          channelId: chatroomId,
+        };
+  
+        // Send the message using your onSend function
+        onSend([imageMessage]);
+      } catch (error) {
+        console.error("Error uploading image:", error);
+        Alert.alert("Error", "An error occurred during image upload");
+      }
     }
   };
+  
 
   const renderCustomActions = () => (
     <TouchableOpacity onPress={pickImage} style={styles.actionButton}>
