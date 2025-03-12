@@ -18,7 +18,7 @@ import {
 
 const SERVER_URL = 'https://b200.tagfans.com:5301';
 // const SERVER_URL = 'http://192.168.100.125:5300';
-import { t, setLanguage } from "./translations";
+import { t, setLanguage } from "../i18n/translations";
 
 
 import { io } from "socket.io-client";

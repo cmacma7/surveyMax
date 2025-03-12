@@ -14,7 +14,7 @@ const SERVER_URL = 'https://b200.tagfans.com:5301';
 const SURVEY_ADMIN_URL = 'https://b200.tagfans.com/surveyMax/admin.html';
 // const SERVER_URL = 'http://192.168.100.125:5300';
 
-import { t, setLanguage } from "./translations";
+import { t, setLanguage } from "../i18n/translations";
 
 export default function TabTwoScreen() {
   const router = useRouter();
