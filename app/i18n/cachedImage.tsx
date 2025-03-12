@@ -8,6 +8,15 @@ const CachedImage = ({ source, style, resizeMode, chatroomId }) => {
   const [localUri, setLocalUri] = useState(null);
 
   useEffect(() => {
+    if (!source || !source.uri) {
+        console.warn("CachedImage: No valid source.uri provided");
+        return;
+    }    
+    // If the URI is already a local file, skip caching.
+    if (source.uri.startsWith("file://")) {
+        setLocalUri(source.uri);
+        return;
+    }    
     async function loadImage() {
       try {
         // Create a directory path based on chatroomId
