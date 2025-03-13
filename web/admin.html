@@ -676,8 +676,9 @@
             <label>Expected Answer</label>
           </div>
         </div>
-      </div>
+      </div>     
     </div>
+ 
     <div class="modal-footer">
       <button class="btn green" onclick="saveTrigger()">Save Trigger</button>
     </div>
@@ -814,11 +815,14 @@
 	<script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>		
 	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ace.js"></script>
 
     <script>
-	
-  	  const BASE_URL = 'https://b200.tagfans.com:5301';
-	  //  const BASE_URL = 'http://127.0.0.1:5300';
+    // Global variables
+    // Global variable for the Ace Editor instance
+    var triggerEditor;
+ 	  const BASE_URL = 'https://b200.tagfans.com:5301';	    
+    //  const BASE_URL = 'http://127.0.0.1:5300';
 	
     // On load, check if userToken exists. If not, redirect to login.html.
     // Helper function to get URL parameters
@@ -1439,7 +1443,14 @@
               // When modal opens, initialize the select elements
               M.FormSelect.init(document.querySelectorAll('select'));
               loadTriggerConfig();
-            }
+            },
+            onOpenEnd: () => {
+              // Initialize select elements as before
+              M.FormSelect.init(document.querySelectorAll('select'));
+              // Call your trigger configuration loader
+              loadTriggerConfig();
+              
+            }            
           });
 
 
@@ -3841,14 +3852,119 @@ async function showEventTriggers() {
 
 function renderTriggersList() {
   const container = document.getElementById('triggersList');
-  container.innerHTML = currentTriggers.map(trigger => `
-    <div class="card-panel">
-      <h6>${trigger.name}</h6>
-      <p>Type: ${trigger.conditionType}</p>
-      <pre>${trigger.script}</pre>
-      <button class="btn red" onclick="deleteTrigger('${trigger._id}')">Delete</button>
-    </div>
-  `).join('');
+  container.innerHTML = "";
+  currentTriggers.forEach(trigger => {
+    const cardPanel = document.createElement("div");
+    cardPanel.className = "card-panel";
+    
+    // Header: trigger name
+    const header = document.createElement("h6");
+    header.textContent = trigger.name;
+    cardPanel.appendChild(header);
+    
+    // Display trigger type
+    const typePara = document.createElement("p");
+    typePara.textContent = "Type: " + trigger.conditionType;
+    cardPanel.appendChild(typePara);
+    
+    // Script display block (initially non-editable)
+    const scriptPre = document.createElement("pre");
+    scriptPre.textContent = trigger.script;
+    cardPanel.appendChild(scriptPre);
+    
+    // Button container for Delete and Edit buttons
+    const buttonContainer = document.createElement("div");
+    
+    // Delete button (unchanged)
+    const deleteButton = document.createElement("button");
+    deleteButton.className = "btn red";
+    deleteButton.textContent = "Delete";
+    deleteButton.onclick = () => deleteTrigger(trigger._id);
+    buttonContainer.appendChild(deleteButton);
+    
+    // Edit button to enable editing the script
+    const editButton = document.createElement("button");
+    editButton.className = "btn blue";
+    editButton.textContent = "Edit";
+    buttonContainer.appendChild(editButton);
+    
+    cardPanel.appendChild(buttonContainer);
+    
+    // When user clicks Edit, replace <pre> with an Ace editor instance.
+    editButton.onclick = () => {
+      // Create a new div that will host the Ace editor.
+      const editorDiv = document.createElement("div");
+      editorDiv.style.width = "100%";
+      editorDiv.style.height = "200px";
+      
+      // Replace the static <pre> with the editor div.
+      cardPanel.replaceChild(editorDiv, scriptPre);
+      
+      // Initialize Ace on the new div.
+      const editor = ace.edit(editorDiv);
+      editor.setTheme("ace/theme/monokai");
+      editor.session.setMode("ace/mode/javascript");
+      editor.session.setOption("useWorker", true);
+      editor.setOptions({ fontSize: "12pt", showPrintMargin: false });
+      editor.setValue(trigger.script, -1);
+      
+      // Remove the Edit button and add Save and Cancel buttons.
+      buttonContainer.removeChild(editButton);
+      
+      const saveButton = document.createElement("button");
+      saveButton.className = "btn green";
+      saveButton.textContent = "Save";
+      buttonContainer.appendChild(saveButton);
+      
+      const cancelButton = document.createElement("button");
+      cancelButton.className = "btn grey";
+      cancelButton.textContent = "Cancel";
+      buttonContainer.appendChild(cancelButton);
+      
+      // Save button: update the trigger on the server
+      saveButton.onclick = async () => {
+        const updatedScript = editor.getValue();
+        try {
+          const response = await fetch(`${BASE_URL}/api/survey/${CurrentSurveySchemaId}/triggers/${trigger._id}`, {
+            method: 'PUT',
+            headers: { 
+              "Content-Type": "application/json",
+              Authorization: "Bearer " + currentUserToken,
+              "X-User-Id": currentUserId
+            },
+            body: JSON.stringify({ script: updatedScript })
+          });
+          const result = await response.json();
+          if (response.ok) {
+            // Update local trigger data and revert back to non-editable view.
+            trigger.script = updatedScript;
+            const newPre = document.createElement("pre");
+            newPre.textContent = updatedScript;
+            cardPanel.replaceChild(newPre, editorDiv);
+            // Remove Save and Cancel buttons; add back Edit.
+            buttonContainer.removeChild(saveButton);
+            buttonContainer.removeChild(cancelButton);
+            buttonContainer.appendChild(editButton);
+          } else {
+            M.toast({ html: result.error || "Failed to save script", displayLength: 2000 });
+          }
+        } catch (err) {
+          console.error(err);
+          M.toast({ html: "Error saving script", displayLength: 2000 });
+        }
+      };
+      
+      // Cancel button: discard changes and revert view.
+      cancelButton.onclick = () => {
+        cardPanel.replaceChild(scriptPre, editorDiv);
+        buttonContainer.removeChild(saveButton);
+        buttonContainer.removeChild(cancelButton);
+        buttonContainer.appendChild(editButton);
+      };
+    };
+    
+    container.appendChild(cardPanel);
+  });
 }
 
 async function saveTrigger() {
@@ -3868,10 +3984,11 @@ async function saveTrigger() {
     };
     script = generateAnswerMatchScript(params);
   }
+  
 
   const response = await fetch(`${BASE_URL}/api/survey/${CurrentSurveySchemaId}/triggers`, {
     method: 'POST',
-    headers: { "Content-Type": "application/json" , Authorization: "Bearer " + currentUserToken, "X-User-Id": currentUserId},
+    headers: { "Content-Type": "application/json", Authorization: "Bearer " + currentUserToken, "X-User-Id": currentUserId},
     body: JSON.stringify({
       name: `Trigger ${currentTriggers.length + 1}`,
       conditionType: type,
@@ -3883,6 +4000,7 @@ async function saveTrigger() {
   currentTriggers = await response.json();
   renderTriggersList();
 }
+
 
 
 async function deleteTrigger(triggerId) {
@@ -3954,7 +4072,7 @@ function loadTriggerConfig() {
   const configContainer = document.getElementById('triggerConfig');
   configContainer.innerHTML = '';
 
-  // Add configuration panels for each trigger type
+  // Add configuration panels for each trigger type (your existing code)...
   const triggerTypes = {
     starThreshold: `
       <div class="row">
@@ -3994,7 +4112,6 @@ function loadTriggerConfig() {
     `
   };
 
-  // Add the config panels to the modal
   for (const [type, html] of Object.entries(triggerTypes)) {
     const div = document.createElement('div');
     div.className = 'trigger-config';
@@ -4006,7 +4123,10 @@ function loadTriggerConfig() {
   // Initialize Materialize components
   M.FormSelect.init(document.querySelectorAll('select'));
   M.updateTextFields();
+
+  
 }
+
 
 // Add this to handle trigger type changes
 document.getElementById('triggerType').addEventListener('change', function() {

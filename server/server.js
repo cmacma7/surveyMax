@@ -136,7 +136,7 @@ app.use(express.urlencoded({ extended: true }));
 //app.use(cors());
 
 app.use(cors({
-  origin: ["https://b200.tagfans.com", "http://b200.tagfans.com", "https://eat.tagfans.com", "http://eat.tagfans.com"], // Allow frontend domains
+  origin: ["https://b200.tagfans.com", "http://b200.tagfans.com", "https://eat.tagfans.com", "http://eat.tagfans.com", "http://127.0.0.1"], // Allow frontend domains
   credentials: true // Allows cookies to be sent with requests
 }));
 
@@ -1082,33 +1082,42 @@ app.get("/api/survey/:id/triggers", async (req, res) => {
   }
 });
 
-// DELETE an event trigger from a survey. (Protected)
+// PUT to modify an event trigger in a survey. (Protected)
+app.put("/api/survey/:surveyId/triggers/:triggerId", authenticateToken, async (req, res) => {
+  try {
+    // Find the survey with the specified surveyId and a trigger with the triggerId
+    const survey = await SurveySchema.findOneAndUpdate(
+      { _id: req.params.surveyId, "eventTriggers._id": req.params.triggerId },
+      { $set: { "eventTriggers.$": req.body } },
+      { new: true }
+    );
+    if (!survey) {
+      return res.status(404).json({ error: "Survey or trigger not found" });
+    }
+    res.json(survey.eventTriggers);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 app.delete("/api/survey/:surveyId/triggers/:triggerId", authenticateToken, async (req, res) => {
   try {
-    const survey = await SurveySchema.findById(req.params.surveyId);
+    const survey = await SurveySchema.findOneAndUpdate(
+      { _id: req.params.surveyId },
+      { $pull: { eventTriggers: { _id: req.params.triggerId } } },
+      { new: true }
+    );
     if (!survey) {
-      return res.status(404).json({ error: "Survey not found" });
+      return res.status(404).json({ error: "Survey or trigger not found" });
     }
-    
-    // Remove the trigger by filtering it out
-    const triggerId = req.params.triggerId;
-    const originalLength = survey.eventTriggers.length;
-    survey.eventTriggers = survey.eventTriggers.filter(trigger => {
-      // Ensure trigger._id is a string (or convert if necessary)
-      return trigger._id.toString() !== triggerId;
-    });
-    
-    if (survey.eventTriggers.length === originalLength) {
-      return res.status(404).json({ error: "Trigger not found" });
-    }
-
-    await survey.save();
-    res.json({ success: true });
+    res.json({ success: true, eventTriggers: survey.eventTriggers });
   } catch (err) {
     console.error("Error deleting trigger:", err);
     res.status(500).json({ error: err.message });
   }
 });
+
 
 /************************************* 
 * AWS S3 operations 
