@@ -1,6 +1,7 @@
 const express = require("express");
 const http = require("http");
 const cors = require("cors");
+const cookieParser = require("cookie-parser");
 const { Server } = require("socket.io");
 const { v4: uuidv4 } = require("uuid");
 const { Expo } = require("expo-server-sdk");
@@ -127,9 +128,18 @@ const transporter = nodemailer.createTransport({
 
 // Initialize Express and HTTP server.
 const app = express();
+
+app.use(cookieParser());
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cors());
+//app.use(cors());
+
+app.use(cors({
+  origin: ["https://b200.tagfans.com", "http://b200.tagfans.com", "https://eat.tagfans.com", "http://eat.tagfans.com"], // Allow frontend domains
+  credentials: true // Allows cookies to be sent with requests
+}));
+
 const server = http.createServer(app);
 
 // Create Socket.IO server with a large payload limit.
@@ -161,13 +171,15 @@ console.log(bucketName);
 // This middleware requires that the request carries a valid JWT token
 // in the Authorization header and that the token's userId matches the provided userId.
 function authenticateToken(req, res, next) {
+
+  // we have cookie and body both has the userId and userToken
+  let token = req.cookies.userToken; // ✅ Check HttpOnly cookie first
+
   // Extract token from Authorization header (expected format: "Bearer <token>")
-  const authHeader = req.headers['authorization'];
-  if (!authHeader) {
-    return res.status(401).json({ error: "Token required" });
+  if (!token){
+    const authHeader = req.headers['authorization'];
+    token = authHeader && authHeader.split(' ')[1];
   }
-  
-  const token = authHeader.split(' ')[1];
   if (!token) {
     return res.status(401).json({ error: "Token required" });
   }
@@ -178,7 +190,9 @@ function authenticateToken(req, res, next) {
     }
 
     // Extract `userId` from headers
-    const requestUserId = req.headers["x-user-id"];
+    let requestUserId = req.cookies.userId; // ✅ Check HttpOnly cookie first
+
+    if (!requestUserId) requestUserId = req.headers["x-user-id"];
     
     // Validate that the provided `X-User-Id` matches the token's `userId`
     if (!requestUserId || requestUserId !== decoded.userId) {
@@ -412,7 +426,27 @@ app.post("/api/login", async (req, res) => {
       { expiresIn: "7d" }
     );
     console.log(`User ${email} logged in successfully.`);
-    // Return both token and userId for client usage.
+
+    // ✅ Store in HttpOnly Cookie (new method)
+    res.cookie("userToken", token, {
+      httpOnly: false,
+      secure: true,
+      sameSite: "None",
+      domain: ".tagfans.com", // Allows sharing across subdomains
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      path: "/" 
+    });
+
+    res.cookie("userId", user._id, {
+      httpOnly: false,
+      secure: true,
+      sameSite: "None",
+      domain: ".tagfans.com",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      path: "/" 
+    });
+
+    // ✅ Return token and userId for client usage to store in localStorage (old method).
     return res.status(200).json({ token, userId: user._id });
   } catch (err) {
     console.error("Error during login:", err);
@@ -421,12 +455,20 @@ app.post("/api/login", async (req, res) => {
 });
 
 // NEW: API endpoint for user logout. (public)
-// Expects { userId, token } in the request body.
+// Expects { userId, token } in the request body. Here token is the pushToken, not the userToken
 // Removes the specified push token from the user's AdminChannel record.
 app.post("/api/logout", async (req, res) => {
   const { userId, token } = req.body;
   if (!userId || !token) {
-    return res.status(400).json({ error: "userId and token are required." });
+    // clear cookie (new method)
+    if (!token) {
+      res.clearCookie("userToken", { domain: ".tagfans.com", path: "/" });
+      res.clearCookie("userId", { domain: ".tagfans.com", path: "/" });
+      return res.status(200).json({ success: true, message: "Anonymous Logout successful" });
+    }
+    else {
+      return res.status(400).json({ error: "userId and token are required." });
+    }
   }
   try {
     // Remove the provided push token from the user's pushTokens array
@@ -440,6 +482,11 @@ app.post("/api/logout", async (req, res) => {
       return res.status(404).json({ error: "User not found or no push tokens to remove." });
     }
     
+    // clear cookie (new method)
+    res.clearCookie("userToken", { domain: ".tagfans.com", path: "/" });
+    res.clearCookie("userId", { domain: ".tagfans.com", path: "/" });
+  
+
     console.log(`Removed push token ${token} for user ${userId}`);
     return res.status(200).json({ success: true, message: "Logout successful" });
   } catch (err) {
@@ -671,6 +718,7 @@ app.post("/api/add-channel-admin", authenticateToken, async (req, res) => {
 // NEW: API endpoint to list all channels that a user can admin. (Protected)
 app.post("/api/list-admin", authenticateToken, async (req, res) => {
   let { userId, email } = req.body;
+  if (!userId && req.cookies.userId) userId = req.cookies.userId;
   if (!userId && !email) {
     return res.status(400).json({ error: "Either userId or email is required." });
   }

@@ -403,7 +403,8 @@
           const response = await fetch(`${SERVER_URL}/api/login`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, password })
+            body: JSON.stringify({ email, password }),
+            credentials: "include" // Ensures cookies are sent and received
           });
           const data = await response.json();
 

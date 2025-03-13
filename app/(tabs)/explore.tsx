@@ -123,6 +123,7 @@ export default function TabTwoScreen() {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({ userId, token: pushToken }),
+                  credentials: "include"
                 });
                 if (!response.ok) {
                   // Handle non-OK responses (e.g., server errors)

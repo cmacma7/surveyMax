@@ -3306,14 +3306,24 @@ async function switchSurveyById(surveyId) {
   
 }
 
-function logout() {
+async function logout() {
 	let res = confirm(i18n_local[currentLang].logoutConfirm);
-	if (res) {
+	if (res) {  
+    // clear the cookie authentication
+    const response = await fetch(`${BASE_URL}/api/logout`, {
+      method: 'POST',
+      body: JSON.stringify({ userId: localStorage.userId }),
+      credentials: "include"
+    });
+    const data = await response.json();
+    console.log(data);
+
     delete localStorage.userId;
     delete localStorage.userToken;
+
     setTimeout(function(){
       location.reload();
-    }, 2000)
+    }, 1000)
     
   }
 }
