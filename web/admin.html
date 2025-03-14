@@ -221,6 +221,16 @@
   transition: max-height 0.5s ease;
 }
 
+.sticky-footer {
+  position: sticky;
+  bottom: 0;
+  background-color: #fff; /* or any background to match the modal */
+  z-index: 1000;  /* ensure it stays on top */
+  padding: 10px 0;
+}
+
+
+
    /*********************************************
    * summary page
    *********************************************/
@@ -686,7 +696,7 @@
     </div>
   </div>
   <!-- Fixed Add Trigger Button -->
-  <div class="modal-footer" style="justify-content: center;">
+  <div class="modal-footer  sticky-footer" style="justify-content: center;">
     <button class="btn blue" onclick="showNewTriggerForm()">Add New Trigger</button>
   </div>
 </div>
@@ -4022,14 +4032,17 @@ async function saveNewTrigger() {
   if (type === 'starThreshold') {
     params = {
       threshold: parseFloat(document.getElementById('starThreshold').value),
-      percentage: parseFloat(document.getElementById('starPercentage').value)
+      count: parseInt(document.getElementById('starCount').value, 10)
     };
     script = generateStarThresholdScript(params);
   } else if (type === 'answerMatch') {
-    params = {
-      questionId: document.getElementById('targetQuestion').value,
-      answer: document.getElementById('targetAnswer').value
-    };
+      const targetAnswerElem = document.getElementById('targetAnswer');
+      const selectedAnswers = Array.from(targetAnswerElem.selectedOptions).map(opt => opt.value);
+
+      params = {
+        questionId: document.getElementById('targetQuestion').value,
+        answer: selectedAnswers
+      };
     script = generateAnswerMatchScript(params);
   }
   
@@ -4080,22 +4093,21 @@ function cancelNewTrigger() {
 
 
 
-
-
 function generateStarThresholdScript(params) {
   return `
     const threshold = ${params.threshold};
-    const requiredPercentage = ${params.percentage};
+    const requiredCount = ${params.count};
 
     (function() {
       return async function checkCondition(surveyData) {
-        const starQuestions = surveyData.data.filter(q => 
-          q.questionType === 'stars' && q.answer < threshold
+        // 篩選出所有星級評分題，其回答低於設定的 threshold
+        const lowRatedQuestions = surveyData.data.filter(q => 
+          q.questionType === 'stars' && Number(q.answer) < threshold
         );
-        
-        const percentage = (starQuestions.length / surveyData.data.length) * 100;
-        if (percentage >= requiredPercentage) {
-          return \`Low star ratings detected: \${percentage.toFixed(1)}% of questions below \${threshold} stars\`;
+        if (lowRatedQuestions.length >= requiredCount) {
+          // 收集觸發條件的題目文字
+          const triggeredQuestions = lowRatedQuestions.map(q => q.question).join('、');
+          return \`觸發條件達成：共有 \${lowRatedQuestions.length} 題星級評分題的回答低於 \${threshold} 星。觸發題目：\${triggeredQuestions}。原因：這些題目的評分均低於設定的 \${threshold} 星。\`;
         }
         return null;
       };
@@ -4108,20 +4120,32 @@ function generateAnswerMatchScript(params) {
   return `
     (function() {
       async function checkCondition(surveyData) {
-        const targetQuestion = surveyData.data.find(q => 
-          q.id === '${params.questionId}' || q._id === '${params.questionId}'
-        );
-      
-        if (targetQuestion && targetQuestion.answer === '${params.answer}') {
-          return \`Condition met: Question '\${targetQuestion.questionText}' answered with '\${targetQuestion.answer}'\`;
+        // 直接使用傳入的預期答案陣列
+        const expectedAnswers = ${JSON.stringify(params.answer)};
+        
+        // 透過比較 questionId（轉為數字）尋找目標問題
+        const targetQuestion = surveyData.data.find(q => q.questionId === Number('${params.questionId}'));
+        
+        if (targetQuestion) {
+          let answer = targetQuestion.answer;
+          // 如果答案不是陣列，則轉換為陣列
+          if (!Array.isArray(answer)) {
+            answer = [answer];
+          }
+          
+          // 檢查答案中是否有符合任一預期答案
+          const matched = expectedAnswers.some(expected => answer.includes(expected));
+          if (matched) {
+            return \`觸發條件達成：問題「\${targetQuestion.question}」的回答（\${answer.join(', ')}）包含預期選項（\${expectedAnswers.join(', ')}）。原因：該回答符合預期的答案條件。\`;
+          }
         }
         return null;
       }
-      
       return checkCondition;
     })();
   `;
 }
+
 
 
 
@@ -4138,11 +4162,11 @@ function loadTriggerConfig() {
       <div class="row">
         <div class="input-field col s6">
           <input type="number" id="starThreshold" step="0.1" min="1" max="5">
-          <label>Threshold (stars)</label>
+          <label for="starThreshold">Threshold (stars)</label>
         </div>
         <div class="input-field col s6">
-          <input type="number" id="starPercentage" min="0" max="100">
-          <label>Percentage (%)</label>
+          <input type="number" id="starCount" min="1">
+          <label for="starCount">Required Count</label>
         </div>
       </div>
     `,
