@@ -3873,93 +3873,88 @@ function renderTriggersList() {
     const cardPanel = document.createElement("div");
     cardPanel.className = "card-panel";
     
-    // Header: trigger name
+    // Create a header container that always shows Title and Type
+    const headerContainer = document.createElement("div");
+    headerContainer.className = "trigger-header";
     const header = document.createElement("h6");
     header.textContent = trigger.name;
-    cardPanel.appendChild(header);
+    headerContainer.appendChild(header);
     
-    // Display trigger type
     const typePara = document.createElement("p");
-    typePara.textContent = "Type: " + trigger.conditionType;
-    cardPanel.appendChild(typePara);
+    typePara.textContent = "類型: " + trigger.conditionType;
+    headerContainer.appendChild(typePara);
     
-// Script display block (initially non-editable)
-const scriptPre = document.createElement("pre");
-scriptPre.textContent = trigger.script;
-// Set a maximum height and enable scrolling if content overflows
-scriptPre.style.maxHeight = "200px";
-scriptPre.style.overflowY = "auto";
-// Allow long lines to wrap and break appropriately
-scriptPre.style.whiteSpace = "pre-wrap";
-scriptPre.style.wordBreak = "break-word";
-// Add a pointer cursor to indicate it is clickable for expansion
-scriptPre.style.cursor = "pointer";
-// Toggle expansion on click
-scriptPre.addEventListener("click", function() {
-  if (scriptPre.style.maxHeight === "none") {
+    cardPanel.appendChild(headerContainer);
+    
+    // Create a container for the script content
+    const scriptContainer = document.createElement("div");
+    scriptContainer.className = "trigger-script";
+    const scriptPre = document.createElement("pre");
+    scriptPre.textContent = trigger.script;
     scriptPre.style.maxHeight = "200px";
-  } else {
-    scriptPre.style.maxHeight = "none";
-  }
-});
-cardPanel.appendChild(scriptPre);
-
+    scriptPre.style.overflowY = "auto";
+    scriptPre.style.whiteSpace = "pre-wrap";
+    scriptPre.style.wordBreak = "break-word";
+    scriptPre.style.cursor = "pointer";
+    // Allow user to toggle expansion if needed
+    scriptPre.addEventListener("click", function() {
+      scriptPre.style.maxHeight = scriptPre.style.maxHeight === "none" ? "200px" : "none";
+    });
+    scriptContainer.appendChild(scriptPre);
+    cardPanel.appendChild(scriptContainer);
     
     // Button container for Delete and Edit buttons
     const buttonContainer = document.createElement("div");
-    // Add flex display and gap between buttons
     buttonContainer.style.display = "flex";
     buttonContainer.style.gap = "10px";
     buttonContainer.style.marginTop = "10px";
-    // Delete button (unchanged)
+    
+    // Delete button
     const deleteButton = document.createElement("button");
     deleteButton.className = "btn red";
-    deleteButton.textContent = "Delete";
+    deleteButton.textContent = "刪除";
     deleteButton.onclick = () => deleteTrigger(trigger._id);
     buttonContainer.appendChild(deleteButton);
     
-    // Edit button to enable editing the script
+    // Edit button
     const editButton = document.createElement("button");
     editButton.className = "btn blue";
-    editButton.textContent = "Edit";
+    editButton.textContent = "編輯";
     buttonContainer.appendChild(editButton);
     
-    cardPanel.appendChild(buttonContainer);
-    
-    // When user clicks Edit, replace <pre> with an Ace editor instance.
+    // When user clicks Edit, only replace the script container with an Ace editor.
     editButton.onclick = () => {
-      // Create a new div that will host the Ace editor.
+      // Create a new div to host the Ace editor
       const editorDiv = document.createElement("div");
       editorDiv.style.width = "100%";
       editorDiv.style.height = "400px";
+      // Replace script container's content with the editor div
+      scriptContainer.innerHTML = "";
+      scriptContainer.appendChild(editorDiv);
       
-      // Replace the static <pre> with the editor div.
-      cardPanel.replaceChild(editorDiv, scriptPre);
-      
-      // Initialize Ace on the new div.
+      // Initialize Ace on the new div
       const editor = ace.edit(editorDiv);
       editor.setTheme("ace/theme/monokai");
       editor.session.setMode("ace/mode/javascript");
       editor.session.setOption("useWorker", true);
-      // Enable ES8 (ECMAScript 2017) support:
-      // editor.session.$worker.send("changeOptions", { esversion: 8 });
       editor.setOptions({ fontSize: "12pt", showPrintMargin: false });
       editor.setValue(trigger.script, -1);
       
-      // Remove the Edit button and add Save and Cancel buttons.
+      // Remove the Edit button from the button container
       buttonContainer.removeChild(editButton);
       
+      // Create Save and Cancel buttons
       const saveButton = document.createElement("button");
       saveButton.className = "btn green";
-      saveButton.textContent = "Save";
-      buttonContainer.appendChild(saveButton);
-      
+      saveButton.textContent = "儲存";
       const cancelButton = document.createElement("button");
       cancelButton.className = "btn grey";
-      cancelButton.textContent = "Cancel";
+      cancelButton.textContent = "取消";
+      
+      buttonContainer.appendChild(saveButton);
       buttonContainer.appendChild(cancelButton);
       
-      // Save button: update the trigger on the server
+      // Save button: update the trigger's script and revert back to static view
       saveButton.onclick = async () => {
         const updatedScript = editor.getValue();
         try {
@@ -3974,36 +3969,51 @@ cardPanel.appendChild(scriptPre);
           });
           const result = await response.json();
           if (response.ok) {
-            // Update local trigger data and revert back to non-editable view.
+            // Update local trigger data and revert scriptContainer to a <pre> view
             trigger.script = updatedScript;
             const newPre = document.createElement("pre");
             newPre.textContent = updatedScript;
-            cardPanel.replaceChild(newPre, editorDiv);
-            // Remove Save and Cancel buttons; add back Edit.
+            newPre.style.maxHeight = "200px";
+            newPre.style.overflowY = "auto";
+            newPre.style.whiteSpace = "pre-wrap";
+            newPre.style.wordBreak = "break-word";
+            newPre.style.cursor = "pointer";
+            newPre.addEventListener("click", function() {
+              newPre.style.maxHeight = newPre.style.maxHeight === "none" ? "200px" : "none";
+            });
+            scriptContainer.innerHTML = "";
+            scriptContainer.appendChild(newPre);
+            
+            // Remove Save and Cancel buttons, add back the Edit button
             buttonContainer.removeChild(saveButton);
             buttonContainer.removeChild(cancelButton);
             buttonContainer.appendChild(editButton);
           } else {
-            M.toast({ html: result.error || "Failed to save script", displayLength: 2000 });
+            M.toast({ html: result.error || "儲存腳本失敗", displayLength: 2000 });
           }
         } catch (err) {
           console.error(err);
-          M.toast({ html: "Error saving script", displayLength: 2000 });
+          M.toast({ html: "儲存腳本時發生錯誤", displayLength: 2000 });
         }
       };
       
-      // Cancel button: discard changes and revert view.
+      // Cancel button: discard changes and revert to the original script view
       cancelButton.onclick = () => {
-        cardPanel.replaceChild(scriptPre, editorDiv);
+        // Restore the original <pre> element
+        scriptContainer.innerHTML = "";
+        scriptContainer.appendChild(scriptPre);
+        // Remove Save and Cancel buttons, add back the Edit button
         buttonContainer.removeChild(saveButton);
         buttonContainer.removeChild(cancelButton);
         buttonContainer.appendChild(editButton);
       };
     };
     
+    cardPanel.appendChild(buttonContainer);
     container.appendChild(cardPanel);
   });
 }
+
 
 
 async function deleteTrigger(triggerId) {
