@@ -37,6 +37,11 @@
 		#nav-title {
 		  font-size: 1.1rem; /* default size */
 		  cursor: pointer;
+      display: inline-block;
+      max-width: 90%;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
 		}
 
     .truncated {
@@ -54,7 +59,7 @@
        * MAIN CONTENT
        **********************************************/
       #main-content {
-        margin-left: 240px; /* On desktop, push right for sidebar */
+        margin-left: 500px; /* On desktop, push right for sidebar */
         transition: margin-left 0.3s ease;
         padding: 0 20px;
       }
@@ -274,48 +279,50 @@
 
 
 
-      /**********************************************
-       * RESPONSIVE
-       **********************************************/
-      @media only screen and (max-width: 992px) {
-        #sidebar {
-          transform: translateX(-110%);
-        }
-        #sidebar:not(.collapsed) {
-          transform: translateX(0);
-        }
-        /* Hide text on some buttons to save space */
-        #add-question-text,
-        #add-group-text,
-        #undo-text,
-        #redo-text,
-        #generate-text {
-          display: none !important;
-        }
-        
-
-        /* Ensure main-content not shrink */
-        #main-content {
-          width : 100%;
-        }
+    /**********************************************
+      * RESPONSIVE
+      **********************************************/
+    @media only screen and (max-width: 1200) {
+      #sidebar {
+        transform: translateX(-110%);
       }
-	  	
-	  	@media only screen and (max-width: 600px) {
-		  #nav-title {
-			font-size: 1rem; /* smaller font on small devices */
-		  }
-		}
-		
-		@media only screen and (min-width: 1200px) {
-		  /* Increase the sidebar width for large screens */
-		  #sidebar {
-			width: 500px; /* Adjust to your desired width */
-		  }
-		  /* Update main content margin to match the new sidebar width */
-		  #main-content {
-			margin-left: 500px;
-		  }
-		}
+      #sidebar:not(.collapsed) {
+        transform: translateX(0);
+      }
+      /* Hide text on some buttons to save space */
+      #add-question-text,
+      #add-group-text,
+      #undo-text,
+      #redo-text,
+      #generate-text {
+        display: none !important;
+      }
+      
+
+      /* Ensure main-content not shrink */
+      #main-content {
+        width : 100%;
+      }
+    }
+    
+    @media only screen and (max-width: 600px) {
+      #nav-title {
+        font-size: 1rem; /* smaller font on small devices */
+      }
+    }
+  
+    @media only screen and (min-width: 1200px) {
+      /* Increase the sidebar width for large screens */
+      #sidebar {
+      width: 500px; /* Adjust to your desired width */
+      }
+      /* Update main content margin to match the new sidebar width */
+      #main-content {
+      margin-left: 500px;
+      }
+    }
+
+
 		@keyframes highlightFade {
 		  0% { background-color: lightgrey; } /* blue highlight */
 		  100% { background-color: transparent; }
@@ -360,7 +367,11 @@
     position: relative;
     z-index: 2;
   }
-
+  #main-content { 
+    margin-left: 340px;
+    width: 100%; 
+  }
+  margin-left: 500px; /* On desktop, push right for sidebar */
   .material-icons.left {
         margin-right: 0 !important;
       }   
