@@ -3867,14 +3867,34 @@ function renderTriggersList() {
     typePara.textContent = "Type: " + trigger.conditionType;
     cardPanel.appendChild(typePara);
     
-    // Script display block (initially non-editable)
-    const scriptPre = document.createElement("pre");
-    scriptPre.textContent = trigger.script;
-    cardPanel.appendChild(scriptPre);
+// Script display block (initially non-editable)
+const scriptPre = document.createElement("pre");
+scriptPre.textContent = trigger.script;
+// Set a maximum height and enable scrolling if content overflows
+scriptPre.style.maxHeight = "200px";
+scriptPre.style.overflowY = "auto";
+// Allow long lines to wrap and break appropriately
+scriptPre.style.whiteSpace = "pre-wrap";
+scriptPre.style.wordBreak = "break-word";
+// Add a pointer cursor to indicate it is clickable for expansion
+scriptPre.style.cursor = "pointer";
+// Toggle expansion on click
+scriptPre.addEventListener("click", function() {
+  if (scriptPre.style.maxHeight === "none") {
+    scriptPre.style.maxHeight = "200px";
+  } else {
+    scriptPre.style.maxHeight = "none";
+  }
+});
+cardPanel.appendChild(scriptPre);
+
     
     // Button container for Delete and Edit buttons
     const buttonContainer = document.createElement("div");
-    
+    // Add flex display and gap between buttons
+    buttonContainer.style.display = "flex";
+    buttonContainer.style.gap = "10px";
+    buttonContainer.style.marginTop = "10px";
     // Delete button (unchanged)
     const deleteButton = document.createElement("button");
     deleteButton.className = "btn red";
@@ -3895,7 +3915,7 @@ function renderTriggersList() {
       // Create a new div that will host the Ace editor.
       const editorDiv = document.createElement("div");
       editorDiv.style.width = "100%";
-      editorDiv.style.height = "200px";
+      editorDiv.style.height = "400px";
       
       // Replace the static <pre> with the editor div.
       cardPanel.replaceChild(editorDiv, scriptPre);
@@ -3905,6 +3925,8 @@ function renderTriggersList() {
       editor.setTheme("ace/theme/monokai");
       editor.session.setMode("ace/mode/javascript");
       editor.session.setOption("useWorker", true);
+      // Enable ES8 (ECMAScript 2017) support:
+      // editor.session.$worker.send("changeOptions", { esversion: 8 });
       editor.setOptions({ fontSize: "12pt", showPrintMargin: false });
       editor.setValue(trigger.script, -1);
       
