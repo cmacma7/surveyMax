@@ -208,11 +208,18 @@
   gap: 10px;
 }
 
-/* Remove float from right-buttons; no additional styling needed */
-.right-buttons {
-  /* This container will naturally move to the far right using justify-content: space-between */
+  /*********************************************
+   * event trigger page
+   *********************************************/
+#triggersList {
+  overflow-y: auto;
+  transition: max-height 0.5s ease;
 }
-
+.hideTriggerList {
+  max-height: 0px;
+  overflow: hidden;
+  transition: max-height 0.5s ease;
+}
 
    /*********************************************
    * summary page
@@ -646,55 +653,44 @@
 
 
 <!-- Survey Event Triggers Modal -->
+<!-- Survey Event Triggers Modal -->
 <div id="eventTriggersModal" class="modal">
   <div class="modal-content">
     <h4>Event Triggers</h4>
+    <!-- Existing triggers list -->
     <div id="triggersList"></div>
-    <div class="row">
-      <div class="input-field col s12">
-        <select id="triggerType">
-          <option value="starThreshold">Star Rating Threshold</option>
-          <option value="answerMatch">Specific Answer</option>
-          <option value="timeBased">Time-based Condition</option>
-        </select>
-        <label>Trigger Type</label>
-      </div>
-    </div>
-    <div id="triggerConfig">
-      <!-- Star Rating Config -->
-      <div class="trigger-config" data-type="starThreshold">
-        <div class="row">
-          <div class="input-field col s6">
-            <input type="number" id="starThreshold" step="0.1">
-            <label>Threshold (stars)</label>
-          </div>
-          <div class="input-field col s6">
-            <input type="number" id="starPercentage">
-            <label>Percentage (%)</label>
-          </div>
+    
+    <!-- New Trigger Form Container (hidden by default) -->
+    <div id="newTriggerForm" style="display: none; margin-top: 20px; border-top: 1px solid #ccc; padding-top: 10px;">
+      <!-- Trigger type selector -->
+      <div class="row">
+        <div class="input-field col s12">
+          <select id="triggerType">
+            <option value="" disabled selected>Select Trigger Type</option>
+            <option value="starThreshold">Star Rating Threshold</option>
+            <option value="answerMatch">Specific Answer</option>
+            <option value="timeBased">Time-based Condition</option>
+          </select>
+          <label>Trigger Type</label>
         </div>
       </div>
-
-      <!-- Answer Match Config -->
-      <div class="trigger-config" data-type="answerMatch">
-        <div class="row">
-          <div class="input-field col s6">
-            <select id="targetQuestion"></select>
-            <label>Question</label>
-          </div>
-          <div class="input-field col s6">
-            <input type="text" id="targetAnswer">
-            <label>Expected Answer</label>
-          </div>
-        </div>
-      </div>     
-    </div>
- 
-    <div class="modal-footer">
-      <button class="btn green" onclick="saveTrigger()">Save Trigger</button>
+      <!-- Trigger configuration panels -->
+      <div id="triggerConfig">
+        <!--  load by loadTriggerConfig() -->
+      </div>
+      <!-- Save and Cancel buttons -->
+      <div class="row" style="margin-top: 10px; display: flex; justify-content: flex-end; gap: 10px;">
+        <button class="btn green" onclick="saveNewTrigger()">Save Trigger</button>
+        <button class="btn grey" onclick="cancelNewTrigger()">Cancel</button>
+      </div>
     </div>
   </div>
+  <!-- Fixed Add Trigger Button -->
+  <div class="modal-footer" style="justify-content: center;">
+    <button class="btn blue" onclick="showNewTriggerForm()">Add New Trigger</button>
+  </div>
 </div>
+
 
 
 <!-- Full Page Survey Data Summary -->
@@ -1458,7 +1454,6 @@
             onOpenEnd: () => {
               // Initialize select elements as before
               M.FormSelect.init(document.querySelectorAll('select'));
-              // Call your trigger configuration loader
               loadTriggerConfig();
               
             }            
@@ -4000,7 +3995,27 @@ cardPanel.appendChild(scriptPre);
   });
 }
 
-async function saveTrigger() {
+
+async function deleteTrigger(triggerId) {
+
+  const response = await fetch(`${BASE_URL}/api/survey/${CurrentSurveySchemaId}/triggers/${triggerId}`, {
+    method: 'DELETE',
+    headers: { "Content-Type": "application/json" , Authorization: "Bearer " + currentUserToken, "X-User-Id": currentUserId},
+    body: JSON.stringify({
+      
+    })
+  });
+  
+  let result = await response.json();
+  if (result?.success){
+    currentTriggers = currentTriggers.filter(item => item._id !== triggerId);
+  }
+  renderTriggersList();
+}
+
+
+
+async function saveNewTrigger() {
   const type = document.getElementById('triggerType').value;
   let script, params = {};
 
@@ -4031,27 +4046,39 @@ async function saveTrigger() {
   });
   
   currentTriggers = await response.json();
+  cancelNewTrigger();
   renderTriggersList();
 }
 
-
-
-async function deleteTrigger(triggerId) {
-
-  const response = await fetch(`${BASE_URL}/api/survey/${CurrentSurveySchemaId}/triggers/${triggerId}`, {
-    method: 'DELETE',
-    headers: { "Content-Type": "application/json" , Authorization: "Bearer " + currentUserToken, "X-User-Id": currentUserId},
-    body: JSON.stringify({
-      
-    })
-  });
+function showNewTriggerForm() {
+  // Hide the triggers list
+  document.getElementById("triggersList").classList.add("hideTriggerList");
   
-  let result = await response.json();
-  if (result?.success){
-    currentTriggers = currentTriggers.filter(item => item._id !== triggerId);
+  // Show the new trigger form
+  document.getElementById("newTriggerForm").style.display = "block";
+  
+  // Hide the "Add New Trigger" button (assumed to be the blue button in the modal footer)
+  const addTriggerBtn = document.querySelector("#eventTriggersModal .modal-footer .btn.blue");
+  if (addTriggerBtn) {
+    addTriggerBtn.style.display = "none";
   }
-  renderTriggersList();
 }
+
+function cancelNewTrigger() {
+  // Hide the new trigger form
+  document.getElementById("newTriggerForm").style.display = "none";
+  
+  // Show the triggers list again
+  document.getElementById("triggersList").classList.remove("hideTriggerList");
+  
+  // Show back the "Add New Trigger" button
+  const addTriggerBtn = document.querySelector("#eventTriggersModal .modal-footer .btn.blue");
+  if (addTriggerBtn) {
+    addTriggerBtn.style.display = "";
+  }
+}
+
+
 
 
 
@@ -4122,12 +4149,16 @@ function loadTriggerConfig() {
     answerMatch: `
       <div class="row">
         <div class="input-field col s6">
-          <select id="targetQuestion"></select>
+          <select id="targetQuestion">
+            <!-- Options will be populated via JS -->
+          </select>
           <label>Question</label>
         </div>
         <div class="input-field col s6">
-          <input type="text" id="targetAnswer">
-          <label>Expected Answer</label>
+          <select id="targetAnswer" multiple>
+            <!-- Options will be populated via JS -->
+          </select>
+          <label>Expected Answer(s)</label>
         </div>
       </div>
     `,
@@ -4145,10 +4176,12 @@ function loadTriggerConfig() {
     `
   };
 
+
   for (const [type, html] of Object.entries(triggerTypes)) {
     const div = document.createElement('div');
     div.className = 'trigger-config';
     div.dataset.type = type;
+    div.style.display = 'none';
     div.innerHTML = html;
     configContainer.appendChild(div);
   }
@@ -4165,20 +4198,18 @@ function loadTriggerConfig() {
 document.getElementById('triggerType').addEventListener('change', function() {
   const selectedType = this.value;
   const configPanels = document.querySelectorAll('.trigger-config');
-  
   configPanels.forEach(panel => {
-    if (panel.dataset.type === selectedType) {
-      panel.style.display = 'block';
-    } else {
-      panel.style.display = 'none';
-    }
+    panel.style.display = panel.dataset.type === selectedType ? 'block' : 'none';
   });
   
-  // If answer match is selected, populate questions
   if (selectedType === 'answerMatch') {
     populateQuestionSelect();
+    // Add listener so that when the selected question changes, the answers get updated
+    document.getElementById('targetQuestion').addEventListener('change', populateExpectedAnswerSelect);
   }
 });
+
+
 
 async function populateQuestionSelect() {
   const select = document.getElementById('targetQuestion');
@@ -4204,10 +4235,63 @@ async function populateQuestionSelect() {
       M.toast({ html: 'Failed to load questions', classes: 'red' });
     }
   }
+  // When the question is changed, update the expected answers
+  select.addEventListener('change', populateExpectedAnswerSelect);
 }
 
+function populateExpectedAnswerSelectElement(options) {
+  const selectElem = document.getElementById('targetAnswer');
+  selectElem.innerHTML = ''; // clear any existing options
+  options.forEach(opt => {
+    const option = document.createElement('option');
+    option.value = opt;
+    option.textContent = opt;
+    selectElem.appendChild(option);
+  });
+  // Reinitialize Materialize’s custom select
+  M.FormSelect.init(selectElem);
+}
 
-
+async function populateExpectedAnswerSelect() {
+  const targetQuestionSelect = document.getElementById('targetQuestion');
+  const selectedQuestionId = targetQuestionSelect.value;
+  if (!selectedQuestionId) return;
+  
+  try {
+    const response = await fetch(`${BASE_URL}/api/survey/${CurrentSurveySchemaId}`);
+    const survey = await response.json();
+    let question;
+    // Search for the matching question (either standalone or in a group)
+    survey.surveyItems.forEach(item => {
+      if (item.type === 'question' && item.id == selectedQuestionId) {
+        question = item;
+      } else if (item.type === 'group' && Array.isArray(item.subQuestions)) {
+        item.subQuestions.forEach(subq => {
+          if (subq.id == selectedQuestionId) {
+            question = subq;
+          }
+        });
+      }
+    });
+    
+    if (question) {
+      let options = [];
+      if (question.questionType === 'radio' || question.questionType === 'checkbox') {
+        options = (question.options || []).map(opt =>
+          typeof opt === 'object' ? opt.text : opt
+        );
+      } else if (question.questionType === 'stars') {
+        const maxStars = question.maxStars || 5;
+        for (let i = 1; i <= maxStars; i++) {
+          options.push(i.toString());
+        }
+      }
+      populateExpectedAnswerSelectElement(options);
+    }
+  } catch (error) {
+    console.error("Error populating expected answer select:", error);
+  }
+}
 
 
 
