@@ -1002,7 +1002,10 @@
           validation_targetQuestion: "Please select a target question.",
           validation_expectedAnswer: "Please select at least one expected answer.",
           validation_timeBased: "Please provide valid numbers for time window and minimum count.",
-          validation_invalidTrigger: "Invalid trigger type selected."
+          validation_invalidTrigger: "Invalid trigger type selected.",
+          triggerName_starThreshold: "Star Threshold: Threshold {threshold}, Count {count}",
+          triggerName_answerMatch: "Answer Match: '{question}' matches [{answers}]",
+          triggerName_timeBased: "Time Based: {timeWindow}h window, Min {minimumCount} responses"          
         },
         "zh-TW": {
           navTitle: "問卷管理",
@@ -1122,7 +1125,10 @@
           validation_targetQuestion: "請選擇一個目標問題。",
           validation_expectedAnswer: "請至少選取一個預期答案。",
           validation_timeBased: "請提供有效的時間範圍和最小計數。",
-          validation_invalidTrigger: "所選觸發器類型無效。"
+          validation_invalidTrigger: "所選觸發器類型無效。",
+          triggerName_starThreshold: "星級閾值：閾值 {threshold}，數量 {count}",
+          triggerName_answerMatch: "特定答案：『{question}』包含 [{answers}]",
+          triggerName_timeBased: "基於時間：{timeWindow} 小時範圍，最少 {minimumCount} 筆回應"
         },
         "ja-JP": {
           navTitle: "アンケート管理",
@@ -1242,7 +1248,10 @@
           validation_targetQuestion: "ターゲットの質問を選択してください。",
           validation_expectedAnswer: "少なくとも1つの期待される回答を選択してください。",
           validation_timeBased: "有効な時間枠と最小数を入力してください。",
-          validation_invalidTrigger: "無効なトリガータイプが選択されました。"
+          validation_invalidTrigger: "無効なトリガータイプが選択されました。",
+          triggerName_starThreshold: "星評価閾値: 閾値 {threshold}、数 {count}",
+          triggerName_answerMatch: "回答一致: 『{question}』が [{answers}] と一致",
+          triggerName_timeBased: "時間基準: {timeWindow}時間のウィンドウ、最小 {minimumCount} 件の回答"
         }
       };
       let currentLang = "en-US";
@@ -4123,10 +4132,10 @@ let currentTriggers = [];
         }
         renderTriggersList();
       }
-
       async function saveNewTrigger() {
   const type = document.getElementById('triggerType').value;
   let script, params = {};
+  let triggerName = "";
 
   if (type === 'starThreshold') {
     const thresholdValue = document.getElementById('starThreshold').value;
@@ -4140,11 +4149,18 @@ let currentTriggers = [];
     }
     params = { threshold, count };
     script = generateStarThresholdScript(params);
+    triggerName = i18n_local[currentLang].triggerName_starThreshold
+      .replace("{threshold}", threshold)
+      .replace("{count}", count);
   } else if (type === 'answerMatch') {
-    const targetQuestion = document.getElementById('targetQuestion').value;
+    const targetQuestionSelect = document.getElementById('targetQuestion');
+    const targetQuestionValue = targetQuestionSelect.value;
+    // Retrieve the displayed question text from the selected option
+    const selectedOption = targetQuestionSelect.options[targetQuestionSelect.selectedIndex];
+    const selectedQuestionText = selectedOption ? selectedOption.textContent : "Unknown Question";
     const targetAnswerElem = document.getElementById('targetAnswer');
     const selectedAnswers = Array.from(targetAnswerElem.selectedOptions).map(opt => opt.value);
-    if (!targetQuestion) {
+    if (!targetQuestionValue) {
       M.toast({ html: i18n_local[currentLang].validation_targetQuestion, displayLength: 3000 });
       return;
     }
@@ -4152,11 +4168,12 @@ let currentTriggers = [];
       M.toast({ html: i18n_local[currentLang].validation_expectedAnswer, displayLength: 3000 });
       return;
     }
-    params = {
-      questionId: targetQuestion,
-      answer: selectedAnswers
-    };
+    params = { questionId: targetQuestionValue, answer: selectedAnswers };
     script = generateAnswerMatchScript(params);
+    // Use the question text in the trigger name
+    triggerName = i18n_local[currentLang].triggerName_answerMatch
+      .replace("{question}", selectedQuestionText)
+      .replace("{answers}", selectedAnswers.join(", "));
   } else if (type === 'timeBased') {
     const timeWindowValue = document.getElementById('timeWindow').value;
     const minimumCountValue = document.getElementById('minimumCount').value;
@@ -4168,14 +4185,16 @@ let currentTriggers = [];
       return;
     }
     params = { timeWindow, minimumCount };
-    // Assuming you have a function to generate the time-based script:
     script = generateTimeBasedScript(params);
+    triggerName = i18n_local[currentLang].triggerName_timeBased
+      .replace("{timeWindow}", timeWindow)
+      .replace("{minimumCount}", minimumCount);
   } else {
     M.toast({ html: i18n_local[currentLang].validation_invalidTrigger, displayLength: 3000 });
     return;
   }
 
-  // Proceed to save the new trigger via API call
+  // Save the new trigger using the dynamically generated, translated trigger name.
   const response = await fetch(`${BASE_URL}/api/survey/${CurrentSurveySchemaId}/triggers`, {
     method: 'POST',
     headers: {
@@ -4184,7 +4203,7 @@ let currentTriggers = [];
       "X-User-Id": currentUserId
     },
     body: JSON.stringify({
-      name: `Trigger ${currentTriggers.length + 1}`,
+      name: triggerName,
       conditionType: type,
       parameters: params,
       script: script
@@ -4194,6 +4213,8 @@ let currentTriggers = [];
   cancelNewTrigger();
   renderTriggersList();
 }
+
+
 
       function showNewTriggerForm() {
   // Hide the triggers list
