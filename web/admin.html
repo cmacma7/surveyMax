@@ -38,7 +38,7 @@
 		  font-size: 1.1rem; /* default size */
 		  cursor: pointer;
       display: inline-block;
-      max-width: 90%;
+      max-width: 70%;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -206,6 +206,7 @@
 .left-buttons {
   display: flex;
   gap: 10px;
+  margin-right: 1em;
 }
 .right-buttons {
   display: flex;
@@ -297,7 +298,44 @@
     }
 
 
+  /**********************************************
+  * Root Bottom bar
+  **********************************************/
+    .more-select-container {
+      position: relative;
+      width: 50px;            /* Adjust width as needed */
+      height: 40px;           /* Adjust height as needed */
+      background-color: white; /* Button background color (blue) */
+      border-radius: 4px;
+      display: inline-block;
+    }
 
+    /* Hide the native select UI */
+    .more-select {
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      position: absolute;
+      top: 0;
+      left: 0;
+      border: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+      cursor: pointer;
+    }
+
+    /* Use a pseudo-element to display the more_vert icon */
+    .more-select-container::before {
+      content: 'more_vert';
+      font-family: 'Material Icons';
+      font-size: 24px;
+      line-height: 40px;
+      color: #565656;
+      text-align: center;
+      display: block;
+      pointer-events: none;
+    }
 
 
 
@@ -307,34 +345,64 @@
     /**********************************************
       * RESPONSIVE
       **********************************************/
-    @media only screen and (max-width: 1200) {
-      #sidebar {
-        transform: translateX(-110%);
+
+  
+    /* Mobile devices: add a 40px gutter */
+    @media only screen and (max-width: 768px) {
+
+      #nav-title {
+        font-size: 1rem; /* smaller font on small devices */
+      }  
+      #sidebar.with-gutter {
+        width: 340px; /* original 300px + 40px for gutter */
       }
-      #sidebar:not(.collapsed) {
-        transform: translateX(0);
+
+    
+
+      #sidebar.with-gutter .scroll-gutter {
+        display: block;
+        position: absolute;
+        top: 0;
+        bottom: 0;  /* Instead of height: 100%, use top: 0 and bottom: 0 */
+        left: 0;
+        width: 40px;
+
+      /* Create a grip/dot pattern using radial gradients */
+        background: radial-gradient(circle, #aaa 2px, transparent 2px),
+                    radial-gradient(circle, #aaa 2px, transparent 2px);
+        background-size: 10px 10px;
+        background-position: 0 0, 5px 5px;	
+        z-index: 1;
       }
+      #sidebar.with-gutter #questions-list {
+        margin-left: 40px;
+        position: relative;
+        z-index: 2;
+      }
+      #main-content { 
+        margin-left: 340px;
+        width: 100%; 
+      }
+      margin-left: 500px; /* On desktop, push right for sidebar */
+      .material-icons.left {
+        margin-right: 0 !important;
+      }  
+      
       /* Hide text on some buttons to save space */
       #add-question-text,
       #add-group-text,
       #undo-text,
       #redo-text,
+      #fetch-data-text,
+      #event-trigger-text,
       #generate-text {
         display: none !important;
       }
-      
-
-      /* Ensure main-content not shrink */
-      #main-content {
-        width : 100%;
+      .sticky-bottom i.left {
+        margin-right: 0px;
       }
-    }
-    
-    @media only screen and (max-width: 600px) {
-      #nav-title {
-        font-size: 1rem; /* smaller font on small devices */
-      }
-    }
+   
+    }		    
   
     @media only screen and (min-width: 1200px) {
       /* Increase the sidebar width for large screens */
@@ -367,40 +435,7 @@
 		}
 		
 		
-/* Mobile devices: add a 40px gutter */
-@media only screen and (max-width: 768px) {
-  #sidebar.with-gutter {
-    width: 340px; /* original 300px + 40px for gutter */
-  }
-  #sidebar.with-gutter .scroll-gutter {
-    display: block;
-    position: absolute;
-    top: 0;
-    bottom: 0;  /* Instead of height: 100%, use top: 0 and bottom: 0 */
-    left: 0;
-    width: 40px;
 
-   /* Create a grip/dot pattern using radial gradients */
-    background: radial-gradient(circle, #aaa 2px, transparent 2px),
-                radial-gradient(circle, #aaa 2px, transparent 2px);
-    background-size: 10px 10px;
-    background-position: 0 0, 5px 5px;	
-    z-index: 1;
-  }
-  #sidebar.with-gutter #questions-list {
-    margin-left: 40px;
-    position: relative;
-    z-index: 2;
-  }
-  #main-content { 
-    margin-left: 340px;
-    width: 100%; 
-  }
-  margin-left: 500px; /* On desktop, push right for sidebar */
-  .material-icons.left {
-        margin-right: 0 !important;
-      }   
-}		
 		
      /**********************************************
        * Utility
@@ -746,23 +781,20 @@
     <main>
       <div id="main-content" class="no-sidebar">
         <div class="section">
-			<div style="display: flex; align-items: center; justify-content: space-between;">
-			<h5 id="page-subtitle" style="flex:4;"></h5>
-			<!-- Add the survey title input on the right -->
-			   <div style="display: flex; align-items: center; flex:6; justify-content: space-between;">
-				<div style="display: flex; align-items: center;">
-				  <label id="survey-title-label" for="survey-title-input" style="margin-right: 8px; font-size:1em; width:6em;">問卷標題:</label>
-				  <input id="survey-title-input" type="text" placeholder="請輸入問卷標題" style="padding: 4px 8px;" />
-				</div>
-				<div style="display: flex; align-items: center;">
-          <label id="channel-id-label" for="channel-select" style="margin-right: 8px; font-size:1em; width:6em;">頻道代碼:</label>
-          <select id="channel-select" style="padding: 4px 8px;">
-            <option value="">-- 選擇頻道 --</option>
-          </select>
-        </div>
-			  </div>
-		  </div>
-          <!-- NEW: Banner Image URL input (the original upload image button has been removed) -->
+		
+          <!-- <h5 id="page-subtitle" style="flex:4;"></h5> -->
+          
+          <div style="display: flex; align-items: center;">
+            <label id="survey-title-label" for="survey-title-input" style="margin-right: 8px; font-size:1em; width:6em;">問卷標題:</label>
+            <input id="survey-title-input" type="text" placeholder="請輸入問卷標題" style="padding: 4px 8px;" />
+          </div>
+          <div style="display: flex; align-items: center;">
+            <label id="channel-id-label" for="channel-select" style="margin-right: 8px; font-size:1em; width:6em;">頻道代碼:</label>
+            <select id="channel-select" style="padding: 4px 8px;">
+              <option value="">-- 選擇頻道 --</option>
+            </select>
+          </div>		 
+          <!-- Banner Image URL input (the original upload image button has been removed) -->
           <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 10px;">
             <label id="survey-banner-label" for="survey-banner-input" style="margin-right: 8px; font-size:1em; width:6em;"><!-- Banner Image URL label will be updated via setLanguage --></label>
             <input id="survey-banner-input" type="text" placeholder="<!-- Banner Image placeholder will be updated via setLanguage -->" style="padding: 4px 8px;" />
@@ -774,7 +806,7 @@
           <!-- Button Row (sticky at bottom) -->
           <div class="row sticky-bottom">
             <div class="col s12">
-              <!-- Left side buttons -->
+              <!-- Left side buttons: always visible -->
               <div class="left-buttons">
                 <!-- Add Question -->
                 <button
@@ -797,49 +829,57 @@
                 </button>
           
                 <!-- Undo / Redo -->
-                <button
-                  id="undo-btn"
-                  class="btn grey waves-effect waves-light"
-                >
+                <button id="undo-btn" class="btn grey waves-effect waves-light">
                   <i class="material-icons left">undo</i>
                   <span id="undo-text"></span>
                 </button>
-                <button
-                  id="redo-btn"
-                  class="btn grey waves-effect waves-light"
-                >
+                <button id="redo-btn" class="btn grey waves-effect waves-light">
                   <i class="material-icons left">redo</i>
                   <span id="redo-text"></span>
                 </button>
+              </div>
           
-                <!-- NEW: Fetch Data Button (shows only icon on small screens) -->
-                <button class="btn grey waves-effect waves-light" id="fetch-data-btn" onclick="fetchSurveyData()">
+              <!-- Right side buttons for desktop: visible on medium and larger screens -->
+              <div class="right-buttons hide-on-small-only">
+                <button
+                  class="btn grey waves-effect waves-light"
+                  id="fetch-data-btn"
+                  onclick="fetchSurveyData()"
+                >
                   <i class="material-icons left">assessment</i>
                   <span id="fetch-data-text">Survey Data</span>
                 </button>
-              </div>
-          
-              
- 
-
-              <!-- Right side button: Generate & Go to Survey -->
-              <div class="right-buttons">
-
-                <button class="btn grey waves-effect waves-light" onclick="showEventTriggers()">
+                <button
+                  class="btn grey waves-effect waves-light"
+                  onclick="showEventTriggers()"
+                >
                   <i class="material-icons left">notifications</i>
                   <span id="event-trigger-text">Event Triggers</span>
                 </button>
-
                 <button
                   class="btn blue waves-effect waves-light"
-                  onclick="generateSurvey()">
-                    <i class="material-icons left">save</i>
-                    <span id="generate-text"></span>
+                  onclick="generateSurvey()"
+                >
+                  <i class="material-icons left">save</i>
+                  <span id="generate-text"></span>
                 </button>
-
               </div>
+          
+              <!-- Mobile: show a native select styled as an icon-only button -->
+              <div class="right-buttons show-on-small hide-on-med-and-up">
+                <div class="more-select-container">
+                  <select id="more-actions-select" class="browser-default more-select">
+                    <option value="" disabled selected hidden></option>
+                    <option value="survey-data">fetchDataText</option>
+                    <option value="event-triggers">eventTriggersTitle</option>
+                    <option value="generate-survey">generate</option>
+                  </select>
+                </div>
+              </div>
+
             </div>
           </div>
+          
         </div>
       </div>
     </main>
@@ -1584,9 +1624,24 @@
 
 
 
+       
 
-
-
+          document.getElementById('more-actions-select').addEventListener('change', function() {
+            var action = this.value;
+            switch(action) {
+              case 'survey-data':
+                fetchSurveyData();
+                break;
+              case 'event-triggers':
+                showEventTriggers();
+                break;
+              case 'generate-survey':
+                generateSurvey();
+                break;
+            }
+            // Reset select to the default "More" option after selection
+            this.selectedIndex = 0;
+          });
           
           window.addEventListener("resize", checkScreenSize);
           checkScreenSize();
@@ -1752,7 +1807,7 @@
           languageSelect.value = lang;
         }
         // Update UI text using i18n_local values...
-        document.getElementById("page-subtitle").textContent = i18n_local[currentLang].subtitle;
+        // document.getElementById("page-subtitle").textContent = i18n_local[currentLang].subtitle;
         document.getElementById("survey-title-label").textContent = i18n_local[lang].surveyTitleLabel;
         document.getElementById("add-question-text").textContent = i18n_local[currentLang].addQuestion;
         document.getElementById("add-group-text").textContent = i18n_local[currentLang].addGroup;
