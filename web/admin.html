@@ -221,6 +221,10 @@
   transition: max-height 0.5s ease;
 }
 
+.height100 {
+  height: 100%;
+}
+
 .sticky-footer {
   position: sticky;
   bottom: 0;
@@ -662,24 +666,24 @@
 </div>
 
 
+
 <!-- Survey Event Triggers Modal -->
-<!-- Survey Event Triggers Modal -->
-<div id="eventTriggersModal" class="modal">
+<div id="eventTriggersModal" class="modal height100">
   <div class="modal-content">
-    <h4>Event Triggers</h4>
+    <h4>addNewTrigger</h4>
     <!-- Existing triggers list -->
     <div id="triggersList"></div>
     
     <!-- New Trigger Form Container (hidden by default) -->
-    <div id="newTriggerForm" style="display: none; margin-top: 20px; border-top: 1px solid #ccc; padding-top: 10px;">
+    <div id="newTriggerForm" style="display: none; margin-top: 20px;  padding-top: 10px;">
       <!-- Trigger type selector -->
       <div class="row">
         <div class="input-field col s12">
           <select id="triggerType">
-            <option value="" disabled selected>Select Trigger Type</option>
-            <option value="starThreshold">Star Rating Threshold</option>
-            <option value="answerMatch">Specific Answer</option>
-            <option value="timeBased">Time-based Condition</option>
+            <option value="" disabled selected>selectTriggerType</option>
+            <option value="starThreshold">starThreshold</option>
+            <option value="answerMatch">answerMatch</option>
+            <option value="timeBased">timeBased</option>
           </select>
           <label>Trigger Type</label>
         </div>
@@ -690,14 +694,16 @@
       </div>
       <!-- Save and Cancel buttons -->
       <div class="row" style="margin-top: 10px; display: flex; justify-content: flex-end; gap: 10px;">
-        <button class="btn green" onclick="saveNewTrigger()">Save Trigger</button>
-        <button class="btn grey" onclick="cancelNewTrigger()">Cancel</button>
+        <button class="btn green" onclick="saveNewTrigger()">saveTriggerButton</button>
+        <button class="btn grey" onclick="cancelNewTrigger()">cancel</button>
       </div>
     </div>
   </div>
   <!-- Fixed Add Trigger Button -->
   <div class="modal-footer  sticky-footer" style="justify-content: center;">
-    <button class="btn blue" onclick="showNewTriggerForm()">Add New Trigger</button>
+    <button class="btn blue" onclick="showNewTriggerForm()">
+      <span id="add-new-trigger-text"></span>
+    </button>    
   </div>
 </div>
 
@@ -805,7 +811,7 @@
               
               <button class="btn grey waves-effect waves-light" onclick="showEventTriggers()">
                 <i class="material-icons left">notifications</i>
-                <span>Event Triggers</span>
+                <span id="event-trigger-text">Event Triggers</span>
               </button>
 
               <!-- Right side button: Generate & Go to Survey -->
@@ -911,9 +917,8 @@
           groupPlaceholder: "Group #",
           deleteGroupMsg: "Group deleted",
           anchorNoQuestion: "No anchor set",
-		  pleaseSelectSurvey: "Please select a survey",
-		  surveyTitleLabel: "Survey Title:",
-          // New translation keys
+          pleaseSelectSurvey: "Please select a survey",
+          surveyTitleLabel: "Survey Title:",
           processingText: "Processing, please wait ...",
           menuTooltip: "Menu",
           selectStoreTitle: "Select Store",
@@ -939,7 +944,6 @@
           surveyIdLabel: "Survey ID:",
           createNewSurvey: "Create New Survey",
           surveyIdPrefix: "ID:",
-          // Additional keys for import survey modal and error messages
           importSurveyTitle: "Import Survey",
           importModeFile: "File",
           importModeUrl: "URL",
@@ -957,17 +961,42 @@
           importSurveyFailed: "Failed to import survey",
           endpointUrlPlaceholder: "https://your-api-endpoint.com/survey",
           noOptionsAvailable: "No options available",
-		  importReplaceConfirmation: "Importing a new survey will replace the current survey. Do you want to continue?",
-		  convertToGroup: "Convert to Group",
-		  unpackToStandalone: "Unpack to Standalone",
-          // NEW keys for banner image
+          importReplaceConfirmation: "Importing a new survey will replace the current survey. Do you want to continue?",
+          convertToGroup: "Convert to Group",
+          unpackToStandalone: "Unpack to Standalone",
           bannerImageUrl: "Banner Image URL:",
           bannerImagePlaceholder: "Enter URL for banner image",
-		  extraText: "Extra Text",
-      fetchDataText: "Survey Data",
-      surveyDataSummaryTitle: "Survey Data Summary",
+          extraText: "Extra Text",
+          fetchDataText: "Survey Data",
+          surveyDataSummaryTitle: "Survey Data Summary",
+          textAnswerSummaryNote: "Text answers are not summarized statistically.",
+          confirmDeleteSurvey: "Are you sure you want to delete this survey?",
+          surveyDeletedSuccessfully: "Survey deleted successfully",
+          failedToDeleteSurvey: "Failed to delete survey",
+          triggerTypeLabel: "Type: ",
+          deleteTriggerButton: "Delete",
+          editTriggerButton: "Edit",
+          saveTriggerButton: "Save",
+          cancelTriggerButton: "Cancel",
+          starThresholdLabel: "Threshold (stars)",
+          starCountLabel: "Required Count",
+          targetQuestionLabel: "Question",
+          expectedAnswerLabel: "Expected Answer(s)",
+          timeWindowLabel: "Time Window (hours)",
+          minimumCountLabel: "Minimum Count",
+          // For trigger script translations, we will use different versions below.
+          // (These are handled separately in the trigger functions.)
+          eventTriggersTitle: "Event Triggers",
+          addNewTrigger: "Add New Trigger",
+          saveTriggerButton: "Save Trigger",
+          cancelTriggerButton: "Cancel Trigger",
+          selectTriggerType: "Select Trigger Type",
+          starThreshold: "Star Rating Threshold",
+          answerMatch: "Specific Answer",
+          timeBased: "Time-based Condition",
+          selectQuestion: "Select a question",
         },
-        'zh-TW': {
+        "zh-TW": {
           navTitle: "問卷管理",
           subtitle: "創建或編輯您的問卷",
           addQuestion: "新增問題",
@@ -983,7 +1012,7 @@
           dateInput: "日期選擇",
           longtextInput: "長文本輸入",
           starsInput: "星級評分",
-          uploadImage: "上傳圖片", // NEW key
+          uploadImage: "上傳圖片",
           requiredLabel: "必填",
           compackLabel: "壓縮顯示",
           optionsLabel: "選項",
@@ -1002,9 +1031,8 @@
           groupPlaceholder: "群組 #",
           deleteGroupMsg: "已刪除群組",
           anchorNoQuestion: "未設定控制問題",
-		  pleaseSelectSurvey: "請選擇一個問卷",
-		  surveyTitleLabel: "問卷標題:",
-          // New translation keys
+          pleaseSelectSurvey: "請選擇一個問卷",
+          surveyTitleLabel: "問卷標題:",
           processingText: "處理中，請稍候 ...",
           menuTooltip: "選單",
           selectStoreTitle: "選擇商店",
@@ -1030,7 +1058,6 @@
           surveyIdLabel: "問卷 ID:",
           createNewSurvey: "建立新問卷",
           surveyIdPrefix: "編號:",
-          // Additional keys for import survey modal and error messages
           importSurveyTitle: "匯入問卷",
           importModeFile: "檔案",
           importModeUrl: "URL",
@@ -1048,17 +1075,40 @@
           importSurveyFailed: "匯入問卷失敗",
           endpointUrlPlaceholder: "https://your-api-endpoint.com/survey",
           noOptionsAvailable: "無可用選項",
-		  importReplaceConfirmation: "匯入新的問卷將取代目前的問卷。您確定要繼續嗎？",
-		  convertToGroup: "轉換為群組",
-		  unpackToStandalone: "拆分為獨立問題",
-          // NEW keys for banner image
+          importReplaceConfirmation: "匯入新的問卷將取代目前的問卷。您確定要繼續嗎？",
+          convertToGroup: "轉換為群組",
+          unpackToStandalone: "拆分為獨立問題",
           bannerImageUrl: "橫幅圖片網址:",
           bannerImagePlaceholder: "輸入橫幅圖片的網址",
-		  extraText: "補充文字",
-      fetchDataText: "問卷分析",
-      surveyDataSummaryTitle: "問卷資料摘要",
+          extraText: "補充文字",
+          fetchDataText: "問卷分析",
+          surveyDataSummaryTitle: "問卷資料摘要",
+          textAnswerSummaryNote: "文字回答不進行統計摘要。",
+          confirmDeleteSurvey: "您確定要刪除此問卷嗎？",
+          surveyDeletedSuccessfully: "問卷刪除成功",
+          failedToDeleteSurvey: "刪除問卷失敗",
+          triggerTypeLabel: "類型: ",
+          deleteTriggerButton: "刪除",
+          editTriggerButton: "編輯",
+          saveTriggerButton: "儲存",
+          cancelTriggerButton: "取消",
+          starThresholdLabel: "閾值 (星級)",
+          starCountLabel: "所需數量",
+          targetQuestionLabel: "問題",
+          expectedAnswerLabel: "預期答案",
+          timeWindowLabel: "時間範圍 (小時)",
+          minimumCountLabel: "最小數量",
+          eventTriggersTitle: "事件觸發",
+          addNewTrigger: "新增觸發",
+          saveTriggerButton: "儲存觸發",
+          cancelTriggerButton: "取消觸發",
+          selectTriggerType: "選擇觸發器類型",
+          starThreshold: "星級評分閾值",
+          answerMatch: "特定答案",
+          timeBased: "基於時間的條件",
+          selectQuestion: "選擇一個問題",
         },
-        'ja-JP': {
+        "ja-JP": {
           navTitle: "アンケート管理",
           subtitle: "アンケートを作成または編集",
           addQuestion: "新しい質問を追加",
@@ -1074,7 +1124,7 @@
           dateInput: "日付入力",
           longtextInput: "長文入力",
           starsInput: "星の評価",
-          uploadImage: "画像アップロード", // NEW key
+          uploadImage: "画像アップロード",
           requiredLabel: "必須",
           compackLabel: "コンパクト表示",
           optionsLabel: "オプション",
@@ -1093,9 +1143,8 @@
           groupPlaceholder: "グループ #",
           deleteGroupMsg: "グループを削除しました",
           anchorNoQuestion: "アンカー質問未設定",
-		  pleaseSelectSurvey: "アンケートを選択してください",
-		  surveyTitleLabel: "アンケートタイトル:",
-          // New translation keys
+          pleaseSelectSurvey: "アンケートを選択してください",
+          surveyTitleLabel: "アンケートタイトル:",
           processingText: "処理中、しばらくお待ちください ...",
           menuTooltip: "メニュー",
           selectStoreTitle: "店舗を選択",
@@ -1121,7 +1170,6 @@
           surveyIdLabel: "アンケートID:",
           createNewSurvey: "新規アンケート作成",
           surveyIdPrefix: "番号:",
-          // Additional keys for import survey modal and error messages
           importSurveyTitle: "アンケートをインポート",
           importModeFile: "ファイル",
           importModeUrl: "URL",
@@ -1139,45 +1187,67 @@
           importSurveyFailed: "アンケートのインポートに失敗しました",
           endpointUrlPlaceholder: "https://your-api-endpoint.com/survey",
           noOptionsAvailable: "利用可能なオプションはありません",
-		  importReplaceConfirmation: "新しいアンケートをインポートすると、現在のアンケートが置き換えられます。続行しますか？",
-		  convertToGroup: "グループに変換",
-		  unpackToStandalone: "独立に戻す",
-          // NEW keys for banner image
+          importReplaceConfirmation: "新しいアンケートをインポートすると、現在のアンケートが置き換えられます。続行しますか？",
+          convertToGroup: "グループに変換",
+          unpackToStandalone: "独立に戻す",
           bannerImageUrl: "バナー画像のURL:",
           bannerImagePlaceholder: "バナー画像のURLを入力",
-		  extraText: "追加テキスト",
-      fetchDataText: "アンケートデータ",
-      surveyDataSummaryTitle: "アンケートデータサマリー",
-        },
+          extraText: "追加テキスト",
+          fetchDataText: "アンケートデータ",
+          surveyDataSummaryTitle: "アンケートデータサマリー",
+          textAnswerSummaryNote: "テキスト回答は統計的に集計しません。",
+          confirmDeleteSurvey: "このアンケートを削除してもよろしいですか？",
+          surveyDeletedSuccessfully: "アンケートが正常に削除されました",
+          failedToDeleteSurvey: "アンケートの削除に失敗しました",
+          triggerTypeLabel: "種類: ",
+          deleteTriggerButton: "削除",
+          editTriggerButton: "編集",
+          saveTriggerButton: "保存",
+          cancelTriggerButton: "キャンセル",
+          starThresholdLabel: "閾値 (星)",
+          starCountLabel: "必要な数",
+          targetQuestionLabel: "質問",
+          expectedAnswerLabel: "予想される回答",
+          timeWindowLabel: "時間枠 (時間)",
+          minimumCountLabel: "最小数",
+          eventTriggersTitle: "イベントトリガー",
+          addNewTrigger: "新規トリガー追加",
+          saveTriggerButton: "トリガー保存",
+          cancelTriggerButton: "キャンセル",
+          selectTriggerType: "トリガータイプを選択",
+          starThreshold: "星評価の閾値",
+          answerMatch: "特定の回答",
+          timeBased: "時間に基づく条件",
+          selectQuestion: "質問を選択",
+        }
       };
-
       let currentLang = "en-US";
 
-      /***********************************************
-       * GLOBAL DATA
-       ***********************************************/
-      /*
-        We'll store both questions and groups in the same array, each item has:
-        {
-          type: "question" | "group",
-          id: number,
-          ...
-        }
+/***********************************************
+ * GLOBAL DATA
+ ***********************************************/
+/*
+  We'll store both questions and groups in the same array, each item has:
+  {
+    type: "question" | "group",
+    id: number,
+    ...
+  }
 
-        If type === "question", it has your existing question fields:
-          questionText, questionType, options, required, compack, etc.
+  If type === "question", it has your existing question fields:
+    questionText, questionType, options, required, compack, etc.
 
-        If type === "group", it has:
-          groupTitle,
-          anchorQuestionId,      // which question controls the group
-          anchorValuesToShow: [],// which answers trigger "show"
-          subQuestions: [ {...}, {...} ] // array of normal question objects
-        ...
-      */
+  If type === "group", it has:
+    groupTitle,
+    anchorQuestionId,      // which question controls the group
+    anchorValuesToShow: [],// which answers trigger "show"
+    subQuestions: [ {...}, {...} ] // array of normal question objects
+  ...
+*/    
       let surveyItems = [];
       let undoStack = [];
       let redoStack = [];
-	  let CurrentSurveySchemaId;
+      let CurrentSurveySchemaId;
 	  
       // For mobile click-outside to close the sidebar
       let mobileClickOutsideHandler = null;
@@ -1578,32 +1648,34 @@
         modal.open();
       }
 
-function setLanguage(lang) {
-  localStorage.setItem("preferredLanguage", lang);
-  currentLang = lang;
+      function setLanguage(lang) {
+        localStorage.setItem("preferredLanguage", lang);
+        currentLang = lang;
 
-  // Update dropdown value
-  const languageSelect = document.getElementById("language-select");
-  if (languageSelect) {
-    languageSelect.value = lang;
-  }
+        // Update dropdown value
+        const languageSelect = document.getElementById("language-select");
+        if (languageSelect) {
+          languageSelect.value = lang;
+        }
+        // Update UI text using i18n_local values...
+        document.getElementById("nav-title").textContent = i18n_local[currentLang].navTitle;
+        document.getElementById("page-subtitle").textContent = i18n_local[currentLang].subtitle;
+        document.getElementById("survey-title-label").textContent = i18n_local[lang].surveyTitleLabel;
+        document.getElementById("add-question-text").textContent = i18n_local[currentLang].addQuestion;
+        document.getElementById("add-group-text").textContent = i18n_local[currentLang].addGroup;
+        document.getElementById("undo-text").textContent = i18n_local[currentLang].undo;
+        document.getElementById("redo-text").textContent = i18n_local[currentLang].redo;
+        document.getElementById("generate-text").textContent = i18n_local[currentLang].generate;
+        document.getElementById("event-trigger-text").textContent = i18n_local[currentLang].eventTriggersTitle;
+        document.getElementById("add-new-trigger-text").textContent = i18n_local[currentLang].addNewTrigger;
+        document.getElementById("survey-title-label").textContent = i18n_local[currentLang].surveyTitleLabel;
+        const bannerLabel = document.getElementById("survey-banner-label");
+        if(bannerLabel) { bannerLabel.textContent = i18n_local[currentLang].bannerImageUrl; }
+        const bannerInput = document.getElementById("survey-banner-input");
+        if(bannerInput) { bannerInput.setAttribute("placeholder", i18n_local[currentLang].bannerImagePlaceholder); }
+        document.getElementById("fetch-data-text").textContent = i18n_local[currentLang].fetchDataText;
+        document.getElementById("add-question-text").textContent = i18n_local[lang].addQuestion;
 
-  // Update UI text using translations
-  // document.getElementById("nav-title").textContent = i18n_local[lang].navTitle;
-  document.getElementById("page-subtitle").textContent = i18n_local[lang].subtitle;
-  document.getElementById("survey-title-label").textContent = i18n_local[lang].surveyTitleLabel;
-  // NEW: Update Banner Image label and placeholder
-  const bannerLabel = document.getElementById("survey-banner-label");
-  if(bannerLabel) { bannerLabel.textContent = i18n_local[currentLang].bannerImageUrl; }
-  const bannerInput = document.getElementById("survey-banner-input");
-  if(bannerInput) { bannerInput.setAttribute("placeholder", i18n_local[currentLang].bannerImagePlaceholder); }
-
-  document.getElementById("add-question-text").textContent = i18n_local[lang].addQuestion;
-  document.getElementById("add-group-text").textContent = i18n_local[lang].addGroup;
-  document.getElementById("undo-text").textContent = i18n_local[lang].undo;
-  document.getElementById("redo-text").textContent = i18n_local[lang].redo;
-  document.getElementById("generate-text").textContent = i18n_local[lang].generate;
-  
   // Update spinner text
   const loadingTextEl = document.querySelector('.loading-text');
   if(loadingTextEl) { loadingTextEl.textContent = i18n_local[lang].processingText; }
@@ -1708,12 +1780,45 @@ function setLanguage(lang) {
 
   document.getElementById("fetch-data-text").textContent = i18n_local[lang].fetchDataText;
   document.getElementById("surveyDataCloseBtn").textContent = i18n_local[lang].close;
-  document.getElementById("surveyDataTitle").textContent = i18n_local[lang].surveyDataSummaryTitle;
-
+  document.getElementById("surveyDataTitle").textContent = i18n_local[lang].surveyDataSummaryTitle;  
+ 
+  translateButtons(lang);
+  translateOptions(lang);
+  translateHeaders(lang)
   
-  // Re-render items if necessary
-  renderAllItems();
-}
+
+        // Re-render items if necessary
+        renderAllItems();
+      }
+
+
+      function translateButtons(lang) {
+        const currentTranslations = i18n_local[lang];
+        document.querySelectorAll("button").forEach((btn) => {
+          const key = btn.textContent.trim();
+          if (currentTranslations.hasOwnProperty(key)) {
+            btn.textContent = currentTranslations[key];
+          }
+        });
+      }
+      function translateHeaders(lang) {
+        const currentTranslations = i18n_local[lang];
+        document.querySelectorAll("H4").forEach((header) => {
+          const key = header.textContent.trim();
+          if (currentTranslations.hasOwnProperty(key)) {
+            header.textContent = currentTranslations[key];
+          }
+        });
+      }
+      function translateOptions(lang) {
+        const currentTranslations = i18n_local[lang];
+        document.querySelectorAll("option").forEach((option) => {
+          const key = option.textContent.trim();
+          if (currentTranslations.hasOwnProperty(key)) {
+            option.textContent = currentTranslations[key];
+          }
+        });
+      }
 
       /***********************************************
        * NEW: DRAG & DROP HANDLERS FOR SIDEBAR ITEMS
@@ -1827,15 +1932,15 @@ function handleSubDrop(e) {
 	/***********************************************
        * RENDER QUESTION CARD (for standalone and sub‐questions)
        ***********************************************/
-	function renderQuestionCard(questionObj, index, { isSubQuestion = false, groupIndex = null } = {}) {
+      function renderQuestionCard(questionObj, index, { isSubQuestion = false, groupIndex = null } = {}) {
 	  // questionObj = { type: 'question', questionText, questionType, ... }
-	  const card = document.createElement("div");
-	  card.className = isSubQuestion ? "card question-card sub-question" : "card question-card";
+        const card = document.createElement("div");
+        card.className = isSubQuestion ? "card question-card sub-question" : "card question-card";
 	  // For sub‐questions, include the group index in the ID
-	  card.id = isSubQuestion ? `question-card-${groupIndex}-${index}-sub` : `question-card-${index}`;
+        card.id = isSubQuestion ? `question-card-${groupIndex}-${index}-sub` : `question-card-${index}`;
 
-	  const cardContent = document.createElement("div");
-	  cardContent.className = "card-content";
+        const cardContent = document.createElement("div");
+        cardContent.className = "card-content";
 
         // QUESTION TEXT
         const questionLabel = document.createElement("label");
@@ -1897,7 +2002,7 @@ function handleSubDrop(e) {
           { value: "date", label: i18n_local[currentLang].dateInput },
           { value: "longtext", label: i18n_local[currentLang].longtextInput },
           { value: "stars", label: i18n_local[currentLang].starsInput },
-          { value: "uploadImage", label: i18n_local[currentLang].uploadImage } // NEW option
+          { value: "uploadImage", label: i18n_local[currentLang].uploadImage }
         ];
         typeOptions.forEach((opt) => {
           const optEl = document.createElement("option");
@@ -1943,8 +2048,8 @@ function handleSubDrop(e) {
           compackSwitchContainer
             .querySelector("input")
             .addEventListener("change", (e) => {
-              questionObj.compack = e.target.checked;
-            });
+            questionObj.compack = e.target.checked;
+          });
           switchesRow.appendChild(compackSwitchContainer);
         } else {
           questionObj.compack = false;
@@ -1958,74 +2063,74 @@ function handleSubDrop(e) {
           cardContent.appendChild(optionsLabel);
 
           questionObj.options = questionObj.options || [];
-			questionObj.options.forEach((opt, optIndex) => {
+          questionObj.options.forEach((opt, optIndex) => {
   // Convert plain string to object if necessary.
-  if (typeof opt !== "object") {
-    questionObj.options[optIndex] = { text: opt, hasTextInput: false };
-    opt = questionObj.options[optIndex];
-  }
+            if (typeof opt !== "object") {
+              questionObj.options[optIndex] = { text: opt, hasTextInput: false };
+              opt = questionObj.options[optIndex];
+            }
 
   // Create a container row.
-  const rowDiv = document.createElement("div");
-  rowDiv.className = "row";
+            const rowDiv = document.createElement("div");
+            rowDiv.className = "row";
 
   // --- Option Text Input Column ---
-  const colInputDiv = document.createElement("div");
-  colInputDiv.className = "col s8"; // Adjust width as needed
-  const optionInput = document.createElement("input");
-  optionInput.type = "text";
-  optionInput.className = "input-field";
-  optionInput.value = opt.text;
-  optionInput.oninput = (e) => {
-    questionObj.options[optIndex].text = e.target.value;
-  };
-  colInputDiv.appendChild(optionInput);
-  rowDiv.appendChild(colInputDiv);
+            const colInputDiv = document.createElement("div");
+            colInputDiv.className = "col s8";
+            const optionInput = document.createElement("input");
+            optionInput.type = "text";
+            optionInput.className = "input-field";
+            optionInput.value = opt.text;
+            optionInput.oninput = (e) => {
+              questionObj.options[optIndex].text = e.target.value;
+            };
+            colInputDiv.appendChild(optionInput);
+            rowDiv.appendChild(colInputDiv);
 
   // --- "Require Extra Text" Toggle Column ---
-  const colToggleDiv = document.createElement("div");
-  colToggleDiv.className = "col s2";
-  const extraLabel = document.createElement("label");
-  extraLabel.style.fontSize = "0.8em";
+            const colToggleDiv = document.createElement("div");
+            colToggleDiv.className = "col s2";
+            const extraLabel = document.createElement("label");
+            extraLabel.style.fontSize = "0.8em";
   // Create the checkbox with proper Materialize markup.
-  const extraCheckbox = document.createElement("input");
-  extraCheckbox.type = "checkbox";
-  extraCheckbox.classList.add("filled-in");
-  extraCheckbox.checked = opt.hasTextInput;
-  extraCheckbox.onchange = (e) => {
-    questionObj.options[optIndex].hasTextInput = e.target.checked;
-  };
-  extraLabel.appendChild(extraCheckbox);
+            const extraCheckbox = document.createElement("input");
+            extraCheckbox.type = "checkbox";
+            extraCheckbox.classList.add("filled-in");
+            extraCheckbox.checked = opt.hasTextInput;
+            extraCheckbox.onchange = (e) => {
+              questionObj.options[optIndex].hasTextInput = e.target.checked;
+            };
+            extraLabel.appendChild(extraCheckbox);
   // Materialize requires a sibling <span> to render the custom checkbox.
-  const extraSpan = document.createElement("span");
-  extraSpan.textContent = i18n_local[currentLang].extraText;
-  extraLabel.appendChild(extraSpan);
-  colToggleDiv.appendChild(extraLabel);
-  rowDiv.appendChild(colToggleDiv);
+            const extraSpan = document.createElement("span");
+            extraSpan.textContent = i18n_local[currentLang].extraText;
+            extraLabel.appendChild(extraSpan);
+            colToggleDiv.appendChild(extraLabel);
+            rowDiv.appendChild(colToggleDiv);
 
   // --- Remove Option Button Column ---
-  const colButtonDiv = document.createElement("div");
-  colButtonDiv.className = "col s2 right-align";
-  const removeBtn = document.createElement("button");
-  removeBtn.className = "btn-small red waves-effect waves-light";
-  removeBtn.textContent = i18n_local[currentLang].removeOption;
-  removeBtn.onclick = () => {
-    pushUndo({
-      type: "delete-option",
-      parentIndex: index,
-      parentType: isSubQuestion ? "group-sub" : "main",
-      optionIndex: optIndex,
-      deletedOption: opt,
-    });
-    questionObj.options.splice(optIndex, 1);
-    renderAllItems();
-  };
-  colButtonDiv.appendChild(removeBtn);
-  rowDiv.appendChild(colButtonDiv);
+            const colButtonDiv = document.createElement("div");
+            colButtonDiv.className = "col s2 right-align";
+            const removeBtn = document.createElement("button");
+            removeBtn.className = "btn-small red waves-effect waves-light";
+            removeBtn.textContent = i18n_local[currentLang].removeOption;
+            removeBtn.onclick = () => {
+              pushUndo({
+                type: "delete-option",
+                parentIndex: index,
+                parentType: isSubQuestion ? "group-sub" : "main",
+                optionIndex: optIndex,
+                deletedOption: opt,
+              });
+              questionObj.options.splice(optIndex, 1);
+              renderAllItems();
+            };
+            colButtonDiv.appendChild(removeBtn);
+            rowDiv.appendChild(colButtonDiv);
 
   // Append the constructed row to the card content.
-  cardContent.appendChild(rowDiv);
-});
+            cardContent.appendChild(rowDiv);
+          });
 
 
           // ADD OPTION BUTTON
@@ -2048,7 +2153,6 @@ function handleSubDrop(e) {
           const maxStarsLabel = document.createElement("label");
           maxStarsLabel.textContent = i18n_local[currentLang].maxStarsLabel;
           cardContent.appendChild(maxStarsLabel);
-
           const maxStarsInput = document.createElement("input");
           maxStarsInput.type = "number";
           maxStarsInput.value = questionObj.maxStars || 5;
@@ -2095,119 +2199,119 @@ function handleSubDrop(e) {
         }
 
 		 /********* ACTION BUTTONS *********/
-		  const cardAction = document.createElement("div");
-		  cardAction.className = "card-action question-actions";
+        const cardAction = document.createElement("div");
+        cardAction.className = "card-action question-actions";
 
 		  // Move up button
-		  const moveUpBtn = document.createElement("button");
-		  moveUpBtn.className = "btn-small grey waves-effect waves-light";
-		  moveUpBtn.innerHTML = `<i class="material-icons">arrow_upward</i>`;
-		  moveUpBtn.style.marginRight = "5px";
-		  moveUpBtn.title = i18n_local[currentLang].moveUp;
+        const moveUpBtn = document.createElement("button");
+        moveUpBtn.className = "btn-small grey waves-effect waves-light";
+        moveUpBtn.innerHTML = `<i class="material-icons">arrow_upward</i>`;
+        moveUpBtn.style.marginRight = "5px";
+        moveUpBtn.title = i18n_local[currentLang].moveUp;
 
 		  // Move down button
-		  const moveDownBtn = document.createElement("button");
-		  moveDownBtn.className = "btn-small grey waves-effect waves-light";
-		  moveDownBtn.innerHTML = `<i class="material-icons">arrow_downward</i>`;
-		  moveDownBtn.style.marginRight = "5px";
-		  moveDownBtn.title = i18n_local[currentLang].moveDown;
+        const moveDownBtn = document.createElement("button");
+        moveDownBtn.className = "btn-small grey waves-effect waves-light";
+        moveDownBtn.innerHTML = `<i class="material-icons">arrow_downward</i>`;
+        moveDownBtn.style.marginRight = "5px";
+        moveDownBtn.title = i18n_local[currentLang].moveDown;
 
 		  // Delete button
-		  const deleteBtn = document.createElement("button");
-		  deleteBtn.className = "btn-small red waves-effect waves-light";
-		  deleteBtn.innerHTML = `<i class="material-icons">delete</i>`;
-		  deleteBtn.title = i18n_local[currentLang].deleteButton;
+        const deleteBtn = document.createElement("button");
+        deleteBtn.className = "btn-small red waves-effect waves-light";
+        deleteBtn.innerHTML = `<i class="material-icons">delete</i>`;
+        deleteBtn.title = i18n_local[currentLang].deleteButton;
 
-		  if (!isSubQuestion) {
+        if (!isSubQuestion) {
 			// For standalone questions, attach standard actions…
-			moveUpBtn.onclick = () => moveItemUp(index);
-			moveDownBtn.onclick = () => moveItemDown(index);
-			deleteBtn.onclick = () => deleteQuestion(index);
+          moveUpBtn.onclick = () => moveItemUp(index);
+          moveDownBtn.onclick = () => moveItemDown(index);
+          deleteBtn.onclick = () => deleteQuestion(index);
 			// ...and add a **Group** button to convert the question into a group.
-			const groupBtn = document.createElement("button");
-			groupBtn.className = "btn-small blue waves-effect waves-light";
-			groupBtn.innerHTML = `<i class="material-icons">group</i>`;
-			groupBtn.title = "Convert to Group";
-			groupBtn.onclick = () => convertQuestionToGroup(index);
-			cardAction.appendChild(groupBtn);
-		  } else {
+          const groupBtn = document.createElement("button");
+          groupBtn.className = "btn-small blue waves-effect waves-light";
+          groupBtn.innerHTML = `<i class="material-icons">group</i>`;
+          groupBtn.title = i18n_local[currentLang].convertToGroup;
+          groupBtn.onclick = () => convertQuestionToGroup(index);
+          cardAction.appendChild(groupBtn);
+        } else {
 			// For sub‐questions, attach sub‐question actions…
-			moveUpBtn.onclick = () => moveSubQuestionUp(groupIndex, index);
-			moveDownBtn.onclick = () => moveSubQuestionDown(groupIndex, index);
-			deleteBtn.onclick = () => deleteSubQuestion(groupIndex, index);
+          moveUpBtn.onclick = () => moveSubQuestionUp(groupIndex, index);
+          moveDownBtn.onclick = () => moveSubQuestionDown(groupIndex, index);
+          deleteBtn.onclick = () => deleteSubQuestion(groupIndex, index);
 			// ...and add an **Unpack** button to remove it from the group.
-			const unpackBtn = document.createElement("button");
-			unpackBtn.className = "btn-small orange waves-effect waves-light";
-			unpackBtn.innerHTML = `<i class="material-icons">call_split</i>`;
-			unpackBtn.title = "Unpack to Standalone";
-			unpackBtn.onclick = () => unpackSubQuestion(groupIndex, index);
-			cardAction.appendChild(unpackBtn);
-		  }
+          const unpackBtn = document.createElement("button");
+          unpackBtn.className = "btn-small orange waves-effect waves-light";
+          unpackBtn.innerHTML = `<i class="material-icons">call_split</i>`;
+          unpackBtn.title = i18n_local[currentLang].unpackToStandalone;
+          unpackBtn.onclick = () => unpackSubQuestion(groupIndex, index);
+          cardAction.appendChild(unpackBtn);
+        }
 		  
 		  // Append the common action buttons
-		  cardAction.appendChild(moveUpBtn);
-		  cardAction.appendChild(moveDownBtn);
-		  cardAction.appendChild(deleteBtn);
+        cardAction.appendChild(moveUpBtn);
+        cardAction.appendChild(moveDownBtn);
+        cardAction.appendChild(deleteBtn);
 
-		  card.appendChild(cardContent);
-		  card.appendChild(cardAction);
-		  return card;
+        card.appendChild(cardContent);
+        card.appendChild(cardAction);
+        return card;
       }
-	  
+
 		/***********************************************
 		 * NEW FUNCTIONS: CONVERT & UNPACK
 		 ***********************************************/
-		function convertQuestionToGroup(index) {
+      function convertQuestionToGroup(index) {
 		  // Take a standalone question and convert it to a group.
 		  // Here we “wrap” the question inside a group so that it now has sub‐questions.
-		  const question = surveyItems[index];
-		  const group = {
-			type: "group",
+        const question = surveyItems[index];
+        const group = {
+          type: "group",
 			id: question.id, // reuse the question id or generate a new one as desired
-			groupTitle: question.questionText || "",
-			anchorQuestionId: null,
-			anchorValuesToShow: [],
+          groupTitle: question.questionText || "",
+          anchorQuestionId: null,
+          anchorValuesToShow: [],
 			// Place the original question as the first sub‐question:
-			subQuestions: [question]
-		  };
-		  surveyItems[index] = group;
-		  renderAllItems();
-		}
+          subQuestions: [question]
+        };
+        surveyItems[index] = group;
+        renderAllItems();
+      }
 
-		function unpackSubQuestion(groupIndex, subIndex) {
+      function unpackSubQuestion(groupIndex, subIndex) {
 		  // Remove a sub‐question from a group and add it as a standalone question.
-		  const groupItem = surveyItems[groupIndex];
-		  const question = groupItem.subQuestions.splice(subIndex, 1)[0];
-		  surveyItems.push(question);
-		  renderAllItems();
-		}	  
-	  
+        const groupItem = surveyItems[groupIndex];
+        const question = groupItem.subQuestions.splice(subIndex, 1)[0];
+        surveyItems.push(question);
+        renderAllItems();
+      }
+
 
 		/***********************************************
 		 * UPDATE GROUP CARD RENDERING
 		 * Add a drop zone so that standalone questions can be dragged into a group.
 		 ***********************************************/
-		function renderGroupCard(groupObj, index) {
-		  const card = document.createElement("div");
-		  card.className = "card group-card";
-		  card.id = `group-card-${index}`;
+      function renderGroupCard(groupObj, index) {
+        const card = document.createElement("div");
+        card.className = "card group-card";
+        card.id = `group-card-${index}`;
 
-		  const cardContent = document.createElement("div");
-		  cardContent.className = "card-content";
+        const cardContent = document.createElement("div");
+        cardContent.className = "card-content";
 
 		  // GROUP TITLE
-		  const groupTitleLabel = document.createElement("label");
-		  groupTitleLabel.textContent = i18n_local[currentLang].groupTitleLabel;
-		  cardContent.appendChild(groupTitleLabel);
+        const groupTitleLabel = document.createElement("label");
+        groupTitleLabel.textContent = i18n_local[currentLang].groupTitleLabel;
+        cardContent.appendChild(groupTitleLabel);
 
-		  const groupTitleInput = document.createElement("input");
-		  groupTitleInput.type = "text";
-		  groupTitleInput.value = groupObj.groupTitle || "";
-		  groupTitleInput.oninput = (e) => {
-			groupObj.groupTitle = e.target.value;
-			renderSidebarList();
-		  };
-		  cardContent.appendChild(groupTitleInput);
+        const groupTitleInput = document.createElement("input");
+        groupTitleInput.type = "text";
+        groupTitleInput.value = groupObj.groupTitle || "";
+        groupTitleInput.oninput = (e) => {
+          groupObj.groupTitle = e.target.value;
+          renderSidebarList();
+        };
+        cardContent.appendChild(groupTitleInput);
 
 
         // ANCHOR QUESTION SELECT
@@ -2235,444 +2339,443 @@ function handleSubDrop(e) {
           anchorSelect.appendChild(opt);
         });
         anchorSelect.value = groupObj.anchorQuestionId || "";
-		anchorSelect.onchange = (e) => {
-		  groupObj.anchorQuestionId = e.target.value ? parseInt(e.target.value, 10) : null;
+        anchorSelect.onchange = (e) => {
+          groupObj.anchorQuestionId = e.target.value ? parseInt(e.target.value, 10) : null;
 		  renderAllItems(); // re-render to update the anchor values dropdown immediately
-		};
-
+        };
         cardContent.appendChild(anchorSelect);
 
         
 // ANCHOR VALUES (Replace text input with multiple select)
-const anchorValuesLabel = document.createElement("label");
-anchorValuesLabel.textContent = i18n_local[currentLang].anchorValuesLabel;
-cardContent.appendChild(anchorValuesLabel);
+        const anchorValuesLabel = document.createElement("label");
+        anchorValuesLabel.textContent = i18n_local[currentLang].anchorValuesLabel;
+        cardContent.appendChild(anchorValuesLabel);
 
 // Create a multiple select element
-const anchorValuesSelect = document.createElement("select");
-anchorValuesSelect.multiple = true;
+        const anchorValuesSelect = document.createElement("select");
+        anchorValuesSelect.multiple = true;
 anchorValuesSelect.style.height = "auto"; // adjust as needed
 
 // Find the anchor question from surveyItems using groupObj.anchorQuestionId
-let anchorQuestionOptions = [];
-if (groupObj.anchorQuestionId) {
-  const anchorQuestion = surveyItems.find(q => q.type === "question" && q.id == groupObj.anchorQuestionId);
-  if (anchorQuestion) {
-    if (anchorQuestion.questionType === "radio" || anchorQuestion.questionType === "checkbox") {
-      anchorQuestionOptions = anchorQuestion.options || [];
-    } else if (anchorQuestion.questionType === "stars") {
+        let anchorQuestionOptions = [];
+        if (groupObj.anchorQuestionId) {
+          const anchorQuestion = surveyItems.find(q => q.type === "question" && q.id == groupObj.anchorQuestionId);
+          if (anchorQuestion) {
+            if (anchorQuestion.questionType === "radio" || anchorQuestion.questionType === "checkbox") {
+              anchorQuestionOptions = anchorQuestion.options || [];
+            } else if (anchorQuestion.questionType === "stars") {
       // Generate options from 1 to the star count
-      const maxStars = anchorQuestion.maxStars || 5;
-      anchorQuestionOptions = [];
-      for (let i = 1; i <= maxStars; i++) {
-        anchorQuestionOptions.push(i.toString());
-      }
-    }
-  }
-}
+              const maxStars = anchorQuestion.maxStars || 5;
+              anchorQuestionOptions = [];
+              for (let i = 1; i <= maxStars; i++) {
+                anchorQuestionOptions.push(i.toString());
+              }
+            }
+          }
+        }
 
 
 // Populate the select element with options
-if (anchorQuestionOptions.length === 0) {
+        if (anchorQuestionOptions.length === 0) {
   // Add a default option if there are no choices
-  const defaultOpt = document.createElement("option");
-  defaultOpt.value = "";
-  defaultOpt.text = i18n_local[currentLang].noOptionsAvailable;
-  anchorValuesSelect.appendChild(defaultOpt);
-} else {
-  anchorQuestionOptions.forEach(option => {
-    const optEl = document.createElement("option");
+          const defaultOpt = document.createElement("option");
+          defaultOpt.value = "";
+          defaultOpt.text = i18n_local[currentLang].noOptionsAvailable;
+          anchorValuesSelect.appendChild(defaultOpt);
+        } else {
+          anchorQuestionOptions.forEach(option => {
+            const optEl = document.createElement("option");
     // If the option is an object, use its "text" property; otherwise, use the option directly.
-    const optionText = typeof option === 'object' ? option.text : option;
-    optEl.value = optionText;
-    optEl.text = optionText;
+            const optionText = typeof option === 'object' ? option.text : option;
+            optEl.value = optionText;
+            optEl.text = optionText;
     // Mark the option as selected if it is already in groupObj.anchorValuesToShow
-    if (groupObj.anchorValuesToShow && groupObj.anchorValuesToShow.includes(optionText)) {
-      optEl.selected = true;
-    }
-    anchorValuesSelect.appendChild(optEl);
-  });
-}
+            if (groupObj.anchorValuesToShow && groupObj.anchorValuesToShow.includes(optionText)) {
+              optEl.selected = true;
+            }
+            anchorValuesSelect.appendChild(optEl);
+          });
+        }
 
 // Update groupObj.anchorValuesToShow when selection changes
-anchorValuesSelect.onchange = (e) => {
-  const selectedOptions = Array.from(e.target.selectedOptions).map(opt => opt.value);
-  groupObj.anchorValuesToShow = selectedOptions;
-};
+        anchorValuesSelect.onchange = (e) => {
+          const selectedOptions = Array.from(e.target.selectedOptions).map(opt => opt.value);
+          groupObj.anchorValuesToShow = selectedOptions;
+        };
 
-cardContent.appendChild(anchorValuesSelect);
+        cardContent.appendChild(anchorValuesSelect);
 // Delay initialization to ensure the element is attached
-setTimeout(() => {
-  M.FormSelect.init(document.querySelectorAll('select[multiple]'));
-}, 0);
+        setTimeout(() => {
+          M.FormSelect.init(document.querySelectorAll('select[multiple]'));
+        }, 0);
 
 
   // SUB–QUESTIONS CONTAINER
-  const subQuestionsContainer = document.createElement("div");
-  subQuestionsContainer.style.marginTop = "20px";
-  groupObj.subQuestions = groupObj.subQuestions || [];
+        const subQuestionsContainer = document.createElement("div");
+        subQuestionsContainer.style.marginTop = "20px";
+        groupObj.subQuestions = groupObj.subQuestions || [];
 
-  groupObj.subQuestions.forEach((sq, sqIndex) => {
-    const subQCard = renderQuestionCard(sq, sqIndex, { isSubQuestion: true, groupIndex: index });
-    subQuestionsContainer.appendChild(subQCard);
-  });
+        groupObj.subQuestions.forEach((sq, sqIndex) => {
+          const subQCard = renderQuestionCard(sq, sqIndex, { isSubQuestion: true, groupIndex: index });
+          subQuestionsContainer.appendChild(subQCard);
+        });
 
   // ADD BUTTON: To add a new sub–question manually.
-  const addSubQuestionBtn = document.createElement("button");
-  addSubQuestionBtn.className = "btn green waves-effect waves-light";
-  addSubQuestionBtn.style.marginTop = "10px";
-  addSubQuestionBtn.innerHTML = `<i class="material-icons left">add</i>${i18n_local[currentLang].addQuestion}`;
-  addSubQuestionBtn.onclick = () => {
-    const newQ = {
-      type: "question",
-      id: Date.now(),
-      questionText: "",
-      questionType: "text",
-      required: false,
-      compack: false,
-      options: [],
-    };
-    groupObj.subQuestions.push(newQ);
-    renderAllItems();
+        const addSubQuestionBtn = document.createElement("button");
+        addSubQuestionBtn.className = "btn green waves-effect waves-light";
+        addSubQuestionBtn.style.marginTop = "10px";
+        addSubQuestionBtn.innerHTML = `<i class="material-icons left">add</i>${i18n_local[currentLang].addQuestion}`;
+        addSubQuestionBtn.onclick = () => {
+          const newQ = {
+            type: "question",
+            id: Date.now(),
+            questionText: "",
+            questionType: "text",
+            required: false,
+            compack: false,
+            options: [],
+          };
+          groupObj.subQuestions.push(newQ);
+          renderAllItems();
     // Optionally scroll to the new sub–question
-    setTimeout(() => {
-      const subIndex = groupObj.subQuestions.length - 1;
-      const newCard = document.getElementById(`question-card-${index}-${subIndex}-sub`);
-      if (newCard) {
-        newCard.scrollIntoView({ behavior: "smooth" });
-      }
-    }, 0);
-  };
-  subQuestionsContainer.appendChild(addSubQuestionBtn);
+          setTimeout(() => {
+            const subIndex = groupObj.subQuestions.length - 1;
+            const newCard = document.getElementById(`question-card-${index}-${subIndex}-sub`);
+            if (newCard) {
+              newCard.scrollIntoView({ behavior: "smooth" });
+            }
+          }, 0);
+        };
+        subQuestionsContainer.appendChild(addSubQuestionBtn);
 
-  cardContent.appendChild(subQuestionsContainer);
+        cardContent.appendChild(subQuestionsContainer);
 
   // GROUP CARD ACTIONS (move up, move down, delete group)
-  const cardAction = document.createElement("div");
-  cardAction.className = "card-action group-actions";
+        const cardAction = document.createElement("div");
+        cardAction.className = "card-action group-actions";
 
-  const moveUpBtn = document.createElement("button");
-  moveUpBtn.className = "btn-small grey waves-effect waves-light";
-  moveUpBtn.innerHTML = `<i class="material-icons">arrow_upward</i>`;
-  moveUpBtn.style.marginRight = "5px";
-  moveUpBtn.title = i18n_local[currentLang].moveUp;
-  moveUpBtn.onclick = () => moveItemUp(index);
+        const moveUpBtn = document.createElement("button");
+        moveUpBtn.className = "btn-small grey waves-effect waves-light";
+        moveUpBtn.innerHTML = `<i class="material-icons">arrow_upward</i>`;
+        moveUpBtn.style.marginRight = "5px";
+        moveUpBtn.title = i18n_local[currentLang].moveUp;
+        moveUpBtn.onclick = () => moveItemUp(index);
 
-  const moveDownBtn = document.createElement("button");
-  moveDownBtn.className = "btn-small grey waves-effect waves-light";
-  moveDownBtn.innerHTML = `<i class="material-icons">arrow_downward</i>`;
-  moveDownBtn.style.marginRight = "5px";
-  moveDownBtn.title = i18n_local[currentLang].moveDown;
-  moveDownBtn.onclick = () => moveItemDown(index);
+        const moveDownBtn = document.createElement("button");
+        moveDownBtn.className = "btn-small grey waves-effect waves-light";
+        moveDownBtn.innerHTML = `<i class="material-icons">arrow_downward</i>`;
+        moveDownBtn.style.marginRight = "5px";
+        moveDownBtn.title = i18n_local[currentLang].moveDown;
+        moveDownBtn.onclick = () => moveItemDown(index);
 
-  const deleteBtn = document.createElement("button");
-  deleteBtn.className = "btn-small red waves-effect waves-light";
-  deleteBtn.innerHTML = `<i class="material-icons">delete</i>`;
-  deleteBtn.title = i18n_local[currentLang].deleteButton;
-  deleteBtn.onclick = () => deleteGroup(index);
+        const deleteBtn = document.createElement("button");
+        deleteBtn.className = "btn-small red waves-effect waves-light";
+        deleteBtn.innerHTML = `<i class="material-icons">delete</i>`;
+        deleteBtn.title = i18n_local[currentLang].deleteButton;
+        deleteBtn.onclick = () => deleteGroup(index);
 
-  cardAction.appendChild(moveUpBtn);
-  cardAction.appendChild(moveDownBtn);
-  cardAction.appendChild(deleteBtn);
+        cardAction.appendChild(moveUpBtn);
+        cardAction.appendChild(moveDownBtn);
+        cardAction.appendChild(deleteBtn);
 
-  card.appendChild(cardContent);
-  card.appendChild(cardAction);
-  return card;
+        card.appendChild(cardContent);
+        card.appendChild(cardAction);
+        return card;
       }
 
       /***********************************************
        * RENDER SIDEBAR
        ***********************************************/
-function renderSidebarList() {
-  const listContainer = document.getElementById("questions-list");
-  listContainer.innerHTML = "";
+      function renderSidebarList() {
+        const listContainer = document.getElementById("questions-list");
+        listContainer.innerHTML = "";
 
-  surveyItems.forEach((item, index) => {
-    if (item.type === "question") {
+        surveyItems.forEach((item, index) => {
+          if (item.type === "question") {
       // Render top-level standalone question
-      const listItem = document.createElement("li");
-      listItem.className = "collection-item";
-      listItem.draggable = true;
-      listItem.dataset.type = "top";
-      listItem.dataset.index = index;
+            const listItem = document.createElement("li");
+            listItem.className = "collection-item";
+            listItem.draggable = true;
+            listItem.dataset.type = "top";
+            listItem.dataset.index = index;
       
       // Display index circle and text
-      const indexCircle = document.createElement("span");
-      indexCircle.className = "list-index-circle";
-      indexCircle.textContent = index + 1;
-      listItem.appendChild(indexCircle);
+            const indexCircle = document.createElement("span");
+            indexCircle.className = "list-index-circle";
+            indexCircle.textContent = index + 1;
+            listItem.appendChild(indexCircle);
       
-      const textSpan = document.createElement("span");
-      textSpan.textContent = item.questionText
-        ? item.questionText.substring(0, 40) + (item.questionText.length > 40 ? "..." : "")
-        : i18n_local[currentLang].questionPlaceholder + (index + 1);
-      listItem.appendChild(textSpan);
+            const textSpan = document.createElement("span");
+            textSpan.textContent = item.questionText
+              ? item.questionText.substring(0, 40) + (item.questionText.length > 40 ? "..." : "")
+              : i18n_local[currentLang].questionPlaceholder + (index + 1);
+            listItem.appendChild(textSpan);
       
       // Attach top-level drag events
-      listItem.addEventListener("dragstart", handleTopDragStart);
-      listItem.addEventListener("dragover", handleTopDragOver);
-      listItem.addEventListener("drop", handleTopDrop);
+            listItem.addEventListener("dragstart", handleTopDragStart);
+            listItem.addEventListener("dragover", handleTopDragOver);
+            listItem.addEventListener("drop", handleTopDrop);
       
       // On click, scroll to question card
-      listItem.onclick = () => {
-        const cardId = `question-card-${index}`;
-        const targetCard = document.getElementById(cardId);
-        if (targetCard) {
-          const elementPosition = targetCard.getBoundingClientRect().top;
-          const offsetPosition = elementPosition + window.pageYOffset - 50;
-          window.scrollTo({ top: offsetPosition, behavior: "smooth" });
-        }
-      };
-	  addContextMenuAndSwipeForStandalone(listItem, index);
-      listContainer.appendChild(listItem);
-    } else if (item.type === "group") {
+            listItem.onclick = () => {
+              const cardId = `question-card-${index}`;
+              const targetCard = document.getElementById(cardId);
+              if (targetCard) {
+                const elementPosition = targetCard.getBoundingClientRect().top;
+                const offsetPosition = elementPosition + window.pageYOffset - 50;
+                window.scrollTo({ top: offsetPosition, behavior: "smooth" });
+              }
+            };
+            addContextMenuAndSwipeForStandalone(listItem, index);
+            listContainer.appendChild(listItem);
+          } else if (item.type === "group") {
       // Render group header
-      const groupItem = document.createElement("li");
-      groupItem.className = "collection-item";
-      groupItem.draggable = true;
-      groupItem.dataset.type = "top";
-      groupItem.dataset.index = index;
+            const groupItem = document.createElement("li");
+            groupItem.className = "collection-item";
+            groupItem.draggable = true;
+            groupItem.dataset.type = "top";
+            groupItem.dataset.index = index;
       
-      const indexCircle = document.createElement("span");
-      indexCircle.className = "list-index-circle";
-      indexCircle.textContent = index + 1;
-      groupItem.appendChild(indexCircle);
+            const indexCircle = document.createElement("span");
+            indexCircle.className = "list-index-circle";
+            indexCircle.textContent = index + 1;
+            groupItem.appendChild(indexCircle);
       
-      const textSpan = document.createElement("span");
-      textSpan.textContent = item.groupTitle
-        ? item.groupTitle.substring(0, 40) + (item.groupTitle.length > 40 ? "..." : "")
-        : i18n_local[currentLang].groupPlaceholder + (index + 1);
-      groupItem.appendChild(textSpan);
+            const textSpan = document.createElement("span");
+            textSpan.textContent = item.groupTitle
+              ? item.groupTitle.substring(0, 40) + (item.groupTitle.length > 40 ? "..." : "")
+              : i18n_local[currentLang].groupPlaceholder + (index + 1);
+            groupItem.appendChild(textSpan);
       
-      groupItem.addEventListener("dragstart", handleTopDragStart);
-      groupItem.addEventListener("dragover", handleTopDragOver);
-      groupItem.addEventListener("drop", handleTopDrop);
+            groupItem.addEventListener("dragstart", handleTopDragStart);
+            groupItem.addEventListener("dragover", handleTopDragOver);
+            groupItem.addEventListener("drop", handleTopDrop);
       
-      groupItem.onclick = () => {
-        const cardId = `group-card-${index}`;
-        const targetCard = document.getElementById(cardId);
-        if (targetCard) {
-          const elementPosition = targetCard.getBoundingClientRect().top;
-          const offsetPosition = elementPosition + window.pageYOffset - 50;
-          window.scrollTo({ top: offsetPosition, behavior: "smooth" });
-        }
-      };
+            groupItem.onclick = () => {
+              const cardId = `group-card-${index}`;
+              const targetCard = document.getElementById(cardId);
+              if (targetCard) {
+                const elementPosition = targetCard.getBoundingClientRect().top;
+                const offsetPosition = elementPosition + window.pageYOffset - 50;
+                window.scrollTo({ top: offsetPosition, behavior: "smooth" });
+              }
+            };
 
-      listContainer.appendChild(groupItem);
+            listContainer.appendChild(groupItem);
 
       // Render the group's sub–questions in a nested list (UL)
-      if (item.subQuestions && item.subQuestions.length > 0) {
-        const subList = document.createElement("ul");
-        subList.style.listStyle = "none";
-        subList.style.paddingLeft = "20px";
+            if (item.subQuestions && item.subQuestions.length > 0) {
+              const subList = document.createElement("ul");
+              subList.style.listStyle = "none";
+              subList.style.paddingLeft = "20px";
         // Save the parent group index so we can use it in the drop handler.
-        subList.dataset.groupIndex = index;
+              subList.dataset.groupIndex = index;
 
         // Attach drop handler on the UL to catch drops in the empty area.
-        subList.addEventListener("dragover", (e) => { e.preventDefault(); });
-        subList.addEventListener("drop", (e) => {
-		  e.preventDefault();
-		  const draggedData = JSON.parse(e.dataTransfer.getData("text/plain"));
-		  if (draggedData.type === "top") {
-			const groupIdx = parseInt(subList.dataset.groupIndex, 10);
+              subList.addEventListener("dragover", (e) => { e.preventDefault(); });
+              subList.addEventListener("drop", (e) => {
+                e.preventDefault();
+                const draggedData = JSON.parse(e.dataTransfer.getData("text/plain"));
+                if (draggedData.type === "top") {
+                  const groupIdx = parseInt(subList.dataset.groupIndex, 10);
 			// Check if the target group exists:
-			if (!surveyItems[groupIdx]) {
-			  console.error("Group at index", groupIdx, "not found.");
-			  return;
-			}
+                  if (!surveyItems[groupIdx]) {
+                    console.error("Group at index", groupIdx, "not found.");
+                    return;
+                  }
 			// Ensure the group has a subQuestions array:
-			if (!surveyItems[groupIdx].subQuestions) {
-			  surveyItems[groupIdx].subQuestions = [];
-			}
+                  if (!surveyItems[groupIdx].subQuestions) {
+                    surveyItems[groupIdx].subQuestions = [];
+                  }
 			// Remove the dragged item from the top-level array:
-			const targetGroup = surveyItems[groupIdx];
-			const draggedItem = surveyItems.splice(draggedData.index, 1)[0];
+                  const targetGroup = surveyItems[groupIdx];
+                  const draggedItem = surveyItems.splice(draggedData.index, 1)[0];
 			// Push the dragged standalone question into the target group's subQuestions:
-			targetGroup.subQuestions.push(draggedItem);
-			renderAllItems();
-		  }
-		});
+                  targetGroup.subQuestions.push(draggedItem);
+                  renderAllItems();
+                }
+              });
 
 
         // For each sub–question, create an LI with its own drop handler.
-        item.subQuestions.forEach((subItem, subIndex) => {
-          const subListItem = document.createElement("li");
-          subListItem.className = "collection-item";
-          subListItem.draggable = true;
-          subListItem.dataset.type = "sub";
-          subListItem.dataset.groupIndex = index;
-          subListItem.dataset.subIndex = subIndex;
+              item.subQuestions.forEach((subItem, subIndex) => {
+                const subListItem = document.createElement("li");
+                subListItem.className = "collection-item";
+                subListItem.draggable = true;
+                subListItem.dataset.type = "sub";
+                subListItem.dataset.groupIndex = index;
+                subListItem.dataset.subIndex = subIndex;
 
           // Display text for the sub–question
-          let subDisplayText = "";
-          if (subItem.questionText) {
-            subDisplayText = subItem.questionText.substring(0, 40) + (subItem.questionText.length > 40 ? "..." : "");
-          } else {
-            subDisplayText = i18n_local[currentLang].questionPlaceholder + (subIndex + 1);
-          }
-          const subTextSpan = document.createElement("span");
-          subTextSpan.textContent = subDisplayText;
-          subListItem.appendChild(subTextSpan);
+                let subDisplayText = "";
+                if (subItem.questionText) {
+                  subDisplayText = subItem.questionText.substring(0, 40) + (subItem.questionText.length > 40 ? "..." : "");
+                } else {
+                  subDisplayText = i18n_local[currentLang].questionPlaceholder + (subIndex + 1);
+                }
+                const subTextSpan = document.createElement("span");
+                subTextSpan.textContent = subDisplayText;
+                subListItem.appendChild(subTextSpan);
 
           // Attach sub–question drag events
-          subListItem.addEventListener("dragstart", handleSubDragStart);
-          subListItem.addEventListener("dragover", handleSubDragOver);
-          subListItem.addEventListener("drop", handleSubDrop);
+                subListItem.addEventListener("dragstart", handleSubDragStart);
+                subListItem.addEventListener("dragover", handleSubDragOver);
+                subListItem.addEventListener("drop", handleSubDrop);
 
           // On click, scroll to sub–question card.
-          subListItem.onclick = () => {
-            const targetCard = document.getElementById(`question-card-${index}-${subIndex}-sub`);
-            if (targetCard) {
-              const elementPosition = targetCard.getBoundingClientRect().top;
-              const offsetPosition = elementPosition + window.pageYOffset - 50;
-              window.scrollTo({ top: offsetPosition, behavior: "smooth" });
-            }
-          };
-		  addContextMenuAndSwipeForSub(subListItem, index, subIndex);
-          subList.appendChild(subListItem);
-        });
+                subListItem.onclick = () => {
+                  const targetCard = document.getElementById(`question-card-${index}-${subIndex}-sub`);
+                  if (targetCard) {
+                    const elementPosition = targetCard.getBoundingClientRect().top;
+                    const offsetPosition = elementPosition + window.pageYOffset - 50;
+                    window.scrollTo({ top: offsetPosition, behavior: "smooth" });
+                  }
+                };
+                addContextMenuAndSwipeForSub(subListItem, index, subIndex);
+                subList.appendChild(subListItem);
+              });
 
-        listContainer.appendChild(subList);
+              listContainer.appendChild(subList);
+            }
+          }
+        });
       }
-    }
-  });
-}
 
 // For standalone questions: attach right-click and swipe handlers to convert to group
-function addContextMenuAndSwipeForStandalone(listItem, index) {
-  listItem.addEventListener("contextmenu", function(e) {
-    e.preventDefault();
-    showContextMenu(e.pageX, e.pageY, [
-      { label: i18n_local[currentLang].convertToGroup || "Convert to Group", action: function() { convertQuestionToGroup(index); } }
-    ]);
-    return false;
-  });
-  addSwipeListener(listItem, function(direction) {
-    if (direction === "left") {
-      showSlideAction(listItem,'<i class="material-icons">group_work</i>', function() {
-        convertQuestionToGroup(index);
-      });
-    }
-  });
-}
+      function addContextMenuAndSwipeForStandalone(listItem, index) {
+        listItem.addEventListener("contextmenu", function(e) {
+          e.preventDefault();
+          showContextMenu(e.pageX, e.pageY, [
+            { label: i18n_local[currentLang].convertToGroup || "Convert to Group", action: function() { convertQuestionToGroup(index); } }
+          ]);
+          return false;
+        });
+        addSwipeListener(listItem, function(direction) {
+          if (direction === "left") {
+            showSlideAction(listItem,'<i class="material-icons">group_work</i>', function() {
+              convertQuestionToGroup(index);
+            });
+          }
+        });
+      }
 
 // For sub‑questions: attach right-click and swipe handlers to unpack to standalone
-function addContextMenuAndSwipeForSub(listItem, groupIndex, subIndex) {
-  listItem.addEventListener("contextmenu", function(e) {
-    e.preventDefault();
-    showContextMenu(e.pageX, e.pageY, [
-      { label: i18n_local[currentLang].unpackToStandalone || "Unpack to Standalone", action: function() { unpackSubQuestion(groupIndex, subIndex); } }
-    ]);
-    return false;
-  });
-  addSwipeListener(listItem, function(direction) {
-    if (direction === "left") {
-      showSlideAction(listItem, '<i class="material-icons">call_split</i>', function() {
-        unpackSubQuestion(groupIndex, subIndex);
-      });
-    }
-  });
-}
-// Simple swipe listener: if a left swipe is detected, call the callback with "left"
-function addSwipeListener(element, callback) {
-  let touchstartX = 0;
-  let touchstartY = 0;
-  element.addEventListener(
-    'touchstart',
-    function(event) {
-      touchstartX = event.changedTouches[0].screenX;
-      touchstartY = event.changedTouches[0].screenY;
-    },
-    { passive: true }
-  );
-  element.addEventListener(
-    'touchend',
-    function(event) {
-      const touchendX = event.changedTouches[0].screenX;
-      const touchendY = event.changedTouches[0].screenY;
-      const deltaX = touchstartX - touchendX;
-      const deltaY = touchstartY - touchendY;
-      // Trigger only if horizontal movement is significant and dominant
-      if (Math.abs(deltaX) > 50 && Math.abs(deltaX) > Math.abs(deltaY)) {
-        callback("left");
+      function addContextMenuAndSwipeForSub(listItem, groupIndex, subIndex) {
+        listItem.addEventListener("contextmenu", function(e) {
+          e.preventDefault();
+          showContextMenu(e.pageX, e.pageY, [
+            { label: i18n_local[currentLang].unpackToStandalone || "Unpack to Standalone", action: function() { unpackSubQuestion(groupIndex, subIndex); } }
+          ]);
+          return false;
+        });
+        addSwipeListener(listItem, function(direction) {
+          if (direction === "left") {
+            showSlideAction(listItem, '<i class="material-icons">call_split</i>', function() {
+              unpackSubQuestion(groupIndex, subIndex);
+            });
+          }
+        });
       }
-    },
-    { passive: true }
-  );
-}
+// Simple swipe listener: if a left swipe is detected, call the callback with "left"
+      function addSwipeListener(element, callback) {
+        let touchstartX = 0;
+        let touchstartY = 0;
+        element.addEventListener(
+          'touchstart',
+          function(event) {
+            touchstartX = event.changedTouches[0].screenX;
+            touchstartY = event.changedTouches[0].screenY;
+          },
+          { passive: true }
+        );
+        element.addEventListener(
+          'touchend',
+          function(event) {
+            const touchendX = event.changedTouches[0].screenX;
+            const touchendY = event.changedTouches[0].screenY;
+            const deltaX = touchstartX - touchendX;
+            const deltaY = touchstartY - touchendY;
+      // Trigger only if horizontal movement is significant and dominant
+            if (Math.abs(deltaX) > 50 && Math.abs(deltaX) > Math.abs(deltaY)) {
+              callback("left");
+            }
+          },
+          { passive: true }
+        );
+      }
 
 
 
 // Display a slide-out overlay action on mobile
-function showSlideAction(element, label, action) {
-  if (element.querySelector('.slide-action-overlay')) return;
-  const overlay = document.createElement('div');
-  overlay.className = 'slide-action-overlay';
-  overlay.style.position = 'absolute';
-  overlay.style.top = '0';
-  overlay.style.right = '0';
-  overlay.style.bottom = '0';
-  overlay.style.width = '150px';
-  overlay.style.backgroundColor = 'rgba(0,0,0,0.7)';
-  overlay.style.color = 'white';
-  overlay.style.display = 'flex';
-  overlay.style.alignItems = 'center';
-  overlay.style.justifyContent = 'center';
-  overlay.style.cursor = 'pointer';
-  overlay.innerHTML = label;
-  element.style.position = 'relative';
-  element.appendChild(overlay);
-  overlay.addEventListener('click', function(e) {
-    e.stopPropagation();
-    action();
-    if (overlay.parentNode) {
-      overlay.parentNode.removeChild(overlay);
-    }
-  });
-  setTimeout(function() {
-    if (overlay.parentNode) {
-      overlay.parentNode.removeChild(overlay);
-    }
-  }, 3000);
-}
+      function showSlideAction(element, label, action) {
+        if (element.querySelector('.slide-action-overlay')) return;
+        const overlay = document.createElement('div');
+        overlay.className = 'slide-action-overlay';
+        overlay.style.position = 'absolute';
+        overlay.style.top = '0';
+        overlay.style.right = '0';
+        overlay.style.bottom = '0';
+        overlay.style.width = '150px';
+        overlay.style.backgroundColor = 'rgba(0,0,0,0.7)';
+        overlay.style.color = 'white';
+        overlay.style.display = 'flex';
+        overlay.style.alignItems = 'center';
+        overlay.style.justifyContent = 'center';
+        overlay.style.cursor = 'pointer';
+        overlay.innerHTML = label;
+        element.style.position = 'relative';
+        element.appendChild(overlay);
+        overlay.addEventListener('click', function(e) {
+          e.stopPropagation();
+          action();
+          if (overlay.parentNode) {
+            overlay.parentNode.removeChild(overlay);
+          }
+        });
+        setTimeout(function() {
+          if (overlay.parentNode) {
+            overlay.parentNode.removeChild(overlay);
+          }
+        }, 3000);
+      }
 
 // Display a custom context menu at the specified coordinates with given items
-function showContextMenu(x, y, items) {
-  let existingMenu = document.getElementById('custom-context-menu');
-  if (existingMenu) {
-    existingMenu.parentNode.removeChild(existingMenu);
-  }
-  const menu = document.createElement('div');
-  menu.id = 'custom-context-menu';
-  menu.style.position = 'absolute';
-  menu.style.top = y + 'px';
-  menu.style.left = x + 'px';
-  menu.style.backgroundColor = 'white';
-  menu.style.border = '1px solid #ccc';
-  menu.style.boxShadow = '0 2px 5px rgba(0,0,0,0.3)';
-  menu.style.zIndex = 10000;
-  items.forEach(function(item) {
-    const menuItem = document.createElement('div');
-    menuItem.textContent = item.label;
-    menuItem.style.padding = '8px 12px';
-    menuItem.style.cursor = 'pointer';
-    menuItem.addEventListener('click', function(e) {
-      e.stopPropagation();
-      item.action();
-      if (menu.parentNode) {
-        menu.parentNode.removeChild(menu);
+      function showContextMenu(x, y, items) {
+        let existingMenu = document.getElementById('custom-context-menu');
+        if (existingMenu) {
+          existingMenu.parentNode.removeChild(existingMenu);
+        }
+        const menu = document.createElement('div');
+        menu.id = 'custom-context-menu';
+        menu.style.position = 'absolute';
+        menu.style.top = y + 'px';
+        menu.style.left = x + 'px';
+        menu.style.backgroundColor = 'white';
+        menu.style.border = '1px solid #ccc';
+        menu.style.boxShadow = '0 2px 5px rgba(0,0,0,0.3)';
+        menu.style.zIndex = 10000;
+        items.forEach(function(item) {
+          const menuItem = document.createElement('div');
+          menuItem.textContent = item.label;
+          menuItem.style.padding = '8px 12px';
+          menuItem.style.cursor = 'pointer';
+          menuItem.addEventListener('click', function(e) {
+            e.stopPropagation();
+            item.action();
+            if (menu.parentNode) {
+              menu.parentNode.removeChild(menu);
+            }
+          });
+          menu.appendChild(menuItem);
+        });
+        document.body.appendChild(menu);
+        document.addEventListener('click', function handler() {
+          if (menu.parentNode) {
+            menu.parentNode.removeChild(menu);
+          }
+          document.removeEventListener('click', handler);
+        });
       }
-    });
-    menu.appendChild(menuItem);
-  });
-  document.body.appendChild(menu);
-  document.addEventListener('click', function handler() {
-    if (menu.parentNode) {
-      menu.parentNode.removeChild(menu);
-    }
-    document.removeEventListener('click', handler);
-  });
-}
 
       /***********************************************
        * CRUD: ADD QUESTION / ADD GROUP
@@ -2816,10 +2919,8 @@ function showContextMenu(x, y, items) {
         if (undoStack.length === 0) return;
         const action = undoStack.pop();
         let redoActionObj = null;
-
         switch (action.type) {
           case "delete-question": {
-            // Re-insert
             surveyItems.splice(action.index, 0, action.deletedItem);
             redoActionObj = {
               type: "delete-question",
@@ -2829,7 +2930,6 @@ function showContextMenu(x, y, items) {
             break;
           }
           case "delete-group": {
-            // Re-insert
             surveyItems.splice(action.index, 0, action.deletedItem);
             redoActionObj = {
               type: "delete-group",
@@ -2868,7 +2968,6 @@ function showContextMenu(x, y, items) {
           default:
             break;
         }
-
         if (redoActionObj) {
           redoStack.push(redoActionObj);
         }
@@ -2879,7 +2978,6 @@ function showContextMenu(x, y, items) {
         if (redoStack.length === 0) return;
         const action = redoStack.pop();
         let undoActionObj = null;
-
         switch (action.type) {
           case "delete-question": {
             const deletedQ = surveyItems.splice(action.index, 1)[0];
@@ -2929,7 +3027,6 @@ function showContextMenu(x, y, items) {
           default:
             break;
         }
-
         if (undoActionObj) {
           undoStack.push(undoActionObj);
         }
@@ -2946,427 +3043,411 @@ function showContextMenu(x, y, items) {
       /***********************************************
        * GENERATE & GO
        ***********************************************/
-		async function generateSurvey() {
+      async function generateSurvey() {
 		  // Get the survey title input value
-		  const surveyTitleInput = document.getElementById("survey-title-input");
-		  const surveyTitle = surveyTitleInput ? surveyTitleInput.value.trim() : "";
+        const surveyTitleInput = document.getElementById("survey-title-input");
+        const surveyTitle = surveyTitleInput ? surveyTitleInput.value.trim() : "";
 
 		  // Validate: user must enter a title
-		  if (!surveyTitle) {
-			M.toast({ html: i18n_local[currentLang].enterSurveyTitle, displayLength: 2000 });
-			surveyTitleInput.focus();
+        if (!surveyTitle) {
+          M.toast({ html: i18n_local[currentLang].enterSurveyTitle, displayLength: 2000 });
+          surveyTitleInput.focus();
 			return;  // stop the function if title is missing
-		  }
+        }
 
 		  // Get the endpoint URL from the settings modal input
-		  const endpointUrl = document.getElementById("endpoint-url").value;
+        const endpointUrl = document.getElementById("endpoint-url").value;
           
       // Get the banner image URL from the new input
-      const bannerImageUrl = document.getElementById("survey-banner-input").value.trim();
+        const bannerImageUrl = document.getElementById("survey-banner-input").value.trim();
 		  
-      const channelSelect = document.getElementById("channel-select");
-      const selectedChannelId = channelSelect.value;
+        const channelSelect = document.getElementById("channel-select");
+        const selectedChannelId = channelSelect.value;
 
-      const channelId = selectedChannelId.trim();
+        const channelId = selectedChannelId.trim();
 
 		  // Create an output object that includes the survey title and banner image URL
-		  const surveyOutput = {
-			endpointUrl: endpointUrl,
-			surveyItems: surveyItems,
+        const surveyOutput = {
+          endpointUrl: endpointUrl,
+          surveyItems: surveyItems,
 			surveyTitle: surveyTitle,   // <-- Added field
       bannerImage: bannerImageUrl, // NEW: Banner image URL
 			storeTitle: null, //@fixme, need to update
 			storeId: null, //@fimxme, need to update
-			_channelId : channelId,
-      _userId: currentUserId
-		  };
+          _channelId : channelId,
+          _userId: currentUserId
+        };
 
 		  // Save the complete structure to localStorage
-		  localStorage.setItem("surveyQuestions", JSON.stringify(surveyOutput));
-
-		  let result = await updateSurvey(CurrentSurveySchemaId, surveyOutput);
-		  if (!CurrentSurveySchemaId) {
-        CurrentSurveySchemaId = result?._id;
-        localStorage.CurrentSurveySchemaId = CurrentSurveySchemaId;
-		  }
+        localStorage.setItem("surveyQuestions", JSON.stringify(surveyOutput));
+        let result = await updateSurvey(CurrentSurveySchemaId, surveyOutput);
+        if (!CurrentSurveySchemaId) {
+          CurrentSurveySchemaId = result?._id;
+          localStorage.CurrentSurveySchemaId = CurrentSurveySchemaId;
+        }
 
 		  // Create the URL string
-		  const finalURL = window.location.origin +
+        const finalURL = window.location.origin +
                  window.location.pathname.replace("admin.html", "survey.html") +
                  "?id=" + CurrentSurveySchemaId;
 
 
 		  // Set the URL text inside the modal
-		  document.getElementById("surveyLinkText").textContent = finalURL;
+        document.getElementById("surveyLinkText").textContent = finalURL;
 
 		  // Set up the copy button to copy the URL to clipboard
-		  document.getElementById("copyBtn").onclick = function() {
-			navigator.clipboard.writeText(finalURL).then(() => {
-			  M.toast({ html: i18n_local[currentLang].copiedToClipboard, displayLength: 2000 });
-			});
-		  };
+        document.getElementById("copyBtn").onclick = function() {
+          navigator.clipboard.writeText(finalURL).then(() => {
+            M.toast({ html: i18n_local[currentLang].copiedToClipboard, displayLength: 2000 });
+          });
+        };
 
 		  // Set up the Go button to navigate to the URL
-		  document.getElementById("goBtn").onclick = function() {
-			window.location.href = finalURL;
-		  };
+        document.getElementById("goBtn").onclick = function() {
+          window.location.href = finalURL;
+        };
 
 		  // Open the modal (initialize if necessary)
-		  const modalElem = document.getElementById("surveyLinkModal");
-		  let modalInstance = M.Modal.getInstance(modalElem);
-		  if (!modalInstance) {
-			modalInstance = M.Modal.init(modalElem);
-		  }
-		  modalInstance.open();
-		}
+        const modalElem = document.getElementById("surveyLinkModal");
+        let modalInstance = M.Modal.getInstance(modalElem);
+        if (!modalInstance) {
+          modalInstance = M.Modal.init(modalElem);
+        }
+        modalInstance.open();
+      }
 
 
 	  	  
       /***********************************************
        * fetch and update survey context
        ***********************************************/
-    async function fetchSurvey(surveySchemaId, callback) {
-      try {
-        let url = "";
-        if (surveySchemaId) {
+      async function fetchSurvey(surveySchemaId, callback) {
+        try {
+          let url = "";
+          if (surveySchemaId) {
           // Get a specific survey schema by its id.
-          url = `${BASE_URL}/api/survey/${surveySchemaId}`;
-        } else {
+            url = `${BASE_URL}/api/survey/${surveySchemaId}`;
+          } else {
           // If no id is provided, fetch all surveys for the current user.
-          url = `${BASE_URL}/api/survey?userId=${currentUserId}`;
+            url = `${BASE_URL}/api/survey?userId=${currentUserId}`;
+          }
+          const response = await fetch(url, {
+            headers: {Authorization: "Bearer " + currentUserToken, "X-User-Id": currentUserId},
+          });
+          const data = await response.json();
+          if (typeof callback === "function") {
+            callback(null, data);
+          }
+          return data;
+        } catch (error) {
+          if (typeof callback === "function") {
+            callback(error);
+          }
+          throw error;
         }
-        const response = await fetch(url, {
-          headers: {Authorization: "Bearer " + currentUserToken, "X-User-Id": currentUserId},
-        });
-        const data = await response.json();
-        if (typeof callback === "function") {
-          callback(null, data);
-        }
-        return data;
-      } catch (error) {
-        if (typeof callback === "function") {
-          callback(error);
-        }
-        throw error;
       }
-    }
 
-    async function updateSurvey(surveySchemaId, content, callback) {
-      try {
-        let response;
-        if (surveySchemaId) {
+      async function updateSurvey(surveySchemaId, content, callback) {
+        try {
+          let response;
+          if (surveySchemaId) {
           // Update an existing survey schema.
-          response = await fetch(`${BASE_URL}/api/survey/${surveySchemaId}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json", Authorization: "Bearer " + currentUserToken, "X-User-Id": currentUserId},
-            body: JSON.stringify(content),
-          });
-        } else {
+            response = await fetch(`${BASE_URL}/api/survey/${surveySchemaId}`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json", Authorization: "Bearer " + currentUserToken, "X-User-Id": currentUserId},
+              body: JSON.stringify(content),
+            });
+          } else {
           // Create a new survey schema.
-          response = await fetch(`${BASE_URL}/api/survey`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", Authorization: "Bearer " + currentUserToken, "X-User-Id": currentUserId},
-            body: JSON.stringify(content),
+            response = await fetch(`${BASE_URL}/api/survey`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json", Authorization: "Bearer " + currentUserToken, "X-User-Id": currentUserId},
+              body: JSON.stringify(content),
+            });
+          }
+          const data = await response.json();
+          if (typeof callback === "function") {
+            callback(null, data);
+          }
+          return data;
+        } catch (error) {
+          if (typeof callback === "function") {
+            callback(error);
+          }
+          throw error;
+        }
+      }
+
+      async function updateSurveyCounter(surveySchemaId, callback) {
+        try {
+          const response = await fetch(`${BASE_URL}/api/survey/${surveySchemaId}/counter`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" , Authorization: "Bearer " + currentUserToken, "X-User-Id": currentUserId},
           });
+          const data = await response.json();
+          if (typeof callback === "function") {
+            callback(null, data);
+          }
+          return data;
+        } catch (error) {
+          if (typeof callback === "function") {
+            callback(error);
+          }
+          throw error;
         }
-        const data = await response.json();
-        if (typeof callback === "function") {
-          callback(null, data);
-        }
-        return data;
-      } catch (error) {
-        if (typeof callback === "function") {
-          callback(error);
-        }
-        throw error;
       }
-    }
 
-    async function updateSurveyCounter(surveySchemaId, callback) {
-      try {
-        const response = await fetch(`${BASE_URL}/api/survey/${surveySchemaId}/counter`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" , Authorization: "Bearer " + currentUserToken, "X-User-Id": currentUserId},
-        });
-        const data = await response.json();
-        if (typeof callback === "function") {
-          callback(null, data);
-        }
-        return data;
-      } catch (error) {
-        if (typeof callback === "function") {
-          callback(error);
-        }
-        throw error;
-      }
-    }
-
-	  
-function showSelectSurveyModal(surveys, dismissible = false) {
-  return new Promise((resolve) => {
+      function showSelectSurveyModal(surveys, dismissible = false) {
+        return new Promise((resolve) => {
     // Populate the list
-    const surveyList = document.getElementById("surveyList");
+          const surveyList = document.getElementById("surveyList");
     surveyList.innerHTML = ""; // clear any previous items
-    const importSurveyBtn = document.getElementById("importSurveyBtn");
+          const importSurveyBtn = document.getElementById("importSurveyBtn");
     // Add existing surveys to the list
-    surveys.forEach((survey) => {
-      const li = document.createElement("li");
-      li.className = "collection-item";
-      li.style.cursor = "pointer";
+          surveys.forEach((survey) => {
+            const li = document.createElement("li");
+            li.className = "collection-item";
+            li.style.cursor = "pointer";
       
       // Display survey title if available; otherwise fallback to survey ID
-      if (survey.surveyTitle) {
-        li.textContent = `${survey.surveyTitle} (ID: ${survey._id})`;
-      } else {
-        li.textContent = i18n_local[currentLang].surveyIdLabel + " " + survey._id;
-      }
-      li.dataset.surveyId = survey._id;
+            if (survey.surveyTitle) {
+              li.textContent = `${survey.surveyTitle} (ID: ${survey._id})`;
+            } else {
+              li.textContent = i18n_local[currentLang].surveyIdLabel + " " + survey._id;
+            }
+            li.dataset.surveyId = survey._id;
 
       // Pre-select if this survey is the current one.
-      if (survey._id === localStorage.CurrentSurveySchemaId) {
-        li.classList.add("blue", "white-text");
-      }
+            if (survey._id === localStorage.CurrentSurveySchemaId) {
+              li.classList.add("blue", "white-text");
+            }
       // Highlight the clicked item
-      li.onclick = function () {
-        document.querySelectorAll("#surveyList .collection-item").forEach((item) => {
-          item.classList.remove("blue", "white-text");
-        });
-        li.classList.add("blue", "white-text");
+            li.onclick = function () {
+              document.querySelectorAll("#surveyList .collection-item").forEach((item) => {
+                item.classList.remove("blue", "white-text");
+              });
+              li.classList.add("blue", "white-text");
         
         // Enable the import button only if the selected survey matches the current one.
-        if (li.dataset.surveyId === localStorage.CurrentSurveySchemaId) {
-          importSurveyBtn.removeAttribute("disabled");
-        } else {
-          importSurveyBtn.setAttribute("disabled", true);
-        }
-      };
+              if (li.dataset.surveyId === localStorage.CurrentSurveySchemaId) {
+                importSurveyBtn.removeAttribute("disabled");
+              } else {
+                importSurveyBtn.setAttribute("disabled", true);
+              }
+            };
       // ADD: Delete icon for survey deletion
-      const deleteIcon = document.createElement("i");
-      deleteIcon.className = "material-icons right";
-      deleteIcon.style.cursor = "pointer";
-      deleteIcon.textContent = "delete";
-      deleteIcon.onclick = async (e) => {
-        e.stopPropagation(); // Prevent the li's click event from firing
-        if (confirm("Are you sure you want to delete this survey?")) {
-          try {
-            const response = await fetch(`${BASE_URL}/api/survey/${survey._id}`, {
-              headers: { Authorization: "Bearer " + currentUserToken, "X-User-Id": currentUserId},
-              method: "DELETE"
-            });
-            const result = await response.json();
-            if (response.ok) {
-              M.toast({ html: "Survey deleted successfully", displayLength: 2000 });
-              li.remove(); // Remove the deleted survey from the list
-            } else {
-              M.toast({ html: result.error || "Failed to delete survey", displayLength: 2000 });
-            }
-          } catch (error) {
-            M.toast({ html: "Error deleting survey", displayLength: 2000 });
-          }
-        }
-      };
-      li.appendChild(deleteIcon);
-
-
-      surveyList.appendChild(li);
-    });
+            const deleteIcon = document.createElement("i");
+            deleteIcon.className = "material-icons right";
+            deleteIcon.style.cursor = "pointer";
+            deleteIcon.textContent = "delete";
+            deleteIcon.onclick = async (e) => {
+              e.stopPropagation();
+              if (confirm(i18n_local[currentLang].confirmDeleteSurvey)) {
+                try {
+                  const response = await fetch(`${BASE_URL}/api/survey/${survey._id}`, {
+                    headers: { Authorization: "Bearer " + currentUserToken, "X-User-Id": currentUserId},
+                    method: "DELETE"
+                  });
+                  const result = await response.json();
+                  if (response.ok) {
+                    M.toast({ html: i18n_local[currentLang].surveyDeletedSuccessfully, displayLength: 2000 });
+                    li.remove();
+                  } else {
+                    M.toast({ html: result.error || i18n_local[currentLang].failedToDeleteSurvey, displayLength: 2000 });
+                  }
+                } catch (error) {
+                  M.toast({ html: "Error deleting survey", displayLength: 2000 });
+                }
+              }
+            };
+            li.appendChild(deleteIcon);
+            surveyList.appendChild(li);
+          });
 
     // Add the "Create New" item at the bottom
-    const createNewItem = document.createElement("li");
-    createNewItem.className = "collection-item";
-    createNewItem.style.cursor = "pointer";
-    createNewItem.style.fontWeight = "bold";
-    createNewItem.textContent = i18n_local[currentLang].newSurvey;
-    createNewItem.dataset.surveyId = "create new";
-    createNewItem.onclick = function () {
-      document.querySelectorAll("#surveyList .collection-item").forEach((item) => {
-        item.classList.remove("blue", "white-text");
-      });
-      createNewItem.classList.add("blue", "white-text");
-      if (createNewItem.dataset.surveyId === localStorage.CurrentSurveySchemaId) {
-        importSurveyBtn.removeAttribute("disabled");
-      } else {
-        importSurveyBtn.setAttribute("disabled", true);
-      }
-    };
-
-    surveyList.appendChild(createNewItem);
+          const createNewItem = document.createElement("li");
+          createNewItem.className = "collection-item";
+          createNewItem.style.cursor = "pointer";
+          createNewItem.style.fontWeight = "bold";
+          createNewItem.textContent = i18n_local[currentLang].newSurvey;
+          createNewItem.dataset.surveyId = "create new";
+          createNewItem.onclick = function () {
+            document.querySelectorAll("#surveyList .collection-item").forEach((item) => {
+              item.classList.remove("blue", "white-text");
+            });
+            createNewItem.classList.add("blue", "white-text");
+            if (createNewItem.dataset.surveyId === localStorage.CurrentSurveySchemaId) {
+              importSurveyBtn.removeAttribute("disabled");
+            } else {
+              importSurveyBtn.setAttribute("disabled", true);
+            }
+          };
+          surveyList.appendChild(createNewItem);
 
     // Open the modal (ensuring it doesn't dismiss if nothing is selected)
-    const modalElem = document.getElementById("selectSurveyModal");
-    let modalInstance = M.Modal.getInstance(modalElem);
-    if (modalInstance) {
-      modalInstance.options.dismissible = dismissible;
-    } else {
-      modalInstance = M.Modal.init(modalElem, {
-        dismissible: dismissible
-      });
-    }
-
-
-    const selectedItem = document.querySelector("#surveyList .collection-item.blue");
-    if (selectedItem && selectedItem.dataset.surveyId === localStorage.CurrentSurveySchemaId) {
-      importSurveyBtn.removeAttribute("disabled");
-    } else {
-      importSurveyBtn.setAttribute("disabled", true);
-    }
-
-
-    modalInstance.open();
+          const modalElem = document.getElementById("selectSurveyModal");
+          let modalInstance = M.Modal.getInstance(modalElem);
+          if (modalInstance) {
+            modalInstance.options.dismissible = dismissible;
+          } else {
+            modalInstance = M.Modal.init(modalElem, {
+              dismissible: dismissible
+            });
+          }
+          const selectedItem = document.querySelector("#surveyList .collection-item.blue");
+          if (selectedItem && selectedItem.dataset.surveyId === localStorage.CurrentSurveySchemaId) {
+            importSurveyBtn.removeAttribute("disabled");
+          } else {
+            importSurveyBtn.setAttribute("disabled", true);
+          }
+          modalInstance.open();
 
     // When user clicks "Confirm", get the selected survey ID
-    const confirmBtn = document.getElementById("confirmSurveyBtn");
-    confirmBtn.onclick = function () {
-      const selectedItem = document.querySelector("#surveyList .collection-item.blue");
-      if (selectedItem) {
-        const selectedId = selectedItem.dataset.surveyId;
-		    modalInstance.close();
-		    if (selectedId === "create new") {
+          const confirmBtn = document.getElementById("confirmSurveyBtn");
+          confirmBtn.onclick = function () {
+            const selectedItem = document.querySelector("#surveyList .collection-item.blue");
+            if (selectedItem) {
+              const selectedId = selectedItem.dataset.surveyId;
+              modalInstance.close();
+              if (selectedId === "create new") {
           // If "create new" is selected, pop up the import survey modal directly.
-          delete localStorage.CurrentSurveySchemaId;
-          CurrentSurveySchemaId = null;
-          openImportSurveyModal();
-        } else {
-          localStorage.CurrentSurveySchemaId = selectedId;
-        }
-        resolve(selectedId);
-      } else {
-        M.toast({
-          html: i18n_local[currentLang].pleaseSelectSurvey,
-          displayLength: 2000
+                delete localStorage.CurrentSurveySchemaId;
+                CurrentSurveySchemaId = null;
+                openImportSurveyModal();
+              } else {
+                localStorage.CurrentSurveySchemaId = selectedId;
+              }
+              resolve(selectedId);
+            } else {
+              M.toast({
+                html: i18n_local[currentLang].pleaseSelectSurvey,
+                displayLength: 2000
+              });
+            }
+          };
         });
       }
-    };
-  });
-}
 
 let isSurveyModified;
-function handleSwitchSurvey() {
-  if (isSurveyModified) {
+      function handleSwitchSurvey() {
+        if (isSurveyModified) {
     // Use Materialize's confirm modal or simply window.confirm.
     // Here we'll use window.confirm for simplicity.
-    if (window.confirm(i18n_local[currentLang].unsavedChangesPrompt)) {
+          if (window.confirm(i18n_local[currentLang].unsavedChangesPrompt)) {
       // User wants to save changes, so call generateSurvey.
-      generateSurvey().then(() => {
+            generateSurvey().then(() => {
         // Once saved, open the survey list modal to let user select another survey.
-        openSurveyListModal();
-      });
-    } else {
+              openSurveyListModal();
+            });
+          } else {
       // User does not want to save changes; simply open the survey list modal.
-      openSurveyListModal();
-    }
-  } else {
-    openSurveyListModal();
-  }
-}
+            openSurveyListModal();
+          }
+        } else {
+          openSurveyListModal();
+        }
+      }
 
-async function openSurveyListModal() {
+      async function openSurveyListModal() {
   // Assume 'surveys' is already available or fetch it here.
   const surveys = await fetchSurvey(); // or however you fetch the list
   
   // Open the survey list modal and get the selected survey ID
-  let selectedId = await showSelectSurveyModal(surveys, true);
+        let selectedId = await showSelectSurveyModal(surveys, true);
 
   
-  if (selectedId) {
+        if (selectedId) {
     // Switch survey after the user selects one.
     // You might want to store the selected survey ID and then reload the survey content.
     // For example:
-    switchSurveyById(selectedId);
-  }
-}
-
-async function switchSurveyById(surveyId) {
-  if (surveyId === "create new") {
-    // Handle creating a new survey
-    surveyItems = [];
-    document.getElementById("survey-title-input").value = "";
-    document.getElementById("survey-banner-input").value = "";
-    CurrentSurveySchemaId = undefined;
-    isSurveyModified = false;
-    renderAllItems();
-  } else {
-    // Fetch the survey by its id
-    let tmp = await fetchSurvey(surveyId);
-    const existingData = tmp;
-    if (existingData) {
-      const parsed = typeof existingData === "string" ? JSON.parse(existingData) : existingData;
-      surveyItems = parsed.surveyItems.map(item => item.type ? item : { type: "question", ...item });
-      // Set the survey title input if one exists
-      if (parsed.surveyTitle) {
-        document.getElementById("survey-title-input").value = parsed.surveyTitle;
-      }
-	  else {
-		document.getElementById("survey-title-input").value = '';
-	  }
-      // Set the banner image input if one exists
-      if (parsed.bannerImage) {
-        document.getElementById("survey-banner-input").value = parsed.bannerImage;
-      } else {
-        document.getElementById("survey-banner-input").value = '';
-      }
-      // Set the channel Id   
-      if (parsed._channelId) {
-        // Save the channel ID in a global variable (if needed later)
-        window.preSelectedChannel = parsed._channelId;
-        // Set the dropdown's value and refresh the Materialize UI
-        const channelSelect = document.getElementById("channel-select");
-        if (channelSelect) {
-          channelSelect.value = parsed._channelId;
-          M.FormSelect.init(channelSelect);
+          switchSurveyById(selectedId);
         }
       }
 
+      async function switchSurveyById(surveyId) {
+        if (surveyId === "create new") {
+    // Handle creating a new survey
+          surveyItems = [];
+          document.getElementById("survey-title-input").value = "";
+          document.getElementById("survey-banner-input").value = "";
+          CurrentSurveySchemaId = undefined;
+          isSurveyModified = false;
+          renderAllItems();
+        } else {
+    // Fetch the survey by its id
+          let tmp = await fetchSurvey(surveyId);
+          const existingData = tmp;
+          if (existingData) {
+            const parsed = typeof existingData === "string" ? JSON.parse(existingData) : existingData;
+            surveyItems = parsed.surveyItems.map(item => item.type ? item : { type: "question", ...item });
+      // Set the survey title input if one exists
+            if (parsed.surveyTitle) {
+              document.getElementById("survey-title-input").value = parsed.surveyTitle;
+            }
+            else {
+              document.getElementById("survey-title-input").value = '';
+            }
+      // Set the banner image input if one exists
+            if (parsed.bannerImage) {
+              document.getElementById("survey-banner-input").value = parsed.bannerImage;
+            } else {
+              document.getElementById("survey-banner-input").value = '';
+            }
+      // Set the channel Id   
+            if (parsed._channelId) {
+        // Save the channel ID in a global variable (if needed later)
+              window.preSelectedChannel = parsed._channelId;
+        // Set the dropdown's value and refresh the Materialize UI
+              const channelSelect = document.getElementById("channel-select");
+              if (channelSelect) {
+                channelSelect.value = parsed._channelId;
+                M.FormSelect.init(channelSelect);
+              }
+            }
+            CurrentSurveySchemaId = surveyId;
+            isSurveyModified = false;
+            renderAllItems();
+          }
+        }
+        updateNavTitle();
+        window.scrollTo({ top: 0, behavior: "auto" });
+        document.querySelectorAll(".question-card, .group-card").forEach((el) => {
+          el.classList.add("slide-in");
+          setTimeout(() => el.classList.remove("slide-in"), 1000);
+        });
+      }
 
-      CurrentSurveySchemaId = surveyId;
-      isSurveyModified = false;
-      renderAllItems();
-    }
-  }
-  updateNavTitle();
-	window.scrollTo({ top: 0, behavior: "auto" });
-      // Add highlight effect to new items
-    document.querySelectorAll(".question-card, .group-card").forEach((el) => {
-      el.classList.add("slide-in");
-      setTimeout(() => el.classList.remove("slide-in"), 1000); // Remove highlight after effect
-    });
-  
-}
-
-async function logout() {
-	let res = confirm(i18n_local[currentLang].logoutConfirm);
-	if (res) {  
+      async function logout() {
+        let res = confirm(i18n_local[currentLang].logoutConfirm);
+        if (res) {  
     // clear the cookie authentication
-    const response = await fetch(`${BASE_URL}/api/logout`, {
-      method: 'POST',
-      body: JSON.stringify({ userId: localStorage.userId }),
-      credentials: "include"
-    });
-    const data = await response.json();
-    console.log(data);
+          const response = await fetch(`${BASE_URL}/api/logout`, {
+            method: 'POST',
+            body: JSON.stringify({ userId: localStorage.userId }),
+            credentials: "include"
+          });
+          const data = await response.json();
+          console.log(data);
+          delete localStorage.userId;
+          delete localStorage.userToken;
+          setTimeout(function(){
+            location.reload();
+          }, 1000)
+        }
+      }
 
-    delete localStorage.userId;
-    delete localStorage.userToken;
-
-    setTimeout(function(){
-      location.reload();
-    }, 1000)
-    
-  }
-}
-
-function updateNavTitle() {
-  const navTitleEl = document.getElementById("nav-title");
-  let titleText = "";
-  if (!CurrentSurveySchemaId) {
-    titleText = i18n_local[currentLang].importSurvey; // e.g., "Import Survey"
-  } else if (CurrentSurveySchemaId === "create new") {
-    titleText = i18n_local[currentLang].newSurvey;
-  } else {
-    titleText = CurrentSurveySchemaId;
-  }
-  navTitleEl.innerHTML = `<span class=''><i class="material-icons left">library_add</i>${i18n_local[currentLang].surveyIdPrefix} (${titleText})</span>`;
-}
+      function updateNavTitle() {
+        const navTitleEl = document.getElementById("nav-title");
+        let titleText = "";
+        if (!CurrentSurveySchemaId) {
+          titleText = i18n_local[currentLang].importSurvey;
+        } else if (CurrentSurveySchemaId === "create new") {
+          titleText = i18n_local[currentLang].newSurvey;
+        } else {
+          titleText = CurrentSurveySchemaId;
+        }
+        navTitleEl.innerHTML = `<span class=''><i class="material-icons left">library_add</i>${i18n_local[currentLang].surveyIdPrefix} (${titleText})</span>`;
+      }
 
 
 
@@ -3375,736 +3456,714 @@ function updateNavTitle() {
        ***********************************************/
 
 // Global variable to hold imported survey JSON (from file)
-var importedSurveyDataFromFile = null;
+      var importedSurveyDataFromFile = null;
 
 // Opens the Import Survey popup modal and resets its fields.
-function openImportSurveyModal() {
+      function openImportSurveyModal() {
 
 
    // NEW: Check if there's an existing survey loaded
-  if (CurrentSurveySchemaId) {
-    if (!confirm(i18n_local[currentLang].importReplaceConfirmation)) {
+        if (CurrentSurveySchemaId) {
+          if (!confirm(i18n_local[currentLang].importReplaceConfirmation)) {
       // If user cancels, exit the import process.
-      return;
-    }
-  }
-
-
-  const modalElem = document.getElementById('importSurveyModal');
-  let modalInstance = M.Modal.getInstance(modalElem);
-  if (!modalInstance) {
-    modalInstance = M.Modal.init(modalElem, { dismissible: true });
-  }
+            return;
+          }
+        }
+        const modalElem = document.getElementById('importSurveyModal');
+        let modalInstance = M.Modal.getInstance(modalElem);
+        if (!modalInstance) {
+          modalInstance = M.Modal.init(modalElem, { dismissible: true });
+        }
   // Reset mode to "file" by default.
-  const storedMode = localStorage.getItem("importMode") || "text";
-  document.querySelector('input[name="importMode"][value="' + storedMode + '"]').checked = true;
-
-  updateImportModePopup();
+        const storedMode = localStorage.getItem("importMode") || "text";
+        document.querySelector('input[name="importMode"][value="' + storedMode + '"]').checked = true;
+        updateImportModePopup();
   // Clear any previous inputs.
-  document.getElementById('popupImportSurveyFile').value = "";
-  document.getElementById('popupImportSurveyUrl').value = "";
-  document.getElementById('popupImportSurveyText').value = "";
-  importedSurveyDataFromFile = null;
-  
-  modalInstance.open();
-}
+        document.getElementById('popupImportSurveyFile').value = "";
+        document.getElementById('popupImportSurveyUrl').value = "";
+        document.getElementById('popupImportSurveyText').value = "";
+        importedSurveyDataFromFile = null;
+        modalInstance.open();
+      }
 
 // Updates the popup UI based on the selected import mode.
-function updateImportModePopup() {
-  const mode = document.querySelector('input[name="importMode"]:checked').value;
-  document.getElementById("popupImportFileContainer").style.display = (mode === "file") ? "block" : "none";
-  document.getElementById("popupImportUrlContainer").style.display = (mode === "url") ? "block" : "none";
-  document.getElementById("popupImportTextContainer").style.display = (mode === "text") ? "block" : "none";
-}
+      function updateImportModePopup() {
+        const mode = document.querySelector('input[name="importMode"]:checked').value;
+        document.getElementById("popupImportFileContainer").style.display = (mode === "file") ? "block" : "none";
+        document.getElementById("popupImportUrlContainer").style.display = (mode === "url") ? "block" : "none";
+        document.getElementById("popupImportTextContainer").style.display = (mode === "text") ? "block" : "none";
+      }
 
 // Handles file import in the popup modal.
 // After the file is read and parsed correctly, the import process is triggered automatically.
-function handleImportSurveyFilePopup(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    try {
-      importedSurveyDataFromFile = JSON.parse(e.target.result);
+      function handleImportSurveyFilePopup(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          try {
+            importedSurveyDataFromFile = JSON.parse(e.target.result);
       // M.toast({ html: "File loaded successfully", displayLength: 2000 });
       // Automatically trigger the import process.
-      handleFinalImport();
-    } catch (error) {
-      M.toast({ html: i18n_local[currentLang].fileParseError, displayLength: 2000 });
-    }
-  };
-  reader.readAsText(file);
-}
+            handleFinalImport();
+          } catch (error) {
+            M.toast({ html: i18n_local[currentLang].fileParseError, displayLength: 2000 });
+          }
+        };
+        reader.readAsText(file);
+      }
 
 // Called when the user clicks "Import" in the popup modal (or automatically for file mode).
-async function handleFinalImport() {
-  const mode = document.querySelector('input[name="importMode"]:checked').value;
-  let importedData;
-  
-  if (mode === "file") {
-    if (!importedSurveyDataFromFile) {
-      M.toast({ html: i18n_local[currentLang].invalidJsonFile, displayLength: 3000 });
-      return;
-    }
-    importedData = importedSurveyDataFromFile;
-  } else if (mode === "url") {
-    const url = document.getElementById('popupImportSurveyUrl').value.trim();
-    if (!url) {
-      M.toast({ html: i18n_local[currentLang].enterUrl, displayLength: 3000 });
-      return;
-    }
-    try {
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error("Network error");
-      }
-      importedData = await response.json();
-    } catch (error) {
-      M.toast({ html: i18n_local[currentLang].importSurveyUrlFail, displayLength: 3000 });
-      return;
-    }
-  } else if (mode === "text") {
-    const text = document.getElementById('popupImportSurveyText').value.trim();
-    if (!text) {
-      M.toast({ html: i18n_local[currentLang].pasteJsonText, displayLength: 3000 });
-      return;
-    }
-    try {
-      importedData = JSON.parse(text);
-    } catch (error) {
-      M.toast({ html: i18n_local[currentLang].parseJsonTextError, displayLength: 3000 });
-      return;
-    }
-  }
+      async function handleFinalImport() {
+        const mode = document.querySelector('input[name="importMode"]:checked').value;
+        let importedData;
+        if (mode === "file") {
+          if (!importedSurveyDataFromFile) {
+            M.toast({ html: i18n_local[currentLang].invalidJsonFile, displayLength: 3000 });
+            return;
+          }
+          importedData = importedSurveyDataFromFile;
+        } else if (mode === "url") {
+          const url = document.getElementById('popupImportSurveyUrl').value.trim();
+          if (!url) {
+            M.toast({ html: i18n_local[currentLang].enterUrl, displayLength: 3000 });
+            return;
+          }
+          try {
+            const response = await fetch(url);
+            if (!response.ok) {
+              throw new Error("Network error");
+            }
+            importedData = await response.json();
+          } catch (error) {
+            M.toast({ html: i18n_local[currentLang].importSurveyUrlFail, displayLength: 3000 });
+            return;
+          }
+        } else if (mode === "text") {
+          const text = document.getElementById('popupImportSurveyText').value.trim();
+          if (!text) {
+            M.toast({ html: i18n_local[currentLang].pasteJsonText, displayLength: 3000 });
+            return;
+          }
+          try {
+            importedData = JSON.parse(text);
+          } catch (error) {
+            M.toast({ html: i18n_local[currentLang].parseJsonTextError, displayLength: 3000 });
+            return;
+          }
+        }
   
   // Validate and process the imported data.
-  try {
-    if (!importedData.surveyItems) {
-      throw new Error(i18n_local[currentLang].invalidSurveySchema || "Invalid survey schema: missing surveyItems");
-    }
+        try {
+          if (!importedData.surveyItems) {
+            throw new Error(i18n_local[currentLang].invalidSurveySchema || "Invalid survey schema: missing surveyItems");
+          }
 
     // Update survey items and UI
-    surveyItems = importedData.surveyItems;
-    document.getElementById("survey-title-input").value = importedData.surveyTitle || "";
+          surveyItems = importedData.surveyItems;
+          document.getElementById("survey-title-input").value = importedData.surveyTitle || "";
     // Update banner image if available
-    document.getElementById("survey-banner-input").value = importedData.bannerImage || "";
+          document.getElementById("survey-banner-input").value = importedData.bannerImage || "";
     
     // Add effect for smoother UI
 
     renderAllItems(); // Render imported survey
 
-	window.scrollTo({ top: 0, behavior: "auto" });
+          window.scrollTo({ top: 0, behavior: "auto" });
     // Add highlight effect to new items
-    document.querySelectorAll(".question-card, .group-card").forEach((el) => {
-      el.classList.add("slide-in");
-      setTimeout(() => {
-		el.classList.remove("slide-in")		
+          document.querySelectorAll(".question-card, .group-card").forEach((el) => {
+            el.classList.add("slide-in");
+            setTimeout(() => {
+              el.classList.remove("slide-in")
 	  }, 1000); // Remove highlight after effect
-    });
+          });
 
     
 
     // Show success message
-    M.toast({ html: i18n_local[currentLang].importSurveySuccess, displayLength: 3000 });
+          M.toast({ html: i18n_local[currentLang].importSurveySuccess, displayLength: 3000 });
 
     // Close import modal
-    const importModalElem = document.getElementById('importSurveyModal');
-    const importModalInstance = M.Modal.getInstance(importModalElem);
-    if (importModalInstance) importModalInstance.close();
+          const importModalElem = document.getElementById('importSurveyModal');
+          const importModalInstance = M.Modal.getInstance(importModalElem);
+          if (importModalInstance) importModalInstance.close();
 
     // Close select survey modal (if open)
-    const selectModalElem = document.getElementById('selectSurveyModal');
-    const selectModalInstance = M.Modal.getInstance(selectModalElem);
-    if (selectModalInstance) selectModalInstance.close();
-  } catch (error) {
-    M.toast({ html: i18n_local[currentLang].importSurveyFailed, displayLength: 2000 });
-  }
-}
+          const selectModalElem = document.getElementById('selectSurveyModal');
+          const selectModalInstance = M.Modal.getInstance(selectModalElem);
+          if (selectModalInstance) selectModalInstance.close();
+        } catch (error) {
+          M.toast({ html: i18n_local[currentLang].importSurveyFailed, displayLength: 2000 });
+        }
+      }
 
 
 
 
 // fetch survey data using the REST API.
-async function fetchSurveyData() {
+      async function fetchSurveyData() {
   
-  if (!CurrentSurveySchemaId) {
-    M.toast({ html: "surveyId is required to fetch survey data", displayLength: 3000 });
-    return;
-  }
+        if (!CurrentSurveySchemaId) {
+          M.toast({ html: "surveyId is required to fetch survey data", displayLength: 3000 });
+          return;
+        }
   
   // Build the API URL. In this example, we map channelId to _typeId and use _type=survey.
-  const url = `${BASE_URL}/api/read-data?_typeId=${encodeURIComponent(CurrentSurveySchemaId)}&_type=survey`;
-  try {
-    const response = await fetch(url, {
-      headers: { "Content-Type": "application/json" , Authorization: "Bearer " + currentUserToken, "X-User-Id": currentUserId},
-    });
-    const result = await response.json();
-    if (result.error) {
-      M.toast({ html: result.error, displayLength: 3000 });
-      return;
-    }
+        const url = `${BASE_URL}/api/read-data?_typeId=${encodeURIComponent(CurrentSurveySchemaId)}&_type=survey`;
+        try {
+          const response = await fetch(url, {
+            headers: { "Content-Type": "application/json" , Authorization: "Bearer " + currentUserToken, "X-User-Id": currentUserId},
+          });
+          const result = await response.json();
+          if (result.error) {
+            M.toast({ html: result.error, displayLength: 3000 });
+            return;
+          }
     // Call the summary function with the fetched data.
-    summarizeSurveyData(result.data);
-  } catch (err) {
-    console.error("Error fetching survey data:", err);
-    M.toast({ html: "Error fetching survey data", displayLength: 3000 });
-  }
-}
+          summarizeSurveyData(result.data);
+        } catch (err) {
+          console.error("Error fetching survey data:", err);
+          M.toast({ html: "Error fetching survey data", displayLength: 3000 });
+        }
+      }
 
-async function summarizeSurveyData(responses) {
+      async function summarizeSurveyData(responses) {
   // First, fetch the survey schema
-  let surveySchema = await fetchSurvey(CurrentSurveySchemaId);
+        let surveySchema = await fetchSurvey(CurrentSurveySchemaId);
   // Flatten the survey items into an ordered array of questions.
-  let orderedQuestions = [];
-  surveySchema.surveyItems.forEach(item => {
-    if (item.type === "question") {
-      orderedQuestions.push(item);
-    } else if (item.type === "group" && Array.isArray(item.subQuestions)) {
+        let orderedQuestions = [];
+        surveySchema.surveyItems.forEach(item => {
+          if (item.type === "question") {
+            orderedQuestions.push(item);
+          } else if (item.type === "group" && Array.isArray(item.subQuestions)) {
       // For groups, add sub-questions in the order they appear.
-      item.subQuestions.forEach(subq => {
-        orderedQuestions.push(subq);
-      });
-    }
-  });
+            item.subQuestions.forEach(subq => {
+              orderedQuestions.push(subq);
+            });
+          }
+        });
   
   // Aggregate responses by questionId.
-  const summaryMap = {};
-  responses.forEach(response => {
-    response.forEach(item => {
-      const qid = item.questionId;
-      if (!summaryMap[qid]) {
-        summaryMap[qid] = {
+        const summaryMap = {};
+        responses.forEach(response => {
+          response.forEach(item => {
+            const qid = item.questionId;
+            if (!summaryMap[qid]) {
+              summaryMap[qid] = {
           question: item.question, // update to last row to reflect current text
-          type: item.questionType,
-          answers: []
-        };
-      }
+                type: item.questionType,
+                answers: []
+              };
+            }
       // Update question and type (in case they change in later responses)
-      summaryMap[qid].question = item.question;
-      summaryMap[qid].type = item.questionType;
-      summaryMap[qid].answers.push(item.answer);
-    });
-  });
-  
-  const content = document.getElementById("surveyDataContent");
-  content.innerHTML = "";
+            summaryMap[qid].question = item.question;
+            summaryMap[qid].type = item.questionType;
+            summaryMap[qid].answers.push(item.answer);
+          });
+        });
+        const content = document.getElementById("surveyDataContent");
+        content.innerHTML = "";
   
   // Define color arrays for the charts.
-  const backgroundColors = [
-    'rgba(255, 99, 132, 0.6)',
-    'rgba(54, 162, 235, 0.6)',
-    'rgba(255, 206, 86, 0.6)',
-    'rgba(75, 192, 192, 0.6)',
-    'rgba(153, 102, 255, 0.6)',
-    'rgba(255, 159, 64, 0.6)'
-  ];
-  const borderColors = [
-    'rgba(255, 99, 132, 1)',
-    'rgba(54, 162, 235, 1)',
-    'rgba(255, 206, 86, 1)',
-    'rgba(75, 192, 192, 1)',
-    'rgba(153, 102, 255, 1)',
-    'rgba(255, 159, 64, 1)'
-  ];
+        const backgroundColors = [
+          'rgba(255, 99, 132, 0.6)',
+          'rgba(54, 162, 235, 0.6)',
+          'rgba(255, 206, 86, 0.6)',
+          'rgba(75, 192, 192, 0.6)',
+          'rgba(153, 102, 255, 0.6)',
+          'rgba(255, 159, 64, 0.6)'
+        ];
+        const borderColors = [
+          'rgba(255, 99, 132, 1)',
+          'rgba(54, 162, 235, 1)',
+          'rgba(255, 206, 86, 1)',
+          'rgba(75, 192, 192, 1)',
+          'rgba(153, 102, 255, 1)',
+          'rgba(255, 159, 64, 1)'
+        ];
   
   // Iterate over questions following the schema order.
-  orderedQuestions.forEach(questionSchema => {
+        orderedQuestions.forEach(questionSchema => {
     // Convert question ID to string for consistency.
-    const qid = questionSchema.id.toString();
+          const qid = questionSchema.id.toString();
     // Use responses if available; otherwise, create an empty summary.
-    let summary = summaryMap[qid] || {
-      question: questionSchema.questionText,
-      type: questionSchema.questionType,
-      answers: []
-    };
+          let summary = summaryMap[qid] || {
+            question: questionSchema.questionText,
+            type: questionSchema.questionType,
+            answers: []
+          };
     
     // Build summary based on the question type.
-    if (questionSchema.questionType === "radio" || questionSchema.questionType === "checkbox") {
+          if (questionSchema.questionType === "radio" || questionSchema.questionType === "checkbox") {
       // For radio/checkbox: use schema options to determine order and include missing options.
-      const options = (questionSchema?.options.map(option => option.text)) || [];
-      let freq = {};
-      options.forEach(opt => { freq[opt] = 0; });
-      summary.answers.forEach(ans => {
-        if (Array.isArray(ans)) {
-          ans.forEach(a => {
-            if (freq[a] !== undefined) {
-              freq[a]++;
-            } else {
-              freq[a] = 1;
-            }
-          });
-        } else {
-          if (freq[ans] !== undefined) {
-            freq[ans]++;
-          } else {
-            freq[ans] = 1;
-          }
-        }
-      });
-      const labels = options;
-      const dataCounts = labels.map(label => freq[label] || 0);
-      createSummaryBlock(questionSchema, summary, labels, dataCounts);
-      
-    } else if (questionSchema.questionType === "stars") {
+            const options = (questionSchema?.options.map(option => option.text)) || [];
+            let freq = {};
+            options.forEach(opt => { freq[opt] = 0; });
+            summary.answers.forEach(ans => {
+              if (Array.isArray(ans)) {
+                ans.forEach(a => {
+                  if (freq[a] !== undefined) {
+                    freq[a]++;
+                  } else {
+                    freq[a] = 1;
+                  }
+                });
+              } else {
+                if (freq[ans] !== undefined) {
+                  freq[ans]++;
+                } else {
+                  freq[ans] = 1;
+                }
+              }
+            });
+            const labels = options;
+            const dataCounts = labels.map(label => freq[label] || 0);
+            createSummaryBlock(questionSchema, summary, labels, dataCounts);
+          } else if (questionSchema.questionType === "stars") {
       // For stars: create a scale from 1 to maxStars.
-      let maxStars = questionSchema.maxStars || 5;
-      let labels = [];
-      let freq = {};
-      for (let i = 1; i <= maxStars; i++) {
-        labels.push(i.toString());
-        freq[i] = 0;
-      }
-      summary.answers.forEach(ans => {
-        let num = Number(ans);
-        if (num >= 1 && num <= maxStars) {
-          freq[num]++;
-        }
-      });
-      const dataCounts = labels.map(label => freq[label] || 0);
-      createSummaryBlock(questionSchema, summary, labels, dataCounts, true);
-      
-    } else if (questionSchema.questionType === "date") {
+            let maxStars = questionSchema.maxStars || 5;
+            let labels = [];
+            let freq = {};
+            for (let i = 1; i <= maxStars; i++) {
+              labels.push(i.toString());
+              freq[i] = 0;
+            }
+            summary.answers.forEach(ans => {
+              let num = Number(ans);
+              if (num >= 1 && num <= maxStars) {
+                freq[num]++;
+              }
+            });
+            const dataCounts = labels.map(label => freq[label] || 0);
+            createSummaryBlock(questionSchema, summary, labels, dataCounts, true);
+          } else if (questionSchema.questionType === "date") {
       // For date questions, aggregate unique dates from responses.
-      let freq = {};
-      summary.answers.forEach(ans => {
-        freq[ans] = (freq[ans] || 0) + 1;
-      });
+            let freq = {};
+            summary.answers.forEach(ans => {
+              freq[ans] = (freq[ans] || 0) + 1;
+            });
       // Order dates by natural order.
-      let labels = Object.keys(freq).sort();
-      const dataCounts = labels.map(label => freq[label]);
-      createSummaryBlock(questionSchema, summary, labels, dataCounts);
-      
-    } else if (questionSchema.questionType === "text" || questionSchema.questionType === "longtext") {
+            let labels = Object.keys(freq).sort();
+            const dataCounts = labels.map(label => freq[label]);
+            createSummaryBlock(questionSchema, summary, labels, dataCounts);
+          } else if (questionSchema.questionType === "text" || questionSchema.questionType === "longtext") {
       // For text answers, simply display a note.
-      createSummaryBlock(questionSchema, summary, null, null);
-    }
-  });
+            createSummaryBlock(questionSchema, summary, null, null);
+          }
+        });
   
   // Open the full-page overlay.
-  openSurveyDataPage();
+        openSurveyDataPage();
   
   // Helper function: creates the summary block (chart and/or list) for a question.
-  function createSummaryBlock(questionSchema, summary, labels, dataCounts, isStars = false) {
-    const container = document.createElement("div");
-    container.className = "question-summary";
-    container.style.padding = "1rem";
-    container.style.border = "1px solid #ddd";
-    container.style.borderRadius = "8px";
-    container.style.boxShadow = "0 2px 5px rgba(0,0,0,0.1)";
-    container.style.background = "#fff";
+        function createSummaryBlock(questionSchema, summary, labels, dataCounts, isStars = false) {
+          const container = document.createElement("div");
+          container.className = "question-summary";
+          container.style.padding = "1rem";
+          container.style.border = "1px solid #ddd";
+          container.style.borderRadius = "8px";
+          container.style.boxShadow = "0 2px 5px rgba(0,0,0,0.1)";
+          container.style.background = "#fff";
     
     // Header: question text and type.
-    const header = document.createElement("h5");
-    header.textContent = `${questionSchema.questionText} (${questionSchema.questionType})`;
-    header.style.fontSize = "1rem";
-    header.style.marginBottom = "0.5rem";
-    header.style.color = "#333";
-    container.appendChild(header);
+          const header = document.createElement("h5");
+          header.textContent = `${questionSchema.questionText} (${questionSchema.questionType})`;
+          header.style.fontSize = "1rem";
+          header.style.marginBottom = "0.5rem";
+          header.style.color = "#333";
+          container.appendChild(header);
     
     // For text/longtext, display note and do not create a chart.
-    if (questionSchema.questionType === "text" || questionSchema.questionType === "longtext") {
-      const note = document.createElement("p");
-      note.textContent = "文字回答不進行統計摘要。";
-      note.style.fontStyle = "italic";
-      note.style.color = "#666";
-      container.appendChild(note);
-      content.appendChild(container);
-      return;
-    }
+          if (questionSchema.questionType === "text" || questionSchema.questionType === "longtext") {
+            const note = document.createElement("p");
+            note.textContent = i18n_local[currentLang].textAnswerSummaryNote;
+            note.style.fontStyle = "italic";
+            note.style.color = "#666";
+            container.appendChild(note);
+            content.appendChild(container);
+            return;
+          }
     
     // Create a canvas element for the chart.
-    const canvas = document.createElement("canvas");
-    canvas.id = "chart_" + questionSchema.id;
-    canvas.style.width = "100%";
-    canvas.style.height = "200px";
-    canvas.style.marginBottom = "0.5rem";
-    container.appendChild(canvas);
+          const canvas = document.createElement("canvas");
+          canvas.id = "chart_" + questionSchema.id;
+          canvas.style.width = "100%";
+          canvas.style.height = "200px";
+          canvas.style.marginBottom = "0.5rem";
+          container.appendChild(canvas);
     
     // Delay chart creation to ensure canvas is in the DOM.
-    setTimeout(() => {
-      new Chart(canvas, {
-        type: 'bar',
-        data: {
-          labels: labels,
-          datasets: [{
-            label: questionSchema.questionText,
-            data: dataCounts,
-            backgroundColor: backgroundColors.slice(0, labels.length),
-            borderColor: borderColors.slice(0, labels.length),
-            borderWidth: 1
-          }]
-        },
-        options: {
-          responsive: false,
-          maintainAspectRatio: false,
-          scales: {
-            y: {
-              beginAtZero: true,
-              ticks: { precision: 0 },
-              title: {
-                display: true,
-                text: "回應數量",
-                font: { size: 14, weight: 'bold' }
+          setTimeout(() => {
+            new Chart(canvas, {
+              type: 'bar',
+              data: {
+                labels: labels,
+                datasets: [{
+                  label: questionSchema.questionText,
+                  data: dataCounts,
+                  backgroundColor: backgroundColors.slice(0, labels.length),
+                  borderColor: borderColors.slice(0, labels.length),
+                  borderWidth: 1
+                }]
+              },
+              options: {
+                responsive: false,
+                maintainAspectRatio: false,
+                scales: {
+                  y: {
+                    beginAtZero: true,
+                    ticks: { precision: 0 },
+                    title: {
+                      display: true,
+                      text: "回應數量",
+                      font: { size: 14, weight: 'bold' }
+                    }
+                  },
+                  x: {
+                    title: {
+                      display: true,
+                      text: "選項",
+                      font: { size: 14, weight: 'bold' }
+                    }
+                  }
+                },
+                plugins: { legend: { display: false } }
               }
-            },
-            x: {
-              title: {
-                display: true,
-                text: "選項",
-                font: { size: 14, weight: 'bold' }
-              }
-            }
-          },
-          plugins: { legend: { display: false } }
-        }
-      });
-    }, 100);
+            });
+          }, 100);
     
     // For stars questions, also calculate and display the average rating.
-    if (questionSchema.questionType === "stars") {
-      const total = summary.answers.reduce((sum, ans) => sum + Number(ans), 0);
-      const avg = summary.answers.length ? total / summary.answers.length : 0;
-      const avgP = document.createElement("p");
-      avgP.style.fontWeight = "bold";
-      avgP.style.color = "#00796b";
-      avgP.textContent = `平均評分: ${avg.toFixed(2)} （共 ${summary.answers.length} 筆回應）`;
-      container.appendChild(avgP);
-    } else if (questionSchema.questionType === "radio" ||
-               questionSchema.questionType === "checkbox" ||
-               questionSchema.questionType === "date") {
+          if (questionSchema.questionType === "stars") {
+            const total = summary.answers.reduce((sum, ans) => sum + Number(ans), 0);
+            const avg = summary.answers.length ? total / summary.answers.length : 0;
+            const avgP = document.createElement("p");
+            avgP.style.fontWeight = "bold";
+            avgP.style.color = "#00796b";
+            avgP.textContent = `平均評分: ${avg.toFixed(2)} （共 ${summary.answers.length} 筆回應）`;
+            container.appendChild(avgP);
+          } else if (questionSchema.questionType === "radio" ||
+                     questionSchema.questionType === "checkbox" ||
+                     questionSchema.questionType === "date") {
       // Display frequency list below the chart.
-      const list = document.createElement("ul");
-      list.style.listStyleType = "none";
-      list.style.paddingLeft = "0";
-      labels.forEach(label => {
-        const li = document.createElement("li");
-        li.textContent = `${label}: ${dataCounts[labels.indexOf(label)]} 筆`;
-        li.style.padding = "0.25rem 0";
-        list.appendChild(li);
-      });
-      container.appendChild(list);
-    }
-    
-    content.appendChild(container);
-  }
-}
+            const list = document.createElement("ul");
+            list.style.listStyleType = "none";
+            list.style.paddingLeft = "0";
+            labels.forEach(label => {
+              const li = document.createElement("li");
+              li.textContent = `${label}: ${dataCounts[labels.indexOf(label)]} 筆`;
+              li.style.padding = "0.25rem 0";
+              list.appendChild(li);
+            });
+            container.appendChild(list);
+          }
+          content.appendChild(container);
+        }
+      }
 
 
 
 // Functions to open and close the full-page overlay.
-function openSurveyDataPage() {
-  const page = document.getElementById("surveyDataPage");
-  page.classList.add("active");
-}
+      function openSurveyDataPage() {
+        const page = document.getElementById("surveyDataPage");
+        page.classList.add("active");
+      }
 
-function closeSurveyDataPage() {
-  const page = document.getElementById("surveyDataPage");
-  page.classList.remove("active");
-}
+      function closeSurveyDataPage() {
+        const page = document.getElementById("surveyDataPage");
+        page.classList.remove("active");
+      }
 
 // Function to fetch the user's channels and populate the dropdown.
-async function fetchChannelList() {
-  try {
+      async function fetchChannelList() {
+        try {
     // Send a POST request to list channels for the current user.
-    const response = await fetch(`${BASE_URL}/api/list-admin`, {
-      method: 'POST',
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + currentUserToken,
-        "X-User-Id": currentUserId
-      },
-      body: JSON.stringify({ userId: currentUserId })
-    });
-    const data = await response.json();
+          const response = await fetch(`${BASE_URL}/api/list-admin`, {
+            method: 'POST',
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": "Bearer " + currentUserToken,
+              "X-User-Id": currentUserId
+            },
+            body: JSON.stringify({ userId: currentUserId })
+          });
+          const data = await response.json();
     // If there is an error in the response, handle it.
-    if (data.error) {
-      M.toast({ html: data.error, displayLength: 2000 });
-      return;
-    }
-    
-    const selectElem = document.getElementById("channel-select");
+          if (data.error) {
+            M.toast({ html: data.error, displayLength: 2000 });
+            return;
+          }
+          const selectElem = document.getElementById("channel-select");
     // Clear any previous options (except the default one).
-    selectElem.innerHTML = `<option value="">-- 選擇頻道 --</option>`;
+          selectElem.innerHTML = `<option value="">-- 選擇頻道 --</option>`;
     
     // Populate the dropdown with channels. Assume each channel object has channelId and channelDescription.
-    data.channels.forEach(channel => {
-      const option = document.createElement("option");
-      option.value = channel.channelId;
-      option.textContent = channel.channelDescription || channel.channelId;
-      selectElem.appendChild(option);
-    });
+          data.channels.forEach(channel => {
+            const option = document.createElement("option");
+            option.value = channel.channelId;
+            option.textContent = channel.channelDescription || channel.channelId;
+            selectElem.appendChild(option);
+          });
     // Reinitialize the Materialize select to update the dropdown UI
-    M.FormSelect.init(document.querySelectorAll('#channel-select'));
-    
-  } catch (error) {
-    console.error("Error fetching channels:", error);
-    M.toast({ html: "無法取得頻道清單", displayLength: 2000 });
-  }
-}
+          M.FormSelect.init(document.querySelectorAll('#channel-select'));
+        } catch (error) {
+          console.error("Error fetching channels:", error);
+          M.toast({ html: "無法取得頻道清單", displayLength: 2000 });
+        }
+      }
 
-
-/*******************************************
+      /*******************************************
  * Survey Event trigger funtions 
  */
 let currentTriggers = [];
 
-async function showEventTriggers() {
+      async function showEventTriggers() {
   // Open the modal
-  const modal = M.Modal.getInstance(document.getElementById('eventTriggersModal'));
-  modal.open();
+        const modal = M.Modal.getInstance(document.getElementById('eventTriggersModal'));
+        modal.open();
 
   // Load triggers if we have a survey selected
-  if (CurrentSurveySchemaId) {
-    try {
-      const response = await fetch(`${BASE_URL}/api/survey/${CurrentSurveySchemaId}/triggers`);
-      currentTriggers = await response.json();
-      renderTriggersList();
-    } catch (error) {
-      console.error('Error loading triggers:', error);
+        if (CurrentSurveySchemaId) {
+          try {
+            const response = await fetch(`${BASE_URL}/api/survey/${CurrentSurveySchemaId}/triggers`);
+            currentTriggers = await response.json();
+            renderTriggersList();
+          } catch (error) {
+            console.error('Error loading triggers:', error);
       M.toast({ html: 'Failed to load triggers', classes: 'red' });
-    }
-  }
-}
+          }
+        }
+      }
 
-function renderTriggersList() {
-  const container = document.getElementById('triggersList');
-  container.innerHTML = "";
-  currentTriggers.forEach(trigger => {
-    const cardPanel = document.createElement("div");
-    cardPanel.className = "card-panel";
+      function renderTriggersList() {
+        const container = document.getElementById('triggersList');
+        container.innerHTML = "";
+        currentTriggers.forEach(trigger => {
+          const cardPanel = document.createElement("div");
+          cardPanel.className = "card-panel";
     
     // Create a header container that always shows Title and Type
-    const headerContainer = document.createElement("div");
-    headerContainer.className = "trigger-header";
-    const header = document.createElement("h6");
-    header.textContent = trigger.name;
-    headerContainer.appendChild(header);
+          const headerContainer = document.createElement("div");
+          headerContainer.className = "trigger-header";
+          const header = document.createElement("h6");
+          header.textContent = trigger.name;
+          headerContainer.appendChild(header);
     
-    const typePara = document.createElement("p");
+          const typePara = document.createElement("p");
     typePara.textContent = "類型: " + trigger.conditionType;
-    headerContainer.appendChild(typePara);
+          headerContainer.appendChild(typePara);
     
-    cardPanel.appendChild(headerContainer);
+          cardPanel.appendChild(headerContainer);
     
     // Create a container for the script content
-    const scriptContainer = document.createElement("div");
-    scriptContainer.className = "trigger-script";
-    const scriptPre = document.createElement("pre");
-    scriptPre.textContent = trigger.script;
-    scriptPre.style.maxHeight = "200px";
-    scriptPre.style.overflowY = "auto";
-    scriptPre.style.whiteSpace = "pre-wrap";
-    scriptPre.style.wordBreak = "break-word";
-    scriptPre.style.cursor = "pointer";
+          const scriptContainer = document.createElement("div");
+          scriptContainer.className = "trigger-script";
+          const scriptPre = document.createElement("pre");
+          scriptPre.textContent = trigger.script;
+          scriptPre.style.maxHeight = "200px";
+          scriptPre.style.overflowY = "auto";
+          scriptPre.style.whiteSpace = "pre-wrap";
+          scriptPre.style.wordBreak = "break-word";
+          scriptPre.style.cursor = "pointer";
     // Allow user to toggle expansion if needed
-    scriptPre.addEventListener("click", function() {
-      scriptPre.style.maxHeight = scriptPre.style.maxHeight === "none" ? "200px" : "none";
-    });
-    scriptContainer.appendChild(scriptPre);
-    cardPanel.appendChild(scriptContainer);
+          scriptPre.addEventListener("click", function() {
+            scriptPre.style.maxHeight = scriptPre.style.maxHeight === "none" ? "200px" : "none";
+          });
+          scriptContainer.appendChild(scriptPre);
+          cardPanel.appendChild(scriptContainer);
     
     // Button container for Delete and Edit buttons
-    const buttonContainer = document.createElement("div");
-    buttonContainer.style.display = "flex";
-    buttonContainer.style.gap = "10px";
-    buttonContainer.style.marginTop = "10px";
+          const buttonContainer = document.createElement("div");
+          buttonContainer.style.display = "flex";
+          buttonContainer.style.gap = "10px";
+          buttonContainer.style.marginTop = "10px";
     
     // Delete button
-    const deleteButton = document.createElement("button");
-    deleteButton.className = "btn red";
-    deleteButton.textContent = "刪除";
-    deleteButton.onclick = () => deleteTrigger(trigger._id);
-    buttonContainer.appendChild(deleteButton);
+          const deleteButton = document.createElement("button");
+          deleteButton.className = "btn red";
+          deleteButton.textContent = i18n_local[currentLang].deleteTriggerButton;
+          deleteButton.onclick = () => deleteTrigger(trigger._id);
+          buttonContainer.appendChild(deleteButton);
     
     // Edit button
-    const editButton = document.createElement("button");
-    editButton.className = "btn blue";
-    editButton.textContent = "編輯";
-    buttonContainer.appendChild(editButton);
+          const editButton = document.createElement("button");
+          editButton.className = "btn blue";
+          editButton.textContent = i18n_local[currentLang].editTriggerButton;
+          buttonContainer.appendChild(editButton);
     
     // When user clicks Edit, only replace the script container with an Ace editor.
-    editButton.onclick = () => {
+          editButton.onclick = () => {
       // Create a new div to host the Ace editor
-      const editorDiv = document.createElement("div");
-      editorDiv.style.width = "100%";
-      editorDiv.style.height = "400px";
+            const editorDiv = document.createElement("div");
+            editorDiv.style.width = "100%";
+            editorDiv.style.height = "400px";
       // Replace script container's content with the editor div
-      scriptContainer.innerHTML = "";
-      scriptContainer.appendChild(editorDiv);
+            scriptContainer.innerHTML = "";
+            scriptContainer.appendChild(editorDiv);
       
       // Initialize Ace on the new div
-      const editor = ace.edit(editorDiv);
-      editor.setTheme("ace/theme/monokai");
-      editor.session.setMode("ace/mode/javascript");
-      editor.session.setOption("useWorker", true);
-      editor.setOptions({ fontSize: "12pt", showPrintMargin: false });
-      editor.setValue(trigger.script, -1);
+            const editor = ace.edit(editorDiv);
+            editor.setTheme("ace/theme/monokai");
+            editor.session.setMode("ace/mode/javascript");
+            editor.session.setOption("useWorker", true);
+            editor.setOptions({ fontSize: "12pt", showPrintMargin: false });
+            editor.setValue(trigger.script, -1);
       
       // Remove the Edit button from the button container
-      buttonContainer.removeChild(editButton);
+            buttonContainer.removeChild(editButton);
       
       // Create Save and Cancel buttons
-      const saveButton = document.createElement("button");
-      saveButton.className = "btn green";
-      saveButton.textContent = "儲存";
-      const cancelButton = document.createElement("button");
-      cancelButton.className = "btn grey";
-      cancelButton.textContent = "取消";
-      
-      buttonContainer.appendChild(saveButton);
-      buttonContainer.appendChild(cancelButton);
+            const saveButton = document.createElement("button");
+            saveButton.className = "btn green";
+            saveButton.textContent = i18n_local[currentLang].saveTriggerButton;
+            const cancelButton = document.createElement("button");
+            cancelButton.className = "btn grey";
+            cancelButton.textContent = i18n_local[currentLang].cancel;
+            buttonContainer.appendChild(saveButton);
+            buttonContainer.appendChild(cancelButton);
       
       // Save button: update the trigger's script and revert back to static view
-      saveButton.onclick = async () => {
-        const updatedScript = editor.getValue();
-        try {
-          const response = await fetch(`${BASE_URL}/api/survey/${CurrentSurveySchemaId}/triggers/${trigger._id}`, {
-            method: 'PUT',
-            headers: { 
-              "Content-Type": "application/json",
-              Authorization: "Bearer " + currentUserToken,
-              "X-User-Id": currentUserId
-            },
-            body: JSON.stringify({ script: updatedScript })
-          });
-          const result = await response.json();
-          if (response.ok) {
+            saveButton.onclick = async () => {
+              const updatedScript = editor.getValue();
+              // Create an updated trigger object that includes the full data
+              const updatedTrigger = {
+                name: trigger.name,
+                conditionType: trigger.conditionType, // "starThreshold", "answerMatch", or "timeBased"
+                parameters: trigger.parameters,         // retain existing parameters
+                script: updatedScript
+              };
+              try {
+                const response = await fetch(`${BASE_URL}/api/survey/${CurrentSurveySchemaId}/triggers/${trigger._id}`, {
+                  method: 'PUT',
+                  headers: { 
+                    "Content-Type": "application/json",
+                    Authorization: "Bearer " + currentUserToken,
+                    "X-User-Id": currentUserId
+                  },
+                  body: JSON.stringify(updatedTrigger)
+                });
+                const result = await response.json();
+                if (response.ok) {
             // Update local trigger data and revert scriptContainer to a <pre> view
-            trigger.script = updatedScript;
-            const newPre = document.createElement("pre");
-            newPre.textContent = updatedScript;
-            newPre.style.maxHeight = "200px";
-            newPre.style.overflowY = "auto";
-            newPre.style.whiteSpace = "pre-wrap";
-            newPre.style.wordBreak = "break-word";
-            newPre.style.cursor = "pointer";
-            newPre.addEventListener("click", function() {
-              newPre.style.maxHeight = newPre.style.maxHeight === "none" ? "200px" : "none";
-            });
-            scriptContainer.innerHTML = "";
-            scriptContainer.appendChild(newPre);
+                  trigger.script = updatedScript;
+                  const newPre = document.createElement("pre");
+                  newPre.textContent = updatedScript;
+                  newPre.style.maxHeight = "200px";
+                  newPre.style.overflowY = "auto";
+                  newPre.style.whiteSpace = "pre-wrap";
+                  newPre.style.wordBreak = "break-word";
+                  newPre.style.cursor = "pointer";
+                  newPre.addEventListener("click", function() {
+                    newPre.style.maxHeight = newPre.style.maxHeight === "none" ? "200px" : "none";
+                  });
+                  scriptContainer.innerHTML = "";
+                  scriptContainer.appendChild(newPre);
             
             // Remove Save and Cancel buttons, add back the Edit button
-            buttonContainer.removeChild(saveButton);
-            buttonContainer.removeChild(cancelButton);
-            buttonContainer.appendChild(editButton);
-          } else {
-            M.toast({ html: result.error || "儲存腳本失敗", displayLength: 2000 });
-          }
-        } catch (err) {
-          console.error(err);
-          M.toast({ html: "儲存腳本時發生錯誤", displayLength: 2000 });
-        }
-      };
+                  buttonContainer.removeChild(saveButton);
+                  buttonContainer.removeChild(cancelButton);
+                  buttonContainer.appendChild(editButton);
+                } else {
+                  M.toast({ html: result.error || "儲存腳本失敗", displayLength: 2000 });
+                }
+              } catch (err) {
+                console.error(err);
+                M.toast({ html: "儲存腳本時發生錯誤", displayLength: 2000 });
+              }
+            };
       
       // Cancel button: discard changes and revert to the original script view
-      cancelButton.onclick = () => {
+            cancelButton.onclick = () => {
         // Restore the original <pre> element
-        scriptContainer.innerHTML = "";
-        scriptContainer.appendChild(scriptPre);
+              scriptContainer.innerHTML = "";
+              scriptContainer.appendChild(scriptPre);
         // Remove Save and Cancel buttons, add back the Edit button
-        buttonContainer.removeChild(saveButton);
-        buttonContainer.removeChild(cancelButton);
-        buttonContainer.appendChild(editButton);
-      };
-    };
-    
-    cardPanel.appendChild(buttonContainer);
-    container.appendChild(cardPanel);
-  });
-}
+              buttonContainer.removeChild(saveButton);
+              buttonContainer.removeChild(cancelButton);
+              buttonContainer.appendChild(editButton);
+            };
+          };
+          cardPanel.appendChild(buttonContainer);
+          container.appendChild(cardPanel);
+        });
+      }
 
+      async function deleteTrigger(triggerId) {
+        const response = await fetch(`${BASE_URL}/api/survey/${CurrentSurveySchemaId}/triggers/${triggerId}`, {
+          method: 'DELETE',
+          headers: { "Content-Type": "application/json" , Authorization: "Bearer " + currentUserToken, "X-User-Id": currentUserId},
+          body: JSON.stringify({})
+        });
+        let result = await response.json();
+        if (result?.success){
+          currentTriggers = currentTriggers.filter(item => item._id !== triggerId);
+        }
+        renderTriggersList();
+      }
 
+      async function saveNewTrigger() {
+        const type = document.getElementById('triggerType').value;
+        let script, params = {};
+        if (type === 'starThreshold') {
+          params = {
+            threshold: parseFloat(document.getElementById('starThreshold').value),
+            count: parseInt(document.getElementById('starCount').value, 10)
+          };
+          script = generateStarThresholdScript(params);
+        } else if (type === 'answerMatch') {
+          const targetAnswerElem = document.getElementById('targetAnswer');
+          const selectedAnswers = Array.from(targetAnswerElem.selectedOptions).map(opt => opt.value);
+          params = {
+            questionId: document.getElementById('targetQuestion').value,
+            answer: selectedAnswers
+          };
+          script = generateAnswerMatchScript(params);
+        }
+        const response = await fetch(`${BASE_URL}/api/survey/${CurrentSurveySchemaId}/triggers`, {
+          method: 'POST',
+          headers: { "Content-Type": "application/json", Authorization: "Bearer " + currentUserToken, "X-User-Id": currentUserId},
+          body: JSON.stringify({
+            name: `Trigger ${currentTriggers.length + 1}`,
+            conditionType: type,
+            parameters: params,
+            script: script
+          })
+        });
+        currentTriggers = await response.json();
+        cancelNewTrigger();
+        renderTriggersList();
+      }
 
-async function deleteTrigger(triggerId) {
-
-  const response = await fetch(`${BASE_URL}/api/survey/${CurrentSurveySchemaId}/triggers/${triggerId}`, {
-    method: 'DELETE',
-    headers: { "Content-Type": "application/json" , Authorization: "Bearer " + currentUserToken, "X-User-Id": currentUserId},
-    body: JSON.stringify({
-      
-    })
-  });
-  
-  let result = await response.json();
-  if (result?.success){
-    currentTriggers = currentTriggers.filter(item => item._id !== triggerId);
-  }
-  renderTriggersList();
-}
-
-
-
-async function saveNewTrigger() {
-  const type = document.getElementById('triggerType').value;
-  let script, params = {};
-
-  if (type === 'starThreshold') {
-    params = {
-      threshold: parseFloat(document.getElementById('starThreshold').value),
-      count: parseInt(document.getElementById('starCount').value, 10)
-    };
-    script = generateStarThresholdScript(params);
-  } else if (type === 'answerMatch') {
-      const targetAnswerElem = document.getElementById('targetAnswer');
-      const selectedAnswers = Array.from(targetAnswerElem.selectedOptions).map(opt => opt.value);
-
-      params = {
-        questionId: document.getElementById('targetQuestion').value,
-        answer: selectedAnswers
-      };
-    script = generateAnswerMatchScript(params);
-  }
-  
-
-  const response = await fetch(`${BASE_URL}/api/survey/${CurrentSurveySchemaId}/triggers`, {
-    method: 'POST',
-    headers: { "Content-Type": "application/json", Authorization: "Bearer " + currentUserToken, "X-User-Id": currentUserId},
-    body: JSON.stringify({
-      name: `Trigger ${currentTriggers.length + 1}`,
-      conditionType: type,
-      parameters: params,
-      script: script
-    })
-  });
-  
-  currentTriggers = await response.json();
-  cancelNewTrigger();
-  renderTriggersList();
-}
-
-function showNewTriggerForm() {
+      function showNewTriggerForm() {
   // Hide the triggers list
-  document.getElementById("triggersList").classList.add("hideTriggerList");
+        document.getElementById("triggersList").classList.add("hideTriggerList");
   
   // Show the new trigger form
-  document.getElementById("newTriggerForm").style.display = "block";
+        document.getElementById("newTriggerForm").style.display = "block";
   
   // Hide the "Add New Trigger" button (assumed to be the blue button in the modal footer)
-  const addTriggerBtn = document.querySelector("#eventTriggersModal .modal-footer .btn.blue");
-  if (addTriggerBtn) {
-    addTriggerBtn.style.display = "none";
-  }
-}
+        const addTriggerBtn = document.querySelector("#eventTriggersModal .modal-footer .btn.blue");
+        if (addTriggerBtn) {
+          addTriggerBtn.style.display = "none";
+        }
+      }
 
-function cancelNewTrigger() {
+      function cancelNewTrigger() {
   // Hide the new trigger form
-  document.getElementById("newTriggerForm").style.display = "none";
+        document.getElementById("newTriggerForm").style.display = "none";
   
   // Show the triggers list again
-  document.getElementById("triggersList").classList.remove("hideTriggerList");
+        document.getElementById("triggersList").classList.remove("hideTriggerList");
   
   // Show back the "Add New Trigger" button
-  const addTriggerBtn = document.querySelector("#eventTriggersModal .modal-footer .btn.blue");
-  if (addTriggerBtn) {
-    addTriggerBtn.style.display = "";
-  }
-}
+        const addTriggerBtn = document.querySelector("#eventTriggersModal .modal-footer .btn.blue");
+        if (addTriggerBtn) {
+          addTriggerBtn.style.display = "";
+        }
+      }
 
-
-
-function generateStarThresholdScript(params) {
-  return `
+      function generateStarThresholdScript(params) {
+        if (currentLang === 'zh-TW') {
+          return `
     const threshold = ${params.threshold};
     const requiredCount = ${params.count};
 
@@ -4123,11 +4182,48 @@ function generateStarThresholdScript(params) {
       };
     })();
   `;
-}
+        } else if (currentLang === 'ja-JP') {
+          return `
+    const threshold = ${params.threshold};
+    const requiredCount = ${params.count};
 
+    (function() {
+      return async function checkCondition(surveyData) {
+        const lowRatedQuestions = surveyData.data.filter(q => 
+          q.questionType === 'stars' && Number(q.answer) < threshold
+        );
+        if (lowRatedQuestions.length >= requiredCount) {
+          const triggeredQuestions = lowRatedQuestions.map(q => q.question).join('、');
+          return \`条件が満たされました：\${lowRatedQuestions.length} 件の星評価の質問の回答が \${threshold} 星未満です。対象の質問: \${triggeredQuestions}。理由: これらの質問の評価はすべて設定された \${threshold} 星未満です。\`;
+        }
+        return null;
+      };
+    })();
+  `;
+        } else {
+          return `
+    const threshold = ${params.threshold};
+    const requiredCount = ${params.count};
 
-function generateAnswerMatchScript(params) {
-  return `
+    (function() {
+      return async function checkCondition(surveyData) {
+        const lowRatedQuestions = surveyData.data.filter(q => 
+          q.questionType === 'stars' && Number(q.answer) < threshold
+        );
+        if (lowRatedQuestions.length >= requiredCount) {
+          const triggeredQuestions = lowRatedQuestions.map(q => q.question).join(', ');
+          return \`Condition met: There are \${lowRatedQuestions.length} star rating questions with answers below \${threshold} stars. Triggered questions: \${triggeredQuestions}. Reason: All these questions have ratings below the set threshold of \${threshold} stars.\`;
+        }
+        return null;
+      };
+    })();
+  `;
+        }
+      }
+
+      function generateAnswerMatchScript(params) {
+        if (currentLang === 'zh-TW') {
+          return `
     (function() {
       async function checkCondition(surveyData) {
         // 直接使用傳入的預期答案陣列
@@ -4135,7 +4231,6 @@ function generateAnswerMatchScript(params) {
         
         // 透過比較 questionId（轉為數字）尋找目標問題
         const targetQuestion = surveyData.data.find(q => q.questionId === Number('${params.questionId}'));
-        
         if (targetQuestion) {
           let answer = targetQuestion.answer;
           // 如果答案不是陣列，則轉換為陣列
@@ -4154,364 +4249,370 @@ function generateAnswerMatchScript(params) {
       return checkCondition;
     })();
   `;
-}
+        } else if (currentLang === 'ja-JP') {
+          return `
+    (function() {
+      async function checkCondition(surveyData) {
+        const expectedAnswers = ${JSON.stringify(params.answer)};
+        const targetQuestion = surveyData.data.find(q => q.questionId === Number('${params.questionId}'));
+        if (targetQuestion) {
+          let answer = targetQuestion.answer;
+          if (!Array.isArray(answer)) {
+            answer = [answer];
+          }
+          const matched = expectedAnswers.some(expected => answer.includes(expected));
+          if (matched) {
+            return \`条件が満たされました：質問「\${targetQuestion.question}」の回答（\${answer.join(', ')}）に、予想される選択肢（\${expectedAnswers.join(', ')}）が含まれています。理由：その回答は期待される条件を満たしています。\`;
+          }
+        }
+        return null;
+      }
+      return checkCondition;
+    })();
+  `;
+        } else {
+          return `
+    (function() {
+      async function checkCondition(surveyData) {
+        const expectedAnswers = ${JSON.stringify(params.answer)};
+        const targetQuestion = surveyData.data.find(q => q.questionId === Number('${params.questionId}'));
+        if (targetQuestion) {
+          let answer = targetQuestion.answer;
+          if (!Array.isArray(answer)) {
+            answer = [answer];
+          }
+          const matched = expectedAnswers.some(expected => answer.includes(expected));
+          if (matched) {
+            return \`Condition met: The answer for question "\${targetQuestion.question}" (\${answer.join(', ')}) contains the expected option(s) (\${expectedAnswers.join(', ')}). Reason: The answer meets the expected criteria.\`;
+          }
+        }
+        return null;
+      }
+      return checkCondition;
+    })();
+  `;
+        }
+      }
 
-
-
-
-
-
-function loadTriggerConfig() {
+      function loadTriggerConfig() {
   // Clear previous config
-  const configContainer = document.getElementById('triggerConfig');
-  configContainer.innerHTML = '';
+        const configContainer = document.getElementById('triggerConfig');
+        configContainer.innerHTML = '';
 
   // Add configuration panels for each trigger type (your existing code)...
-  const triggerTypes = {
-    starThreshold: `
+        const triggerTypes = {
+          starThreshold: `
       <div class="row">
         <div class="input-field col s6">
-          <input type="number" id="starThreshold" step="0.1" min="1" max="5">
-          <label for="starThreshold">Threshold (stars)</label>
+          <input type="number" id="starThreshold" step="0.1" min="1">
+          <label for="starThreshold">${i18n_local[currentLang].starThresholdLabel}</label>
         </div>
         <div class="input-field col s6">
           <input type="number" id="starCount" min="1">
-          <label for="starCount">Required Count</label>
+          <label for="starCount">${i18n_local[currentLang].starCountLabel}</label>
         </div>
       </div>
     `,
-    answerMatch: `
+          answerMatch: `
       <div class="row">
         <div class="input-field col s6">
           <select id="targetQuestion">
             <!-- Options will be populated via JS -->
           </select>
-          <label>Question</label>
+          <label>${i18n_local[currentLang].targetQuestionLabel}</label>
         </div>
         <div class="input-field col s6">
           <select id="targetAnswer" multiple>
             <!-- Options will be populated via JS -->
           </select>
-          <label>Expected Answer(s)</label>
+          <label>${i18n_local[currentLang].expectedAnswerLabel}</label>
         </div>
       </div>
     `,
-    timeBased: `
+          timeBased: `
       <div class="row">
         <div class="input-field col s6">
           <input type="number" id="timeWindow" min="1">
-          <label>Time Window (hours)</label>
+          <label>${i18n_local[currentLang].timeWindowLabel}</label>
         </div>
         <div class="input-field col s6">
           <input type="number" id="minimumCount">
-          <label>Minimum Count</label>
+          <label>${i18n_local[currentLang].minimumCountLabel}</label>
         </div>
       </div>
     `
-  };
-
-
-  for (const [type, html] of Object.entries(triggerTypes)) {
-    const div = document.createElement('div');
-    div.className = 'trigger-config';
-    div.dataset.type = type;
-    div.style.display = 'none';
-    div.innerHTML = html;
-    configContainer.appendChild(div);
-  }
+        };
+        for (const [type, html] of Object.entries(triggerTypes)) {
+          const div = document.createElement("div");
+          div.className = "trigger-config";
+          div.dataset.type = type;
+          div.style.display = "none";
+          div.innerHTML = html;
+          configContainer.appendChild(div);
+        }
 
   // Initialize Materialize components
-  M.FormSelect.init(document.querySelectorAll('select'));
-  M.updateTextFields();
-
-  
-}
+        M.FormSelect.init(document.querySelectorAll('select'));
+        M.updateTextFields();
+      }
 
 
 // Add this to handle trigger type changes
-document.getElementById('triggerType').addEventListener('change', function() {
-  const selectedType = this.value;
-  const configPanels = document.querySelectorAll('.trigger-config');
-  configPanels.forEach(panel => {
-    panel.style.display = panel.dataset.type === selectedType ? 'block' : 'none';
-  });
-  
-  if (selectedType === 'answerMatch') {
-    populateQuestionSelect();
+      document.getElementById('triggerType').addEventListener('change', function() {
+        const selectedType = this.value;
+        const configPanels = document.querySelectorAll('.trigger-config');
+        configPanels.forEach(panel => {
+          panel.style.display = panel.dataset.type === selectedType ? 'block' : 'none';
+        });
+        if (selectedType === 'answerMatch') {
+          populateQuestionSelect();
     // Add listener so that when the selected question changes, the answers get updated
-    document.getElementById('targetQuestion').addEventListener('change', populateExpectedAnswerSelect);
-  }
-});
-
-
-
-async function populateQuestionSelect() {
-  const select = document.getElementById('targetQuestion');
-  select.innerHTML = '<option value="" disabled selected>Select a question</option>';
-  
-  if (CurrentSurveySchemaId) {
-    try {
-      const response = await fetch(`${BASE_URL}/api/survey/${CurrentSurveySchemaId}`);
-      const survey = await response.json();
-      
-      survey.surveyItems.forEach(item => {
-        if (item.type === 'question') {
-          const option = document.createElement('option');
-          option.value = item.id;
-          option.textContent = item.questionText || `Question ${item.id}`;
-          select.appendChild(option);
+          document.getElementById('targetQuestion').addEventListener('change', populateExpectedAnswerSelect);
         }
       });
-      
-      M.FormSelect.init(select);
-    } catch (error) {
-      console.error('Error loading questions:', error);
-      M.toast({ html: 'Failed to load questions', classes: 'red' });
-    }
-  }
-  // When the question is changed, update the expected answers
-  select.addEventListener('change', populateExpectedAnswerSelect);
-}
 
-function populateExpectedAnswerSelectElement(options) {
-  const selectElem = document.getElementById('targetAnswer');
-  selectElem.innerHTML = ''; // clear any existing options
-  options.forEach(opt => {
-    const option = document.createElement('option');
-    option.value = opt;
-    option.textContent = opt;
-    selectElem.appendChild(option);
-  });
-  // Reinitialize Materialize’s custom select
-  M.FormSelect.init(selectElem);
-}
-
-async function populateExpectedAnswerSelect() {
-  const targetQuestionSelect = document.getElementById('targetQuestion');
-  const selectedQuestionId = targetQuestionSelect.value;
-  if (!selectedQuestionId) return;
-  
-  try {
-    const response = await fetch(`${BASE_URL}/api/survey/${CurrentSurveySchemaId}`);
-    const survey = await response.json();
-    let question;
-    // Search for the matching question (either standalone or in a group)
-    survey.surveyItems.forEach(item => {
-      if (item.type === 'question' && item.id == selectedQuestionId) {
-        question = item;
-      } else if (item.type === 'group' && Array.isArray(item.subQuestions)) {
-        item.subQuestions.forEach(subq => {
-          if (subq.id == selectedQuestionId) {
-            question = subq;
+      async function populateQuestionSelect() {
+        const select = document.getElementById('targetQuestion');
+        select.innerHTML = `<option value="" disabled selected>${i18n_local[currentLang].selectQuestion}</option>`;
+        if (CurrentSurveySchemaId) {
+          try {
+            const response = await fetch(`${BASE_URL}/api/survey/${CurrentSurveySchemaId}`);
+            const survey = await response.json();
+            survey.surveyItems.forEach(item => {
+              if (item.type === 'question') {
+                const option = document.createElement('option');
+                option.value = item.id;
+                option.textContent = item.questionText || `Question ${item.id}`;
+                select.appendChild(option);
+              }
+            });
+            M.FormSelect.init(select);
+          } catch (error) {
+            console.error('Error loading questions:', error);
+            M.toast({ html: 'Failed to load questions', classes: 'red' });
           }
-        });
+        }
+  // When the question is changed, update the expected answers
+        select.addEventListener('change', populateExpectedAnswerSelect);
       }
-    });
-    
-    if (question) {
-      let options = [];
-      if (question.questionType === 'radio' || question.questionType === 'checkbox') {
-        options = (question.options || []).map(opt =>
-          typeof opt === 'object' ? opt.text : opt
-        );
-      } else if (question.questionType === 'stars') {
-        const maxStars = question.maxStars || 5;
-        for (let i = 1; i <= maxStars; i++) {
-          options.push(i.toString());
+
+      function populateExpectedAnswerSelectElement(options) {
+        const selectElem = document.getElementById('targetAnswer');
+        selectElem.innerHTML = '';
+        options.forEach(opt => {
+          const option = document.createElement('option');
+          option.value = opt;
+          option.textContent = opt;
+          selectElem.appendChild(option);
+        });
+        M.FormSelect.init(selectElem);
+      }
+
+      async function populateExpectedAnswerSelect() {
+        const targetQuestionSelect = document.getElementById('targetQuestion');
+        const selectedQuestionId = targetQuestionSelect.value;
+        if (!selectedQuestionId) return;
+        try {
+          const response = await fetch(`${BASE_URL}/api/survey/${CurrentSurveySchemaId}`);
+          const survey = await response.json();
+          let question;
+    // Search for the matching question (either standalone or in a group)
+          survey.surveyItems.forEach(item => {
+            if (item.type === 'question' && item.id == selectedQuestionId) {
+              question = item;
+            } else if (item.type === 'group' && Array.isArray(item.subQuestions)) {
+              item.subQuestions.forEach(subq => {
+                if (subq.id == selectedQuestionId) {
+                  question = subq;
+                }
+              });
+            }
+          });
+          if (question) {
+            let options = [];
+            if (question.questionType === 'radio' || question.questionType === 'checkbox') {
+              options = (question.options || []).map(opt =>
+                typeof opt === 'object' ? opt.text : opt
+              );
+            } else if (question.questionType === 'stars') {
+              const maxStars = question.maxStars || 5;
+              for (let i = 1; i <= maxStars; i++) {
+                options.push(i.toString());
+              }
+            }
+            populateExpectedAnswerSelectElement(options);
+          }
+        } catch (error) {
+          console.error("Error populating expected answer select:", error);
         }
       }
-      populateExpectedAnswerSelectElement(options);
-    }
-  } catch (error) {
-    console.error("Error populating expected answer select:", error);
-  }
-}
 
-
-
-
-     /***********************************************
+      /***********************************************
        * VOICE recognition
        ***********************************************/
 
 // Global variables for voice recognition insertion tracking
-let isListening = false;
-let recognition = null;
+      let isListening = false;
+      let recognition = null;
 let insertionPoint = null;     // The starting index where recognized text is inserted
 let lastInsertedLength = 0;    // How many characters of interim text have been inserted
 let keyInserted = false;       // Indicate key is inserting, so that the recog result should be skip
-let rec;
+      let rec;
 // Helper to create a new SpeechRecognition instance
-function createRecognition() {
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) {
-    alert("Speech recognition is not supported in this browser.");
-    return null;
-  }
-  rec = new SpeechRecognition();
+      function createRecognition() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+          alert("Speech recognition is not supported in this browser.");
+          return null;
+        }
+        rec = new SpeechRecognition();
   rec.continuous = true;       // Keep listening until manually stopped
   rec.interimResults = true;   // Get interim (partial) results
   rec.lang = currentLang || 'en-US';          // Adjust as needed
 
-document.getElementById("start-voice-btn").classList.add("recording-btn");
+        document.getElementById("start-voice-btn").classList.add("recording-btn");
 // Global variable to track the current interim string
-let currentInterim = "";
+        let currentInterim = "";
 
-rec.onresult = (event) => {
-  const descInput = document.getElementById("survey-description-input");
-  // On first result, record the current cursor position
-  if (insertionPoint === null) {
-    insertionPoint = descInput.selectionStart;
-    lastInsertedLength = 0;
-    currentInterim = "";
-  }
+        rec.onresult = (event) => {
+          const descInput = document.getElementById("survey-description-input");
+          if (insertionPoint === null) {
+            insertionPoint = descInput.selectionStart;
+            lastInsertedLength = 0;
+            currentInterim = "";
+          }
   
   // Use only the last result from the event
-  let result = event.results[event.results.length - 1];
-  let transcript = result[0].transcript;
+          let result = event.results[event.results.length - 1];
+          let transcript = result[0].transcript;
   
   //console.log(result);
   
   // If the result is not final and the new transcript is a partial (i.e. a prefix)
   // of the previously inserted interim, then skip updating the display.
-  if (!result.isFinal && currentInterim && (currentInterim.indexOf(transcript)>=0 || currentInterim.length > transcript.length)  ) {
-	console.log("repeat");
-    return;
-  }
- 
-  if (keyInserted) {
-	console.log("interrupt");
-	
-	if (result.isFinal) {		
-		lastInsertedLength = 0;
-		currentInterim = "";
-		
-	}
-	return;
-  } 
- 
- 
-  console.log(keyInserted, transcript);
+          if (!result.isFinal && currentInterim && (currentInterim.indexOf(transcript)>=0 || currentInterim.length > transcript.length)  ) {
+            console.log("repeat");
+            return;
+          }
+          if (keyInserted) {
+            console.log("interrupt");
+            if (result.isFinal) {		
+              lastInsertedLength = 0;
+              currentInterim = "";
+            }
+            return;
+          } 
+          console.log(keyInserted, transcript);
   
   // Remove the previously inserted interim text from the textarea:
-  let currentVal = descInput.value;
-  let before = currentVal.substring(0, insertionPoint);
-  let after = currentVal.substring(insertionPoint + lastInsertedLength);
+          let currentVal = descInput.value;
+          let before = currentVal.substring(0, insertionPoint);
+          let after = currentVal.substring(insertionPoint + lastInsertedLength);
 
   // Insert the new transcript
-  descInput.value = before + transcript + after;
+          descInput.value = before + transcript + after;
   
   // Move the cursor to the end of the newly inserted text
-  const newCursorPos = insertionPoint + transcript.length;
-  descInput.setSelectionRange(newCursorPos, newCursorPos);
-  descInput.focus();
+          const newCursorPos = insertionPoint + transcript.length;
+          descInput.setSelectionRange(newCursorPos, newCursorPos);
+          descInput.focus();
   
 	
   
   // Update lastInsertedLength and currentInterim
-  lastInsertedLength = transcript.length;
-  currentInterim = transcript;
+          lastInsertedLength = transcript.length;
+          currentInterim = transcript;
   
   // If the result is final, finalize the insertion:
-  if (result.isFinal) {
+          if (result.isFinal) {
     // Advance the insertion point so that future speech is appended at the end of this text.
-    insertionPoint += transcript.length;
-    lastInsertedLength = 0;
-    currentInterim = "";
+            insertionPoint += transcript.length;
+            lastInsertedLength = 0;
+            currentInterim = "";
 	
 	// trigger the button 
 	// Manually dispatch an "input" event so the listener fires
-	const event = new Event("input", { bubbles: true, cancelable: true });
-	descInput.dispatchEvent(event);
-	
-	
-	
-	
-  }
-};
-
-
-  rec.onerror = (event) => {
-    console.error("Speech recognition error:", event.error);
-    try {
-      rec.stop();
-    } catch(e) {}
-  };
-
-  rec.onend = () => {
+            const event = new Event("input", { bubbles: true, cancelable: true });
+            descInput.dispatchEvent(event);
+          }
+        };
+        rec.onerror = (event) => {
+          console.error("Speech recognition error:", event.error);
+          try {
+            rec.stop();
+          } catch(e) {}
+        };
+        rec.onend = () => {
     // Reset variables when recognition ends
-    isListening = false;
-    recognition = null;
-    insertionPoint = null;
-    lastInsertedLength = 0;
-	if (keyInserted) {
-		rec.start();
-		isListening = true;
-		keyInserted = false;
-		return;
-	}
-    document.getElementById("start-voice-btn").innerHTML = '<i class="material-icons">mic</i>';
-	document.getElementById("start-voice-btn").classList.remove("recording-btn");
-  };
-
-  return rec;
-}
+          isListening = false;
+          recognition = null;
+          insertionPoint = null;
+          lastInsertedLength = 0;
+          if (keyInserted) {
+            rec.start();
+            isListening = true;
+            keyInserted = false;
+            return;
+          }
+          document.getElementById("start-voice-btn").innerHTML = '<i class="material-icons">mic</i>';
+          document.getElementById("start-voice-btn").classList.remove("recording-btn");
+        };
+        return rec;
+      }
 
 // Add event listeners to update the insertion point if user manually changes the cursor
-const descInput = document.getElementById("survey-description-input");
-descInput.addEventListener("click", () => {
-  if (isListening) {
-    insertionPoint = descInput.selectionStart;
-    lastInsertedLength = 0;
-  }
-});
-descInput.addEventListener("keyup", () => {
-  if (isListening) {
-    insertionPoint = descInput.selectionStart;
-    lastInsertedLength = 0;
+      const descInput = document.getElementById("survey-description-input");
+      descInput.addEventListener("click", () => {
+        if (isListening) {
+          insertionPoint = descInput.selectionStart;
+          lastInsertedLength = 0;
+        }
+      });
+      descInput.addEventListener("keyup", () => {
+        if (isListening) {
+          insertionPoint = descInput.selectionStart;
+          lastInsertedLength = 0;
 	keyInserted = true; // indicate we should break the recognition for 200ms
-	rec.stop();
-	
-  }
-});
+          rec.stop();
+        }
+      });
 
 // Handle voice button clicks
-document.getElementById("start-voice-btn").addEventListener("click", () => {
-  if (!isListening) {
+      document.getElementById("start-voice-btn").addEventListener("click", () => {
+        if (!isListening) {
     // Start recognition: create a new instance and record the current cursor position
-    recognition = createRecognition();
-    if (!recognition) return;
-    insertionPoint = descInput.selectionStart;
-    lastInsertedLength = 0;
-    try {
-      recognition.start();
-      isListening = true;
-      document.getElementById("start-voice-btn").innerHTML = '<i class="material-icons">mic_off</i>';
-    } catch (err) {
-      console.error("Error starting speech recognition:", err);
-    }
-  } else {
-    try {
-      recognition.stop();
+          recognition = createRecognition();
+          if (!recognition) return;
+          insertionPoint = descInput.selectionStart;
+          lastInsertedLength = 0;
+          try {
+            recognition.start();
+            isListening = true;
+            document.getElementById("start-voice-btn").innerHTML = '<i class="material-icons">mic_off</i>';
+          } catch (err) {
+            console.error("Error starting speech recognition:", err);
+          }
+        } else {
+          try {
+            recognition.stop();
       // onend handler will reset state
-    } catch (err) {
-      console.error("Error stopping speech recognition:", err);
-    }
-  }
-});
+          } catch (err) {
+            console.error("Error stopping speech recognition:", err);
+          }
+        }
+      });
 
 // Also stop recognition if the user clicks the "Generate Survey Schema" button
-document.getElementById("generate-survey-schema-btn").addEventListener("click", () => {
-  if (isListening && recognition) {
-    try {
-      recognition.stop();
-    } catch (err) {
-      console.error("Error stopping speech recognition:", err);
-    }
-  }
+      document.getElementById("generate-survey-schema-btn").addEventListener("click", () => {
+        if (isListening && recognition) {
+          try {
+            recognition.stop();
+          } catch (err) {
+            console.error("Error stopping speech recognition:", err);
+          }
+        }
   // Continue with your generate logic here...
-});
-
+      });
     </script>
   </body>
 </html>
