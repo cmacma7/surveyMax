@@ -995,6 +995,14 @@
           answerMatch: "Specific Answer",
           timeBased: "Time-based Condition",
           selectQuestion: "Select a question",
+          triggerDescription_starThreshold: "Set a star rating threshold and the required count. The trigger activates if at least the specified number of responses have a rating below the threshold.",
+          triggerDescription_answerMatch: "Select a target question and choose one or more expected answers. The trigger activates if the target question’s answer contains any of the selected options.",
+          triggerDescription_timeBased: "Specify a time window (in hours) and a minimum count. The trigger activates if the number of responses within the time window meets or exceeds the minimum count.",
+          validation_starThreshold: "Please fill in valid numbers for star threshold and count.",
+          validation_targetQuestion: "Please select a target question.",
+          validation_expectedAnswer: "Please select at least one expected answer.",
+          validation_timeBased: "Please provide valid numbers for time window and minimum count.",
+          validation_invalidTrigger: "Invalid trigger type selected."
         },
         "zh-TW": {
           navTitle: "問卷管理",
@@ -1107,6 +1115,14 @@
           answerMatch: "特定答案",
           timeBased: "基於時間的條件",
           selectQuestion: "選擇一個問題",
+          triggerDescription_starThreshold: "設定一個星級評分閾值以及所需的次數。當至少有指定數量的回答的評分低於此閾值時，觸發器便會啟動。",
+          triggerDescription_answerMatch: "請選擇目標問題並選取一個或多個預期答案。當目標問題的回答包含任何選定的選項時，觸發器便會啟動。",
+          triggerDescription_timeBased: "請指定一個時間範圍（以小時計）和一個最小計數。當在該時間範圍內的回答數量達到或超過最小計數時，觸發器將會啟動。",
+          validation_starThreshold: "請填寫有效的星級閾值和數量。",
+          validation_targetQuestion: "請選擇一個目標問題。",
+          validation_expectedAnswer: "請至少選取一個預期答案。",
+          validation_timeBased: "請提供有效的時間範圍和最小計數。",
+          validation_invalidTrigger: "所選觸發器類型無效。"
         },
         "ja-JP": {
           navTitle: "アンケート管理",
@@ -1219,6 +1235,14 @@
           answerMatch: "特定の回答",
           timeBased: "時間に基づく条件",
           selectQuestion: "質問を選択",
+          triggerDescription_starThreshold: "星の評価閾値と必要な数を設定してください。指定された数以上の回答が閾値未満の場合、トリガーが発動します。",
+          triggerDescription_answerMatch: "ターゲットの質問を選択し、1つ以上の期待される回答を選んでください。対象の質問の回答に選択されたオプションが含まれる場合、トリガーが発動します。",
+          triggerDescription_timeBased: "時間枠（時間単位）と最小数を指定してください。時間枠内の回答数が最小数に達するかそれ以上の場合、トリガーが発動します。",
+          validation_starThreshold: "有効な星評価の閾値とカウントを入力してください。",
+          validation_targetQuestion: "ターゲットの質問を選択してください。",
+          validation_expectedAnswer: "少なくとも1つの期待される回答を選択してください。",
+          validation_timeBased: "有効な時間枠と最小数を入力してください。",
+          validation_invalidTrigger: "無効なトリガータイプが選択されました。"
         }
       };
       let currentLang = "en-US";
@@ -4101,37 +4125,75 @@ let currentTriggers = [];
       }
 
       async function saveNewTrigger() {
-        const type = document.getElementById('triggerType').value;
-        let script, params = {};
-        if (type === 'starThreshold') {
-          params = {
-            threshold: parseFloat(document.getElementById('starThreshold').value),
-            count: parseInt(document.getElementById('starCount').value, 10)
-          };
-          script = generateStarThresholdScript(params);
-        } else if (type === 'answerMatch') {
-          const targetAnswerElem = document.getElementById('targetAnswer');
-          const selectedAnswers = Array.from(targetAnswerElem.selectedOptions).map(opt => opt.value);
-          params = {
-            questionId: document.getElementById('targetQuestion').value,
-            answer: selectedAnswers
-          };
-          script = generateAnswerMatchScript(params);
-        }
-        const response = await fetch(`${BASE_URL}/api/survey/${CurrentSurveySchemaId}/triggers`, {
-          method: 'POST',
-          headers: { "Content-Type": "application/json", Authorization: "Bearer " + currentUserToken, "X-User-Id": currentUserId},
-          body: JSON.stringify({
-            name: `Trigger ${currentTriggers.length + 1}`,
-            conditionType: type,
-            parameters: params,
-            script: script
-          })
-        });
-        currentTriggers = await response.json();
-        cancelNewTrigger();
-        renderTriggersList();
-      }
+  const type = document.getElementById('triggerType').value;
+  let script, params = {};
+
+  if (type === 'starThreshold') {
+    const thresholdValue = document.getElementById('starThreshold').value;
+    const countValue = document.getElementById('starCount').value;
+    const threshold = parseFloat(thresholdValue);
+    const count = parseInt(countValue, 10);
+    if (!thresholdValue || isNaN(threshold) || threshold <= 0 ||
+        !countValue || isNaN(count) || count <= 0) {
+      M.toast({ html: i18n_local[currentLang].validation_starThreshold, displayLength: 3000 });
+      return;
+    }
+    params = { threshold, count };
+    script = generateStarThresholdScript(params);
+  } else if (type === 'answerMatch') {
+    const targetQuestion = document.getElementById('targetQuestion').value;
+    const targetAnswerElem = document.getElementById('targetAnswer');
+    const selectedAnswers = Array.from(targetAnswerElem.selectedOptions).map(opt => opt.value);
+    if (!targetQuestion) {
+      M.toast({ html: i18n_local[currentLang].validation_targetQuestion, displayLength: 3000 });
+      return;
+    }
+    if (selectedAnswers.length === 0) {
+      M.toast({ html: i18n_local[currentLang].validation_expectedAnswer, displayLength: 3000 });
+      return;
+    }
+    params = {
+      questionId: targetQuestion,
+      answer: selectedAnswers
+    };
+    script = generateAnswerMatchScript(params);
+  } else if (type === 'timeBased') {
+    const timeWindowValue = document.getElementById('timeWindow').value;
+    const minimumCountValue = document.getElementById('minimumCount').value;
+    const timeWindow = parseInt(timeWindowValue, 10);
+    const minimumCount = parseInt(minimumCountValue, 10);
+    if (!timeWindowValue || isNaN(timeWindow) || timeWindow <= 0 ||
+        !minimumCountValue || isNaN(minimumCount) || minimumCount <= 0) {
+      M.toast({ html: i18n_local[currentLang].validation_timeBased, displayLength: 3000 });
+      return;
+    }
+    params = { timeWindow, minimumCount };
+    // Assuming you have a function to generate the time-based script:
+    script = generateTimeBasedScript(params);
+  } else {
+    M.toast({ html: i18n_local[currentLang].validation_invalidTrigger, displayLength: 3000 });
+    return;
+  }
+
+  // Proceed to save the new trigger via API call
+  const response = await fetch(`${BASE_URL}/api/survey/${CurrentSurveySchemaId}/triggers`, {
+    method: 'POST',
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer " + currentUserToken,
+      "X-User-Id": currentUserId
+    },
+    body: JSON.stringify({
+      name: `Trigger ${currentTriggers.length + 1}`,
+      conditionType: type,
+      parameters: params,
+      script: script
+    })
+  });
+  currentTriggers = await response.json();
+  cancelNewTrigger();
+  renderTriggersList();
+}
 
       function showNewTriggerForm() {
   // Hide the triggers list
@@ -4296,13 +4358,19 @@ let currentTriggers = [];
 
       function loadTriggerConfig() {
   // Clear previous config
-        const configContainer = document.getElementById('triggerConfig');
-        configContainer.innerHTML = '';
+  const configContainer = document.getElementById('triggerConfig');
+  configContainer.innerHTML = '';
 
-  // Add configuration panels for each trigger type (your existing code)...
-        const triggerTypes = {
-          starThreshold: `
+  // Define configuration panels with descriptions (using i18n_local for the descriptions
+  // and i18n_local for field labels)
+  const triggerTypes = {
+    starThreshold: `
       <div class="row">
+        <div class="col s12">
+          <p style="font-size: 0.9em; color: #666;">
+            ${i18n_local[currentLang].triggerDescription_starThreshold}
+          </p>
+        </div>
         <div class="input-field col s6">
           <input type="number" id="starThreshold" step="0.1" min="1">
           <label for="starThreshold">${i18n_local[currentLang].starThresholdLabel}</label>
@@ -4313,8 +4381,13 @@ let currentTriggers = [];
         </div>
       </div>
     `,
-          answerMatch: `
+    answerMatch: `
       <div class="row">
+        <div class="col s12">
+          <p style="font-size: 0.9em; color: #666;">
+            ${i18n_local[currentLang].triggerDescription_answerMatch}
+          </p>
+        </div>
         <div class="input-field col s6">
           <select id="targetQuestion">
             <!-- Options will be populated via JS -->
@@ -4329,32 +4402,39 @@ let currentTriggers = [];
         </div>
       </div>
     `,
-          timeBased: `
+    timeBased: `
       <div class="row">
+        <div class="col s12">
+          <p style="font-size: 0.9em; color: #666;">
+            ${i18n_local[currentLang].triggerDescription_timeBased}
+          </p>
+        </div>
         <div class="input-field col s6">
           <input type="number" id="timeWindow" min="1">
           <label>${i18n_local[currentLang].timeWindowLabel}</label>
         </div>
         <div class="input-field col s6">
-          <input type="number" id="minimumCount">
+          <input type="number" id="minimumCount" min="1">
           <label>${i18n_local[currentLang].minimumCountLabel}</label>
         </div>
       </div>
     `
-        };
-        for (const [type, html] of Object.entries(triggerTypes)) {
-          const div = document.createElement("div");
-          div.className = "trigger-config";
-          div.dataset.type = type;
-          div.style.display = "none";
-          div.innerHTML = html;
-          configContainer.appendChild(div);
-        }
+  };
 
-  // Initialize Materialize components
-        M.FormSelect.init(document.querySelectorAll('select'));
-        M.updateTextFields();
-      }
+  // Create a config panel for each trigger type
+  for (const [type, html] of Object.entries(triggerTypes)) {
+    const div = document.createElement("div");
+    div.className = "trigger-config";
+    div.dataset.type = type;
+    div.style.display = "none"; // initially hidden; show when trigger type is selected
+    div.innerHTML = html;
+    configContainer.appendChild(div);
+  }
+
+  // Initialize Materialize components for any <select> elements
+  M.FormSelect.init(document.querySelectorAll('select'));
+  M.updateTextFields();
+}
 
 
 // Add this to handle trigger type changes
