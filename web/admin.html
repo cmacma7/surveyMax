@@ -207,6 +207,10 @@
   display: flex;
   gap: 10px;
 }
+.right-buttons {
+  display: flex;
+  gap: 10px;
+}
 
   /*********************************************
    * event trigger page
@@ -525,18 +529,25 @@
 		</div>
 
       <!-- DELETE ACCOUNT SECTION -->
-      <hr>
-      <h6 style="color:red;">Delete Account</h6>
-      <label for="delete-email">Enter Email:</label>
-      <input type="email" id="delete-email" placeholder="Your email" />
-      <label for="delete-password">Enter Password:</label>
-      <input type="password" id="delete-password" placeholder="Your password" />
-      <button id="delete-account-btn" class="btn red">Delete Account</button>
+     
+      <div id="delete-account-fields" style="display: none;">
+        <h6 class="delete-account-title" style="color:red;"></h6>
+        <label for="delete-email" class="delete-email-label"></label>
+        <input type="email" id="delete-email" placeholder="" />
+        <label for="delete-password" class="delete-password-label"></label>
+        <input type="password" id="delete-password" placeholder="" />
+      </div>
+     
+      <div style="display: flex; gap: 10px; margin:3em 0 1em;">
+        
+        <button id="delete-account-btn" class="btn red"></button>
+        <button id="cancel-delete-account-btn" class="btn green" style="display: none;">cancel</button>
+      </div>
 
 
 
       </div>
-      <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+      <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; padding: 0 1.7em;">
 		  <button class="modal-close btn red" onclick="logout();"><!-- Logout text will be updated via setLanguage --></button>
 		  <button class="modal-close btn blue"><!-- Close text will be updated via setLanguage --></button>
 		</div>
@@ -809,20 +820,23 @@
               </div>
           
               
-              <button class="btn grey waves-effect waves-light" onclick="showEventTriggers()">
-                <i class="material-icons left">notifications</i>
-                <span id="event-trigger-text">Event Triggers</span>
-              </button>
+ 
 
               <!-- Right side button: Generate & Go to Survey -->
               <div class="right-buttons">
+
+                <button class="btn grey waves-effect waves-light" onclick="showEventTriggers()">
+                  <i class="material-icons left">notifications</i>
+                  <span id="event-trigger-text">Event Triggers</span>
+                </button>
+
                 <button
                   class="btn blue waves-effect waves-light"
-                  onclick="generateSurvey()"
-                >
-                  <i class="material-icons left">save</i>
-                  <span id="generate-text"></span>
+                  onclick="generateSurvey()">
+                    <i class="material-icons left">save</i>
+                    <span id="generate-text"></span>
                 </button>
+
               </div>
             </div>
           </div>
@@ -1005,7 +1019,15 @@
           validation_invalidTrigger: "Invalid trigger type selected.",
           triggerName_starThreshold: "Star Threshold: Threshold {threshold}, Count {count}",
           triggerName_answerMatch: "Answer Match: '{question}' matches [{answers}]",
-          triggerName_timeBased: "Time Based: {timeWindow}h window, Min {minimumCount} responses"          
+          triggerName_timeBased: "Time Based: {timeWindow}h window, Min {minimumCount} responses",
+          deleteAccountTitle: "Delete Account",
+          deleteEmailLabel: "Enter Email:",
+          deleteEmailPlaceholder: "Your email",
+          deletePasswordLabel: "Enter Password:",
+          deletePasswordPlaceholder: "Your password",
+          deleteAccountButton: "Delete Account",
+          deleteAccountButtonConfirm: "Confirm Delete Account" // after first click
+          
         },
         "zh-TW": {
           navTitle: "問卷管理",
@@ -1128,7 +1150,15 @@
           validation_invalidTrigger: "所選觸發器類型無效。",
           triggerName_starThreshold: "星級閾值：閾值 {threshold}，數量 {count}",
           triggerName_answerMatch: "特定答案：『{question}』包含 [{answers}]",
-          triggerName_timeBased: "基於時間：{timeWindow} 小時範圍，最少 {minimumCount} 筆回應"
+          triggerName_timeBased: "基於時間：{timeWindow} 小時範圍，最少 {minimumCount} 筆回應",
+          deleteAccountTitle: "刪除帳戶",
+          deleteEmailLabel: "輸入電子郵件：",
+          deleteEmailPlaceholder: "您的電子郵件",
+          deletePasswordLabel: "輸入密碼：",
+          deletePasswordPlaceholder: "您的密碼",
+          deleteAccountButton: "刪除帳戶",
+          deleteAccountButtonConfirm: "確認刪除帳戶"
+
         },
         "ja-JP": {
           navTitle: "アンケート管理",
@@ -1251,7 +1281,15 @@
           validation_invalidTrigger: "無効なトリガータイプが選択されました。",
           triggerName_starThreshold: "星評価閾値: 閾値 {threshold}、数 {count}",
           triggerName_answerMatch: "回答一致: 『{question}』が [{answers}] と一致",
-          triggerName_timeBased: "時間基準: {timeWindow}時間のウィンドウ、最小 {minimumCount} 件の回答"
+          triggerName_timeBased: "時間基準: {timeWindow}時間のウィンドウ、最小 {minimumCount} 件の回答",
+          deleteAccountTitle: "アカウントの削除",
+          deleteEmailLabel: "メールアドレスを入力:",
+          deleteEmailPlaceholder: "あなたのメールアドレス",
+          deletePasswordLabel: "パスワードを入力:",
+          deletePasswordPlaceholder: "あなたのパスワード",
+          deleteAccountButton: "アカウント削除",
+          deleteAccountButtonConfirm: "アカウント削除を確定"
+
         }
       };
       let currentLang = "en-US";
@@ -1505,7 +1543,58 @@
 
 
 
-          document.getElementById("delete-account-btn").addEventListener("click", async function() {
+          
+
+          const modalElem = document.getElementById('eventTriggersModal');
+          M.Modal.init(modalElem, {
+            onOpenStart: () => {
+              // When modal opens, initialize the select elements
+              M.FormSelect.init(document.querySelectorAll('select'));
+              loadTriggerConfig();
+            },
+            onOpenEnd: () => {
+              // Initialize select elements as before
+              M.FormSelect.init(document.querySelectorAll('select'));
+              loadTriggerConfig();
+              
+            }            
+          });
+
+
+
+          document.getElementById('delete-account-btn').addEventListener('click', function() {
+            const fields = document.getElementById('delete-account-fields');
+            if (fields.style.display === "none") {
+              // First click: reveal the fields and change the button text.
+              fields.style.display = "block";
+              this.textContent = i18n_local[currentLang].deleteAccountButtonConfirm;
+              document.getElementById('cancel-delete-account-btn').style.display = "block";
+            } else {
+              // Second click: trigger the delete account process.
+              // For example, call your deleteAccount function.
+              deleteAccount();
+            }
+          });
+          document.getElementById('cancel-delete-account-btn').addEventListener('click', function() {
+            const fields = document.getElementById('delete-account-fields');
+            document.getElementById('delete-account-btn').textContent = i18n_local[currentLang].deleteAccountButton;
+            fields.style.display = "none";
+            this.style.display = "none";
+          });          
+
+
+
+
+
+
+          
+          window.addEventListener("resize", checkScreenSize);
+          checkScreenSize();
+      });
+
+
+
+      async function deleteAccount() {
               const email = document.getElementById("delete-email").value.trim();
               const password = document.getElementById("delete-password").value;
               if (!email || !password) {
@@ -1554,36 +1643,8 @@
                   console.error(err);
                   M.toast({ html: "Error deleting account", displayLength: 2000 });
               }
-          });
+          };
 
-
-          const modalElem = document.getElementById('eventTriggersModal');
-          M.Modal.init(modalElem, {
-            onOpenStart: () => {
-              // When modal opens, initialize the select elements
-              M.FormSelect.init(document.querySelectorAll('select'));
-              loadTriggerConfig();
-            },
-            onOpenEnd: () => {
-              // Initialize select elements as before
-              M.FormSelect.init(document.querySelectorAll('select'));
-              loadTriggerConfig();
-              
-            }            
-          });
-
-
-
-
-
-
-
-
-
-          
-          window.addEventListener("resize", checkScreenSize);
-          checkScreenSize();
-      });
       /***********************************************
        * MOBILE CLICK-OUTSIDE-TO-CLOSE SIDEBAR
        ***********************************************/
@@ -1691,7 +1752,6 @@
           languageSelect.value = lang;
         }
         // Update UI text using i18n_local values...
-        document.getElementById("nav-title").textContent = i18n_local[currentLang].navTitle;
         document.getElementById("page-subtitle").textContent = i18n_local[currentLang].subtitle;
         document.getElementById("survey-title-label").textContent = i18n_local[lang].surveyTitleLabel;
         document.getElementById("add-question-text").textContent = i18n_local[currentLang].addQuestion;
@@ -1708,6 +1768,16 @@
         if(bannerInput) { bannerInput.setAttribute("placeholder", i18n_local[currentLang].bannerImagePlaceholder); }
         document.getElementById("fetch-data-text").textContent = i18n_local[currentLang].fetchDataText;
         document.getElementById("add-question-text").textContent = i18n_local[lang].addQuestion;
+
+        // Update Delete Account section texts concisely:
+        document.querySelector('.delete-account-title').textContent = i18n_local[currentLang].deleteAccountTitle;
+        document.querySelector('label[for="delete-email"]').textContent = i18n_local[currentLang].deleteEmailLabel;
+        document.getElementById("delete-email").placeholder = i18n_local[currentLang].deleteEmailPlaceholder;
+        document.querySelector('label[for="delete-password"]').textContent = i18n_local[currentLang].deletePasswordLabel;
+        document.getElementById("delete-password").placeholder = i18n_local[currentLang].deletePasswordPlaceholder;
+        document.getElementById("delete-account-btn").textContent = i18n_local[currentLang].deleteAccountButton;
+
+
 
   // Update spinner text
   const loadingTextEl = document.querySelector('.loading-text');
