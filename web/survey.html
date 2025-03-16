@@ -125,6 +125,19 @@
         border-radius: 5px;
       }
 
+
+	  @keyframes spin {
+			0% { transform: rotate(0deg); }
+			100% { transform: rotate(360deg); }
+		}
+		.spinner {
+			font-size: 24px;
+			/* Optionally add margin if needed */
+			margin-right: 10px;
+		}
+
+
+
       /* Progress bar container (optional extra styling) */
       #progress-bar-container {
         position: fixed;      /* Sticky to the bottom */
@@ -234,9 +247,7 @@
       integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4="
       crossorigin="anonymous"
     ></script>
-    <script type="text/javascript" src="../admin/common.js?v=20"></script>
-    <script type="text/javascript" src="../admin/db.js?v=20"></script>
-
+   
     <script>
 
 	const SERVER_URL = "https://b200.tagfans.com:5301";
@@ -302,6 +313,7 @@
 	let currentSurvey; // the current survey
 	let currentLanguage = localStorage.getItem("selectedLanguage") || "zh";
 	let uploadedImageLinks = []; // store image data URLs
+	let surveyId;
 
 	window.onload = async function () {
 	    // Retrieve from localStorage, or server
@@ -318,6 +330,7 @@
 
 	    let survey;
 	    if (id) {
+			surveyId = id; // the global survey ID
 	        survey = await fetchSurvey(id);
 	    }
 
@@ -640,14 +653,24 @@
 	        inputEl.style.height = "100%";
 	        inputEl.style.opacity = "0";
 	        btnDiv.appendChild(inputEl);
-	        fileFieldDiv.appendChild(btnDiv);
 
-	        questionDiv.appendChild(fileFieldDiv);
 
-	        const previewDiv = document.createElement("div");
-	        previewDiv.className = "uploaded-images";
-	        previewDiv.id = "uploaded-images-" + qIndex;
-	        questionDiv.appendChild(previewDiv);
+			// Create a container to hold both the button and the preview side by side
+			const containerDiv = document.createElement("div");
+			containerDiv.style.display = "flex";
+			containerDiv.style.alignItems = "center";
+			containerDiv.style.gap = "10px"; // Adjust gap as needed
+
+			containerDiv.appendChild(btnDiv);
+
+			const previewDiv = document.createElement("div");
+			previewDiv.className = "uploaded-images";
+			previewDiv.id = "uploaded-images-" + qIndex;
+			containerDiv.appendChild(previewDiv);
+
+			fileFieldDiv.appendChild(containerDiv);
+			questionDiv.appendChild(fileFieldDiv);
+
 
 	        const hiddenInput = document.createElement("input");
 	        hiddenInput.type = "hidden";
@@ -1245,7 +1268,23 @@
 	                }
 
 	                // Generate a unique key for the image
-	                const imageKey = global.gid + "/image_" + Date.now();
+					// the key will use store ID, if store exist, otherwise use the survey ID
+	                const imageKey = ( window.global?window.global.gid:null || surveyId) + "/image_" + Date.now();
+
+
+					// Get the preview container
+					const previewContainer = document.getElementById("uploaded-images-" + fieldName.split("_")[1]);
+
+					// Create a spinner element
+					const spinner = document.createElement("div");
+					spinner.className = "spinner";
+					spinner.innerHTML = '<i class="material-icons">autorenew</i>';
+					spinner.style.animation = "spin 1s linear infinite";
+
+					// Clear any existing content and add the spinner
+					previewContainer.innerHTML = "";
+					previewContainer.appendChild(spinner);
+
 
 	                // Request a signed URL for uploading to S3 via your local server
 	                fetch(`${SERVER_URL}/presigned-url/put?key=${encodeURIComponent(imageKey)}`)
@@ -1267,6 +1306,8 @@
 	                                console.log("Image uploaded successfully to S3.");
 	                                // Update the preview image (optional)
 	                                const previewContainer = document.getElementById("uploaded-images-" + fieldName.split("_")[1]);
+
+								
 	                                if (previewContainer) {
 	                                    previewContainer.innerHTML = "";
 	                                    const previewImg = document.createElement("img");
