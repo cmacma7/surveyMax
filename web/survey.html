@@ -953,12 +953,10 @@
 
 	            if (item.questionType === "radio") {
 	                // Handle radio questions using data-opt-index
-	                const checkedRadio = document.querySelector(
-`input[name="question_${index}"]:checked`);
+	                const checkedRadio = document.querySelector(`input[name="question_${index}"]:checked`);
 	                if (checkedRadio) {
 	                    const selectedOptIndex = checkedRadio.getAttribute("data-opt-index");
-	                    const extraInput = document.querySelector(
-`input[name="extra_${index}_${selectedOptIndex}"]`);
+	                    const extraInput = document.querySelector(`input[name="extra_${index}_${selectedOptIndex}"]`);
 	                    if (extraInput && extraInput.value.trim() !== "") {
 	                        qAnswer = checkedRadio.value + " (" + extraInput.value.trim() + ")";
 	                    } else {
@@ -969,14 +967,12 @@
 	                }
 	            } else if (item.questionType === "checkbox") {
 	                // FIX: For checkboxes, re-read checked inputs and map extra text using data-opt-index
-	                const checkedBoxes = document.querySelectorAll(
-`input[name="question_${index}"]:checked`);
+	                const checkedBoxes = document.querySelectorAll(`input[name="question_${index}"]:checked`);
 	                let answersArr = [];
 	                checkedBoxes.forEach((box) => {
 	                    const optIndex = box.getAttribute("data-opt-index");
 	                    let answerText = box.value;
-	                    const extraInput = document.querySelector(
-`input[name="extra_${index}_${optIndex}"]`);
+	                    const extraInput = document.querySelector(`input[name="extra_${index}_${optIndex}"]`);
 	                    if (extraInput && extraInput.value.trim() !== "") {
 	                        answerText += " (" + extraInput.value.trim() + ")";
 	                    }
@@ -1005,12 +1001,10 @@
 	                    let qAnswer = answersObj[qKey];
 
 	                    if (subQ.questionType === "radio") {
-	                        const checkedRadio = document.querySelector(
-`input[name="question_${index}_${subIndex}"]:checked`);
+	                        const checkedRadio = document.querySelector(`input[name="question_${index}_${subIndex}"]:checked`);
 	                        if (checkedRadio) {
 	                            const selectedOptIndex = checkedRadio.getAttribute("data-opt-index");
-	                            const extraInput = document.querySelector(
-`input[name="extra_${index}_${subIndex}_${selectedOptIndex}"]`);
+	                            const extraInput = document.querySelector(`input[name="extra_${index}_${subIndex}_${selectedOptIndex}"]`);
 	                            if (extraInput && extraInput.value.trim() !== "") {
 	                                qAnswer = checkedRadio.value + " (" + extraInput.value.trim() + ")";
 	                            } else {
@@ -1021,14 +1015,12 @@
 	                        }
 	                    } else if (subQ.questionType === "checkbox") {
 	                        // FIX: For checkbox sub-questions, re-read checked inputs from DOM
-	                        const checkedBoxes = document.querySelectorAll(
-`input[name="question_${index}_${subIndex}"]:checked`);
+	                        const checkedBoxes = document.querySelectorAll(`input[name="question_${index}_${subIndex}"]:checked`);
 	                        let answersArr = [];
 	                        checkedBoxes.forEach((box) => {
 	                            const optIndex = box.getAttribute("data-opt-index");
 	                            let answerText = box.value;
-	                            const extraInput = document.querySelector(
-`input[name="extra_${index}_${subIndex}_${optIndex}"]`);
+	                            const extraInput = document.querySelector(`input[name="extra_${index}_${subIndex}_${optIndex}"]`);
 	                            if (extraInput && extraInput.value.trim() !== "") {
 	                                answerText += " (" + extraInput.value.trim() + ")";
 	                            }
@@ -1233,118 +1225,155 @@
 	/***********************************************
 	 * SINGLE IMAGE UPLOAD FOR UPLOADIMAGE QUESTION
 	 ***********************************************/
-	function handleSingleImageUpload(e, fieldName) {
-	    const file = e.target.files[0];
-	    if (!file)
-	        return;
+	// Global array to keep track of uploaded image URLs.
+	let uploadedImageUrls = [];
 
-	    // Confirm the file is an image
-	    if (!file.type.startsWith("image/")) {
-	        alert(languageTable[currentLanguage].invalidImageAlert);
-	        return;
-	    }
-
-	    // Read the file as a Data URL
-	    const reader = new FileReader();
-	    reader.onload = function (event) {
-	        const img = new Image();
-	        img.onload = function () {
-	            // Create a canvas to compress the image
-	            const canvas = document.createElement("canvas");
-	            const ctx = canvas.getContext("2d");
-
-	            // Optionally, set a maximum width for the compressed image
-	            const maxWidth = 800;
-	            const scale = Math.min(1, maxWidth / img.width);
-	            canvas.width = img.width * scale;
-	            canvas.height = img.height * scale;
-	            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-	            // Convert the canvas to a JPEG Blob (quality 0.8)
-	            canvas.toBlob(function (blob) {
-	                if (!blob) {
-	                    console.error("Compression failed: blob is null.");
-	                    return;
-	                }
-
-	                // Generate a unique key for the image
-					// the key will use store ID, if store exist, otherwise use the survey ID
-	                const imageKey = ( window.global?window.global.gid:null || surveyId) + "/image_" + Date.now();
-
-
-					// Get the preview container
-					const previewContainer = document.getElementById("uploaded-images-" + fieldName.split("_")[1]);
-
-					// Create a spinner element
-					const spinner = document.createElement("div");
-					spinner.className = "spinner";
-					spinner.innerHTML = '<i class="material-icons">autorenew</i>';
-					spinner.style.animation = "spin 1s linear infinite";
-
-					// Clear any existing content and add the spinner
-					previewContainer.innerHTML = "";
-					previewContainer.appendChild(spinner);
-
-
-	                // Request a signed URL for uploading to S3 via your local server
-	                fetch(`${SERVER_URL}/presigned-url/put?key=${encodeURIComponent(imageKey)}`)
-	                .then(response => response.json())
-	                .then(data => {
-	                    if (data && data.signedUrl) {
-	                        const signedUrl = data.signedUrl;
-
-	                        // Upload the compressed image to S3 using the signed URL
-	                        fetch(signedUrl, {
-	                            method: "PUT",
-	                            body: blob,
-	                            headers: {
-	                                "Content-Type": "image/jpeg"
-	                            }
-	                        })
-	                        .then(response => {
-	                            if (response.ok) {
-	                                console.log("Image uploaded successfully to S3.");
-	                                // Update the preview image (optional)
-	                                const previewContainer = document.getElementById("uploaded-images-" + fieldName.split("_")[1]);
-
-								
-	                                if (previewContainer) {
-	                                    previewContainer.innerHTML = "";
-	                                    const previewImg = document.createElement("img");
-	                                    previewImg.src = URL.createObjectURL(blob);
-	                                    previewContainer.appendChild(previewImg);
-	                                }
-	                                // Store the image key (or URL) in the hidden input
-	                                const hiddenInput = document.querySelector(`input[name="${fieldName}"]`);
-	                                if (hiddenInput) {
-	                                    hiddenInput.value = `https://tagfans-survey-image.s3.amazonaws.com/${imageKey}`;
-	                                }
-	                            } else {
-	                                console.error("Failed to upload image to S3. Status:", response.status);
-	                            }
-	                        })
-	                        .catch(error => {
-	                            console.error("Error during image upload:", error);
-	                        });
-	                    } else {
-	                        console.error("Failed to obtain signed URL from server. Response data:", data);
-	                    }
-	                })
-	                .catch(error => {
-	                    console.error("Error fetching signed URL:", error);
-	                });
-	            }, "image/jpeg", 0.8);
-	        };
-	        img.onerror = function () {
-	            console.error("Failed to load image for compression.");
-	        };
-	        img.src = event.target.result;
-	    };
-	    reader.onerror = function () {
-	        console.error("Failed to read file.");
-	    };
-	    reader.readAsDataURL(file);
+	// Helper function to update the hidden input value based on the global array.
+	function updateHiddenInput(fieldName, urls) {
+		const hiddenInput = document.querySelector(`input[name="${fieldName}"]`);
+		if (hiddenInput) {
+			// If only one image, store it as a string; if multiple, store a JSON string.
+			hiddenInput.value = urls.length === 1 ? urls[0] : urls;
+		}
 	}
+
+	function handleSingleImageUpload(e, fieldName) {
+	const file = e.target.files[0];
+	if (!file) return;
+
+	// Ensure the file is an image.
+	if (!file.type.startsWith("image/")) {
+		alert(languageTable[currentLanguage].invalidImageAlert);
+		return;
+	}
+
+	const reader = new FileReader();
+	reader.onload = function (event) {
+		const img = new Image();
+		img.onload = function () {
+		// Create a canvas to compress the image.
+		const canvas = document.createElement("canvas");
+		const ctx = canvas.getContext("2d");
+		const maxWidth = 800;
+		const scale = Math.min(1, maxWidth / img.width);
+		canvas.width = img.width * scale;
+		canvas.height = img.height * scale;
+		ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+		canvas.toBlob(function (blob) {
+			if (!blob) {
+			console.error("Compression failed: blob is null.");
+			return;
+			}
+
+			// Generate a unique key for the image.
+			const imageKey = (window.global ? window.global.gid : null || surveyId) + "/image_" + Date.now();
+			const previewContainer = document.getElementById("uploaded-images-" + fieldName.split("_")[1]);
+
+			// Create and add a spinner to indicate progress.
+			const spinner = document.createElement("div");
+			spinner.className = "spinner";
+			spinner.innerHTML = '<i class="material-icons">autorenew</i>';
+			spinner.style.animation = "spin 1s linear infinite";
+			previewContainer.appendChild(spinner);
+
+			// Request a presigned URL from your server.
+			fetch(`${SERVER_URL}/presigned-url/put?key=${encodeURIComponent(imageKey)}`)
+			.then(response => response.json())
+			.then(data => {
+				if (data && data.signedUrl) {
+				const signedUrl = data.signedUrl;
+				// Upload the compressed image using the signed URL.
+				fetch(signedUrl, {
+					method: "PUT",
+					body: blob,
+					headers: {
+					"Content-Type": "image/jpeg"
+					}
+				})
+					.then(response => {
+					if (response.ok) {
+						// Remove the spinner.
+						spinner.remove();
+
+						// Create a container for the thumbnail and delete button.
+						const thumbDiv = document.createElement("div");
+						thumbDiv.style.position = "relative";
+						thumbDiv.style.display = "inline-block";
+						thumbDiv.style.marginRight = "10px";
+
+						// Create the thumbnail image.
+						const thumbImg = document.createElement("img");
+						thumbImg.src = URL.createObjectURL(blob);
+						thumbImg.style.width = "100px";
+						thumbImg.style.height = "100px";
+						thumbImg.style.objectFit = "cover";
+						thumbImg.style.border = "1px solid #ccc";
+						thumbImg.style.borderRadius = "5px";
+						thumbDiv.appendChild(thumbImg);
+
+						// Create the delete button overlay.
+						const deleteBtn = document.createElement("span");
+						deleteBtn.innerHTML = "&times;";
+						deleteBtn.style.position = "absolute";
+						deleteBtn.style.top = "0";
+						deleteBtn.style.right = "0";
+						deleteBtn.style.background = "rgba(255, 0, 0, 0.7)";
+						deleteBtn.style.color = "#fff";
+						deleteBtn.style.cursor = "pointer";
+						deleteBtn.style.padding = "2px 5px";
+						thumbDiv.appendChild(deleteBtn);
+
+						// Append the new thumbnail to the preview container.
+						previewContainer.appendChild(thumbDiv);
+
+						// Form the full URL for the uploaded image.
+						const imageUrl = `https://tagfans-survey-image.s3.amazonaws.com/${imageKey}`;
+						// Add the new URL to the global array.
+						uploadedImageUrls.push(imageUrl);
+						// Update the hidden input accordingly.
+						updateHiddenInput(fieldName, uploadedImageUrls);
+
+						// Allow deletion: remove thumbnail and update global array/input when clicked.
+						deleteBtn.addEventListener("click", function () {
+						previewContainer.removeChild(thumbDiv);
+						const index = uploadedImageUrls.indexOf(imageUrl);
+						if (index > -1) {
+							uploadedImageUrls.splice(index, 1);
+							updateHiddenInput(fieldName, uploadedImageUrls);
+						}
+						});
+					} else {
+						console.error("Failed to upload image to S3. Status:", response.status);
+						spinner.remove();
+					}
+					})
+					.catch(error => {
+					console.error("Error during image upload:", error);
+					spinner.remove();
+					});
+				} else {
+				console.error("Failed to obtain signed URL from server. Response data:", data);
+				spinner.remove();
+				}
+			})
+			.catch(error => {
+				console.error("Error fetching signed URL:", error);
+				spinner.remove();
+			});
+		}, "image/jpeg", 0.8);
+		};
+		img.onerror = function () {
+		console.error("Failed to load image for compression.");
+		};
+		img.src = event.target.result;
+	};
+	reader.onerror = function () {
+		console.error("Failed to read file.");
+	};
+	reader.readAsDataURL(file);
+	}
+
 
 	/***********************************************
 	 * fetch and update survey context
