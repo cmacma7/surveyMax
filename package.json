@@ -25,6 +25,7 @@
     "expo-cli": "^6.3.12",
     "expo-constants": "~17.0.7",
     "expo-dev-client": "~5.0.14",
+    "expo-dev-menu": "^6.0.20",
     "expo-device": "~7.0.2",
     "expo-font": "~13.0.4",
     "expo-haptics": "~14.0.1",
