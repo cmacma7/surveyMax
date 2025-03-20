@@ -14,6 +14,8 @@ import {
   FlatList,
   Alert,
   Dimensions,
+  Pressable,
+  TouchableNativeFeedback, 
 } from "react-native";
 
 const SERVER_URL = 'https://b200.tagfans.com:5301';
@@ -398,14 +400,19 @@ const ChatScreen: React.FC<any> = ({ route, navigation }) => {
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
-        <TouchableOpacity
-          onPress={() =>
-            navigation.navigate("ChatRoomSettings", { chatroomId, chatroomName, userId })
+        <Pressable
+          onPress={() => {
+              navigation.navigate("ChatRoomSettings", { chatroomId, chatroomName, userId })
+            }
           }
-          style={{ marginRight: 10 }}
+          style={({ pressed }) => ({
+            marginRight: 0,
+            padding: 10, // Increase padding to enlarge the touch area.
+            opacity: pressed ? 0.6 : 1,
+          })}
         >
           <Icon name="settings" size={28} color="#007AFF" />
-        </TouchableOpacity>
+        </Pressable>
       ),
     });
   }, [navigation, chatroomId, chatroomName, userId]);
@@ -539,16 +546,23 @@ const ChatroomListScreen: React.FC<any> = ({ navigation, route }) => {
    
   const [chatrooms, setChatrooms] = useState<{ id: string; name: string }[]>([]);
 
+
+  const AddChatRoomButton = React.memo(({ onPress }) => (
+    <TouchableNativeFeedback
+    onPress={onPress}
+    background={TouchableNativeFeedback.SelectableBackgroundBorderless()}
+  >
+    <View style={{ marginRight: 10, padding: 10 }}>
+      <Icon name="add" size={28} color="#007AFF" />
+    </View>
+  </TouchableNativeFeedback>
+  ));
+
   // NEW: Set headerRight with add chat room icon.
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
-        <TouchableOpacity
-          onPress={() => navigation.navigate("AddChatRoom", { userId: userIdentifier })}
-          style={{ marginRight: 10 }}
-        >
-          <Icon name="add" size={28} color="#007AFF" />
-        </TouchableOpacity>
+        <AddChatRoomButton onPress={() => navigation.navigate("AddChatRoom", { userId: userIdentifier })} />
       ),
     });
   }, [navigation, userIdentifier]);
