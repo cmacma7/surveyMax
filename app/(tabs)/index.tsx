@@ -1,5 +1,5 @@
 import "react-native-get-random-values";
-import React, { useState, useEffect, useRef, useLayoutEffect, useMemo } from "react";
+import React, { useState, useEffect, useRef, useLayoutEffect, useMemo, useCallback} from "react";
 import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
@@ -138,6 +138,41 @@ const ChatScreen: React.FC<any> = ({ route, navigation }) => {
   const [fullScreenImageUri, setFullScreenImageUri] = useState("");
   const [scaleValue] = useState(new Animated.Value(0.8)); // initial scale value
 
+
+
+  const loadAndFetchMessages = useCallback(async () => {
+    let localMessages: IMessage[] = [];
+    try {
+      const saved = await AsyncStorage.getItem(`chat_${chatroomId}_messages`);
+      if (saved) {
+        localMessages = JSON.parse(saved);
+        setMessages(localMessages);
+      }
+    } catch (err) {
+      console.error("Error loading local messages", err);
+    }
+
+    const lastMessage = localMessages[0];
+    let url = `${SERVER_URL}/api/messages/${chatroomId}`;
+    if (lastMessage && lastMessage.createdAt) {
+      url += `?after=${encodeURIComponent(lastMessage.createdAt)}`;
+    }
+
+    try {
+      const res = await fetch(url, { headers: HttpAuthHeader });
+      const data = await res.json();
+      if (data.messages && data.messages.length) {
+        const newMessages = data.messages.reverse();
+        const updatedMessages = GiftedChat.append(localMessages, newMessages);
+        setMessages(updatedMessages);
+        await AsyncStorage.setItem(`chat_${chatroomId}_messages`, JSON.stringify(updatedMessages));
+      }
+    } catch (err) {
+      console.error("Error fetching new messages", err);
+    }
+  }, [chatroomId]);
+
+
   // Function to open full screen image
   const openFullScreen = (uri) => {
     setFullScreenImageUri(uri);
@@ -161,61 +196,25 @@ const ChatScreen: React.FC<any> = ({ route, navigation }) => {
 
   useEffect(() => {
     console.log("Entered ChatRoom:", chatroomName, "ID:", chatroomId);
-    // Even though the client joins all rooms in the list, we can call join here as well.
-    // This ensures that if the ChatScreen is opened directly, the user is in this room.
     socket.emit("joinRoom", chatroomId);
-    // Fetch saved/offline messages for this channel.
-
-    async function loadAndFetchMessages() {
-      let localMessages: IMessage[] = [];
-      try {
-        const saved = await AsyncStorage.getItem(`chat_${chatroomId}_messages`);
-        if (saved) {
-          localMessages = JSON.parse(saved);
-          setMessages(localMessages);
-        }
-      } catch (err) {
-        console.error("Error loading local messages", err);
-      }
-  
-      // Now that we have local messages, determine the timestamp of the last one.
-      const lastMessage = localMessages[0];
-      let url = `${SERVER_URL}/api/messages/${chatroomId}`;
-      if (lastMessage && lastMessage.createdAt) {
-        url += `?after=${encodeURIComponent(lastMessage.createdAt)}`;
-      }
-  
-      try {
-        const res = await fetch(url, { headers: HttpAuthHeader });
-        const data = await res.json();
-        if (data.messages && data.messages.length) {
-          const newMessages = data.messages.reverse();
-          const updatedMessages = GiftedChat.append(localMessages, newMessages);
-          setMessages(updatedMessages);
-          await AsyncStorage.setItem(`chat_${chatroomId}_messages`, JSON.stringify(updatedMessages));
-        }
-      } catch (err) {
-        console.error("Error fetching new messages", err);
-      }
-    }
     loadAndFetchMessages();
 
     const handleReconnect = () => {
       console.log("Socket reconnected. Rejoining room:", chatroomId);
       socket.emit("joinRoom", chatroomId);
     };
-  
     socket.on("connect", handleReconnect);
-  
     return () => {
       socket.off("connect", handleReconnect);
     };
-    
-  }, [chatroomId, chatroomName]);
-
+  }, [chatroomId, chatroomName, loadAndFetchMessages]);
  
 
-
+  useFocusEffect(
+    useCallback(() => {
+      loadAndFetchMessages();
+    }, [loadAndFetchMessages])
+  );
 
 
   useEffect(() => {
