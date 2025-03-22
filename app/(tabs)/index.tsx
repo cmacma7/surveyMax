@@ -142,7 +142,7 @@ const ChatScreen: React.FC<any> = ({ route, navigation }) => {
 // 1. --- Helper: update message status and persist ---
 const updateMessageStatus = (messageId: string, status: "pending" | "failed" | "sent" | "giveup") => {
   setMessages((prevMessages) => {
-    const updatedMessages = prevMessages.map((msg) => {
+    let updatedMessages = prevMessages.map((msg) => {
       if (msg._id === messageId) {
         if (status === "sent") {
           // Remove the sendStatus property once sent
@@ -154,6 +154,7 @@ const updateMessageStatus = (messageId: string, status: "pending" | "failed" | "
       }
       return msg;
     });
+    updatedMessages = deduplicateMessages(updatedMessages);
     // Persist updated messages without the sendStatus for sent messages.
     AsyncStorage.setItem(`chat_${chatroomId}_messages`, JSON.stringify(updatedMessages));
     return updatedMessages;
@@ -182,7 +183,27 @@ const handleGiveUp = (message: IMessage) => {
 };
 
 
-
+// helper function to deduplicate messages:
+const deduplicateMessages = (msgs: IMessage[]): IMessage[] => {
+  const messageMap: { [key: string]: IMessage } = {};
+  msgs.forEach((msg) => {
+    if (!messageMap[msg._id]) {
+      messageMap[msg._id] = msg;
+    } else {
+      // Prefer the version marked as "sent" or the one with a later createdAt timestamp
+      if (
+        messageMap[msg._id].sendStatus !== "sent" &&
+        msg.sendStatus === "sent"
+      ) {
+        messageMap[msg._id] = msg;
+      } else if (new Date(msg.createdAt) > new Date(messageMap[msg._id].createdAt)) {
+        messageMap[msg._id] = msg;
+      }
+    }
+  });
+  // Return messages sorted by createdAt descending
+  return Object.values(messageMap);
+};
 
   const loadAndFetchMessages = useCallback(async () => {
     let localMessages: IMessage[] = [];
@@ -190,6 +211,7 @@ const handleGiveUp = (message: IMessage) => {
       const saved = await AsyncStorage.getItem(`chat_${chatroomId}_messages`);
       if (saved) {
         localMessages = JSON.parse(saved);
+        localMessages = deduplicateMessages(localMessages);
         setMessages(localMessages);
       }
     } catch (err) {
@@ -312,9 +334,22 @@ const handleGiveUp = (message: IMessage) => {
 
   useEffect(() => {
     const handleReceiveMessage = (incomingMessage: IMessage) => {
-      // Only update the chat if the message belongs to the current room.
       if (incomingMessage.channelId === chatroomId) {
-        setMessages((prev) => GiftedChat.append(prev, incomingMessage));
+        setMessages((prev) => {
+          const exists = prev.find(msg => msg._id === incomingMessage._id);
+          let newMessages;
+          if (exists) {
+            // Replace the old message with the new one and mark as sent
+            newMessages = prev.map(msg => 
+              msg._id === incomingMessage._id ? { ...incomingMessage, sendStatus: "sent" } : msg
+            );
+          } else {
+            newMessages = GiftedChat.append(prev, { ...incomingMessage, sendStatus: "sent" });
+          }
+          newMessages = deduplicateMessages(newMessages);
+          AsyncStorage.setItem(`chat_${chatroomId}_messages`, JSON.stringify(newMessages));
+          return newMessages;
+        });
       }
     };
     socket.on("receiveMessage", handleReceiveMessage);
@@ -330,9 +365,14 @@ const handleGiveUp = (message: IMessage) => {
       channelId: chatroomId,
       sendStatus: "pending"  // new field to track sending status
     };
-    setMessages((prev) => GiftedChat.append(prev, messageWithChannel));
-    AsyncStorage.setItem(`chat_${chatroomId}_messages`, JSON.stringify([...messages, messageWithChannel]));
-
+    setMessages((prev) => {
+      // Remove any message with the same _id
+      const filtered = prev.filter(msg => msg._id !== messageWithChannel._id);
+      const newMsgList = GiftedChat.append(filtered, messageWithChannel);
+      const deduped = deduplicateMessages(newMsgList);
+      AsyncStorage.setItem(`chat_${chatroomId}_messages`, JSON.stringify(deduped));
+      return deduped;
+    });
     // Create a copy of the message without sendStatus for transmission
     const { sendStatus, ...messagePayload } = messageWithChannel;
   
