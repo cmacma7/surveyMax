@@ -35,7 +35,7 @@ import { io } from "socket.io-client";
 const socket = io(SERVER_URL);
 
 import * as ImagePicker from "expo-image-picker";
-import { GiftedChat, IMessage, Send } from "react-native-gifted-chat";
+import { GiftedChat, IMessage, Send, Message } from "react-native-gifted-chat";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
@@ -139,6 +139,50 @@ const ChatScreen: React.FC<any> = ({ route, navigation }) => {
   const [scaleValue] = useState(new Animated.Value(0.8)); // initial scale value
 
 
+// 1. --- Helper: update message status and persist ---
+const updateMessageStatus = (messageId: string, status: "pending" | "failed" | "sent" | "giveup") => {
+  setMessages((prevMessages) => {
+    const updatedMessages = prevMessages.map((msg) => {
+      if (msg._id === messageId) {
+        if (status === "sent") {
+          // Remove the sendStatus property once sent
+          const { sendStatus, ...rest } = msg;
+          return rest;
+        } else {
+          return { ...msg, sendStatus: status };
+        }
+      }
+      return msg;
+    });
+    // Persist updated messages without the sendStatus for sent messages.
+    AsyncStorage.setItem(`chat_${chatroomId}_messages`, JSON.stringify(updatedMessages));
+    return updatedMessages;
+  });
+};
+
+
+// 2. --- Resend / Give up Handlers ---
+const handleResend = (message: IMessage) => {
+  // Mark as pending again
+  updateMessageStatus(message._id, "pending");
+  socket.emit("sendMessage", message, (ack: any) => {
+    if (ack && ack.error) {
+      // If sending fails again, mark as failed.
+      updateMessageStatus(message._id, "failed");
+    } else {
+      // Otherwise mark as sent.
+      updateMessageStatus(message._id, "sent");
+    }
+  });
+};
+
+const handleGiveUp = (message: IMessage) => {
+  // Mark as giveup so that no further resend is attempted.
+  updateMessageStatus(message._id, "giveup");
+};
+
+
+
 
   const loadAndFetchMessages = useCallback(async () => {
     let localMessages: IMessage[] = [];
@@ -202,6 +246,7 @@ const ChatScreen: React.FC<any> = ({ route, navigation }) => {
     const handleReconnect = () => {
       console.log("Socket reconnected. Rejoining room:", chatroomId);
       socket.emit("joinRoom", chatroomId);
+      loadAndFetchMessages();
     };
     socket.on("connect", handleReconnect);
     return () => {
@@ -212,7 +257,7 @@ const ChatScreen: React.FC<any> = ({ route, navigation }) => {
 
   useFocusEffect(
     useCallback(() => {
-      loadAndFetchMessages();
+      //loadAndFetchMessages();
     }, [loadAndFetchMessages])
   );
 
@@ -279,10 +324,25 @@ const ChatScreen: React.FC<any> = ({ route, navigation }) => {
   }, [chatroomId]);
 
   const onSend = (newMessages: IMessage[] = []) => {
-    // Attach channelId (chatroomId) to the message.
-    const messageWithChannel = { ...newMessages[0], channelId: chatroomId };
+    // Attach channelId and set initial sendStatus to pending.
+    const messageWithChannel = { 
+      ...newMessages[0], 
+      channelId: chatroomId,
+      sendStatus: "pending"  // new field to track sending status
+    };
     setMessages((prev) => GiftedChat.append(prev, messageWithChannel));
-    socket.emit("sendMessage", messageWithChannel);
+    AsyncStorage.setItem(`chat_${chatroomId}_messages`, JSON.stringify([...messages, messageWithChannel]));
+
+    // Create a copy of the message without sendStatus for transmission
+    const { sendStatus, ...messagePayload } = messageWithChannel;
+  
+    socket.emit("sendMessage", messagePayload, (ack: any) => {
+      if (ack && ack.error) {
+        updateMessageStatus(messageWithChannel._id, "failed");
+      } else {
+        updateMessageStatus(messageWithChannel._id, "sent");
+      }
+    });
   };
 
   const pickImage = async () => {
@@ -370,8 +430,13 @@ const ChatScreen: React.FC<any> = ({ route, navigation }) => {
           };
   
           // Send the final message via socket.io so that other devices receive it.
-          socket.emit("sendMessage", finalMessage);
-  
+          socket.emit("sendMessage", finalMessage, (ack: any) => {
+            if (ack && ack.error) {
+              updateMessageStatus(tempMessageId, "failed");
+            } else {
+              updateMessageStatus(tempMessageId, "sent");
+            }
+          });
           // Replace the temporary message in local state with the final message.
           /*
           setMessages((prevMessages) =>
@@ -417,6 +482,62 @@ const ChatScreen: React.FC<any> = ({ route, navigation }) => {
   }, [navigation, chatroomId, chatroomName, userId]);
 
 
+  // Then define a custom renderer:
+  const renderMessage = (props: any) => {
+    const isCurrentUser = props.currentMessage?.user?._id === props?.user?._id;
+    return (
+      <View style={{ flexDirection: 'column' }}>
+        <Message {...props} />
+        {(props.currentMessage.sendStatus === "failed" || props.currentMessage.sendStatus === "pending") && (
+          <View
+            style={[
+              styles.resendContainer,
+              isCurrentUser ? { alignSelf: 'flex-end' } : { alignSelf: 'flex-start' },
+            ]}
+          >
+            <TouchableOpacity onPress={() => handleResend(props.currentMessage)}>
+              <Icon name="replay" size={20} color="red" style={styles.iconStyle} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => handleGiveUp(props.currentMessage)}>
+              <Icon name="cancel" size={20} color="red" style={styles.iconStyle} />
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+    );
+  };
+   
+
+
+  const renderMessage1 = (props: any) => {
+    // Check if the message is from the current user
+    const isCurrentUser = props.currentMessage?.user?._id === props?.user?._id;
+    
+    return (
+      <>
+        <Message {...props} />
+        { (props.currentMessage.sendStatus === "failed" || props.currentMessage.sendStatus === "pending") && (
+          <View
+            style={[
+              styles.resendContainer,
+              isCurrentUser ? { alignSelf: 'flex-end' } : { alignSelf: 'flex-start' },
+            ]}
+          >
+            <TouchableOpacity onPress={() => handleResend(props.currentMessage)}>
+              <Icon name="replay" size={20} color="red" style={styles.iconStyle} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => handleGiveUp(props.currentMessage)}>
+              <Icon name="cancel" size={20} color="red" style={styles.iconStyle} />
+            </TouchableOpacity>
+          </View>
+        )}
+      </>
+    );
+  };
+  
+  
+  
+
   // Modify your renderCustomImage function:
   const renderCustomImage = (props) => {
     return (
@@ -430,6 +551,10 @@ const ChatScreen: React.FC<any> = ({ route, navigation }) => {
       </TouchableOpacity>
     );
   };
+
+  useEffect(() => {
+    AsyncStorage.setItem(`chat_${chatroomId}_messages`, JSON.stringify(messages));
+  }, [messages]);  
 
 // Add the Modal component (e.g., at the bottom of ChatScreen's return statement)
 return (
@@ -448,6 +573,7 @@ return (
         user={{ _id: userId }}
         placeholder={t('typeMessage')}
         renderActions={renderCustomActions}
+        renderMessage={renderMessage}  // our custom message renderer
         textInputProps={{
           multiline: true,
           style: {
@@ -1225,5 +1351,13 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     paddingBottom: 10,
+  },
+  resendContainer: {
+    marginTop: 5,
+    flexDirection: 'row',
+    // No absolute positioning or fixed width here—this container will take the natural width of its parent.
+  },
+  iconStyle: {
+    marginHorizontal: 5,
   },
 });
