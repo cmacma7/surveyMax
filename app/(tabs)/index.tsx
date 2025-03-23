@@ -407,6 +407,7 @@ const deduplicateMessages = (msgs: IMessage[]): IMessage[] => {
         image: localUri, // Local file path is used for now.
         channelId: chatroomId,
         temp: true, // Mark this message as temporary.
+        sendStatus: "pending"  // new field to track sending status
       };
   
       // Insert the temporary message into the chat locally.
