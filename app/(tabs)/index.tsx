@@ -178,8 +178,11 @@ const handleResend = (message: IMessage) => {
 };
 
 const handleGiveUp = (message: IMessage) => {
-  // Mark as giveup so that no further resend is attempted.
-  updateMessageStatus(message._id, "giveup");
+  setMessages((prevMessages) => {
+    const updatedMessages = prevMessages.filter((msg) => msg._id !== message._id);
+    AsyncStorage.setItem(`chat_${chatroomId}_messages`, JSON.stringify(updatedMessages));
+    return updatedMessages;
+  });  
 };
 
 
