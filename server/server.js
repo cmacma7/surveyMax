@@ -755,13 +755,16 @@ io.on("connection", (socket) => {
   });
 
   // When a message is sent from a client.
-  socket.on("sendMessage", async (message) => {
+  socket.on("sendMessage", async (message, callback) => {
     const { channelId } = message;
     if (!channelId) {
       console.error("Message does not contain channelId", message);
+      callback({ error: "Missing channelId" });
       return;
     }
-
+    // Process the message (e.g., save to database, broadcast, etc.)
+    // Then call the callback to acknowledge success:
+    callback({ success: true });
     sendAndNotify(socket, channelId, message);
   });
 
