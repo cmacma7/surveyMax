@@ -35,7 +35,7 @@ import { io } from "socket.io-client";
 const socket = io(SERVER_URL);
 
 import * as ImagePicker from "expo-image-picker";
-import { GiftedChat, IMessage, Send } from "react-native-gifted-chat";
+import { GiftedChat, IMessage, Send, Message } from "react-native-gifted-chat";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
@@ -139,6 +139,74 @@ const ChatScreen: React.FC<any> = ({ route, navigation }) => {
   const [scaleValue] = useState(new Animated.Value(0.8)); // initial scale value
 
 
+// 1. --- Helper: update message status and persist ---
+const updateMessageStatus = (messageId: string, status: "pending" | "failed" | "sent" | "giveup") => {
+  setMessages((prevMessages) => {
+    let updatedMessages = prevMessages.map((msg) => {
+      if (msg._id === messageId) {
+        if (status === "sent") {
+          // Remove the sendStatus property once sent
+          const { sendStatus, ...rest } = msg;
+          return rest;
+        } else {
+          return { ...msg, sendStatus: status };
+        }
+      }
+      return msg;
+    });
+    updatedMessages = deduplicateMessages(updatedMessages);
+    // Persist updated messages without the sendStatus for sent messages.
+    AsyncStorage.setItem(`chat_${chatroomId}_messages`, JSON.stringify(updatedMessages));
+    return updatedMessages;
+  });
+};
+
+
+// 2. --- Resend / Give up Handlers ---
+const handleResend = (message: IMessage) => {
+  // Mark as pending again
+  updateMessageStatus(message._id, "pending");
+  socket.emit("sendMessage", message, (ack: any) => {
+    if (ack && ack.error) {
+      // If sending fails again, mark as failed.
+      updateMessageStatus(message._id, "failed");
+    } else {
+      // Otherwise mark as sent.
+      updateMessageStatus(message._id, "sent");
+    }
+  });
+};
+
+const handleGiveUp = (message: IMessage) => {
+  setMessages((prevMessages) => {
+    const updatedMessages = prevMessages.filter((msg) => msg._id !== message._id);
+    AsyncStorage.setItem(`chat_${chatroomId}_messages`, JSON.stringify(updatedMessages));
+    return updatedMessages;
+  });  
+};
+
+
+// helper function to deduplicate messages:
+const deduplicateMessages = (msgs: IMessage[]): IMessage[] => {
+  const messageMap: { [key: string]: IMessage } = {};
+  msgs.forEach((msg) => {
+    if (!messageMap[msg._id]) {
+      messageMap[msg._id] = msg;
+    } else {
+      // Prefer the version marked as "sent" or the one with a later createdAt timestamp
+      if (
+        messageMap[msg._id].sendStatus !== "sent" &&
+        msg.sendStatus === "sent"
+      ) {
+        messageMap[msg._id] = msg;
+      } else if (new Date(msg.createdAt) > new Date(messageMap[msg._id].createdAt)) {
+        messageMap[msg._id] = msg;
+      }
+    }
+  });
+  // Return messages sorted by createdAt descending
+  return Object.values(messageMap);
+};
 
   const loadAndFetchMessages = useCallback(async () => {
     let localMessages: IMessage[] = [];
@@ -146,6 +214,7 @@ const ChatScreen: React.FC<any> = ({ route, navigation }) => {
       const saved = await AsyncStorage.getItem(`chat_${chatroomId}_messages`);
       if (saved) {
         localMessages = JSON.parse(saved);
+        localMessages = deduplicateMessages(localMessages);
         setMessages(localMessages);
       }
     } catch (err) {
@@ -202,6 +271,7 @@ const ChatScreen: React.FC<any> = ({ route, navigation }) => {
     const handleReconnect = () => {
       console.log("Socket reconnected. Rejoining room:", chatroomId);
       socket.emit("joinRoom", chatroomId);
+      loadAndFetchMessages();
     };
     socket.on("connect", handleReconnect);
     return () => {
@@ -212,7 +282,7 @@ const ChatScreen: React.FC<any> = ({ route, navigation }) => {
 
   useFocusEffect(
     useCallback(() => {
-      loadAndFetchMessages();
+      //loadAndFetchMessages();
     }, [loadAndFetchMessages])
   );
 
@@ -267,9 +337,22 @@ const ChatScreen: React.FC<any> = ({ route, navigation }) => {
 
   useEffect(() => {
     const handleReceiveMessage = (incomingMessage: IMessage) => {
-      // Only update the chat if the message belongs to the current room.
       if (incomingMessage.channelId === chatroomId) {
-        setMessages((prev) => GiftedChat.append(prev, incomingMessage));
+        setMessages((prev) => {
+          const exists = prev.find(msg => msg._id === incomingMessage._id);
+          let newMessages;
+          if (exists) {
+            // Replace the old message with the new one and mark as sent
+            newMessages = prev.map(msg => 
+              msg._id === incomingMessage._id ? { ...incomingMessage, sendStatus: "sent" } : msg
+            );
+          } else {
+            newMessages = GiftedChat.append(prev, { ...incomingMessage, sendStatus: "sent" });
+          }
+          newMessages = deduplicateMessages(newMessages);
+          AsyncStorage.setItem(`chat_${chatroomId}_messages`, JSON.stringify(newMessages));
+          return newMessages;
+        });
       }
     };
     socket.on("receiveMessage", handleReceiveMessage);
@@ -279,10 +362,30 @@ const ChatScreen: React.FC<any> = ({ route, navigation }) => {
   }, [chatroomId]);
 
   const onSend = (newMessages: IMessage[] = []) => {
-    // Attach channelId (chatroomId) to the message.
-    const messageWithChannel = { ...newMessages[0], channelId: chatroomId };
-    setMessages((prev) => GiftedChat.append(prev, messageWithChannel));
-    socket.emit("sendMessage", messageWithChannel);
+    // Attach channelId and set initial sendStatus to pending.
+    const messageWithChannel = { 
+      ...newMessages[0], 
+      channelId: chatroomId,
+      sendStatus: "pending"  // new field to track sending status
+    };
+    setMessages((prev) => {
+      // Remove any message with the same _id
+      const filtered = prev.filter(msg => msg._id !== messageWithChannel._id);
+      const newMsgList = GiftedChat.append(filtered, messageWithChannel);
+      const deduped = deduplicateMessages(newMsgList);
+      AsyncStorage.setItem(`chat_${chatroomId}_messages`, JSON.stringify(deduped));
+      return deduped;
+    });
+    // Create a copy of the message without sendStatus for transmission
+    const { sendStatus, ...messagePayload } = messageWithChannel;
+  
+    socket.emit("sendMessage", messagePayload, (ack: any) => {
+      if (ack && ack.error) {
+        updateMessageStatus(messageWithChannel._id, "failed");
+      } else {
+        updateMessageStatus(messageWithChannel._id, "sent");
+      }
+    });
   };
 
   const pickImage = async () => {
@@ -307,6 +410,7 @@ const ChatScreen: React.FC<any> = ({ route, navigation }) => {
         image: localUri, // Local file path is used for now.
         channelId: chatroomId,
         temp: true, // Mark this message as temporary.
+        sendStatus: "pending"  // new field to track sending status
       };
   
       // Insert the temporary message into the chat locally.
@@ -370,8 +474,13 @@ const ChatScreen: React.FC<any> = ({ route, navigation }) => {
           };
   
           // Send the final message via socket.io so that other devices receive it.
-          socket.emit("sendMessage", finalMessage);
-  
+          socket.emit("sendMessage", finalMessage, (ack: any) => {
+            if (ack && ack.error) {
+              updateMessageStatus(tempMessageId, "failed");
+            } else {
+              updateMessageStatus(tempMessageId, "sent");
+            }
+          });
           // Replace the temporary message in local state with the final message.
           /*
           setMessages((prevMessages) =>
@@ -417,6 +526,62 @@ const ChatScreen: React.FC<any> = ({ route, navigation }) => {
   }, [navigation, chatroomId, chatroomName, userId]);
 
 
+  // Then define a custom renderer:
+  const renderMessage = (props: any) => {
+    const isCurrentUser = props.currentMessage?.user?._id === props?.user?._id;
+    return (
+      <View style={{ flexDirection: 'column' }}>
+        <Message {...props} />
+        {(props.currentMessage.sendStatus === "failed" || props.currentMessage.sendStatus === "pending") && (
+          <View
+            style={[
+              styles.resendContainer,
+              isCurrentUser ? { alignSelf: 'flex-end' } : { alignSelf: 'flex-start' },
+            ]}
+          >
+            <TouchableOpacity onPress={() => handleResend(props.currentMessage)}>
+              <Icon name="replay" size={20} color="red" style={styles.iconStyle} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => handleGiveUp(props.currentMessage)}>
+              <Icon name="cancel" size={20} color="red" style={styles.iconStyle} />
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+    );
+  };
+   
+
+
+  const renderMessage1 = (props: any) => {
+    // Check if the message is from the current user
+    const isCurrentUser = props.currentMessage?.user?._id === props?.user?._id;
+    
+    return (
+      <>
+        <Message {...props} />
+        { (props.currentMessage.sendStatus === "failed" || props.currentMessage.sendStatus === "pending") && (
+          <View
+            style={[
+              styles.resendContainer,
+              isCurrentUser ? { alignSelf: 'flex-end' } : { alignSelf: 'flex-start' },
+            ]}
+          >
+            <TouchableOpacity onPress={() => handleResend(props.currentMessage)}>
+              <Icon name="replay" size={20} color="red" style={styles.iconStyle} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => handleGiveUp(props.currentMessage)}>
+              <Icon name="cancel" size={20} color="red" style={styles.iconStyle} />
+            </TouchableOpacity>
+          </View>
+        )}
+      </>
+    );
+  };
+  
+  
+  
+
   // Modify your renderCustomImage function:
   const renderCustomImage = (props) => {
     return (
@@ -430,6 +595,10 @@ const ChatScreen: React.FC<any> = ({ route, navigation }) => {
       </TouchableOpacity>
     );
   };
+
+  useEffect(() => {
+    AsyncStorage.setItem(`chat_${chatroomId}_messages`, JSON.stringify(messages));
+  }, [messages]);  
 
 // Add the Modal component (e.g., at the bottom of ChatScreen's return statement)
 return (
@@ -448,6 +617,7 @@ return (
         user={{ _id: userId }}
         placeholder={t('typeMessage')}
         renderActions={renderCustomActions}
+        renderMessage={renderMessage}  // our custom message renderer
         textInputProps={{
           multiline: true,
           style: {
@@ -1225,5 +1395,13 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     paddingBottom: 10,
+  },
+  resendContainer: {
+    marginTop: 5,
+    flexDirection: 'row',
+    // No absolute positioning or fixed width here—this container will take the natural width of its parent.
+  },
+  iconStyle: {
+    marginHorizontal: 5,
   },
 });
