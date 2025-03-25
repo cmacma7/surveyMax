@@ -96,9 +96,14 @@ async function registerForPushNotificationsAsync() {
   }
   
   let token;
+  console.log("check isDevice", Device.isDevice)
   if (Device.isDevice) {
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    
     let finalStatus = existingStatus;
+
+    console.log(existingStatus)
+
     if (existingStatus !== "granted") {
       const { status } = await Notifications.requestPermissionsAsync();
       finalStatus = status;
@@ -107,8 +112,15 @@ async function registerForPushNotificationsAsync() {
       alert(t('failedPushToken'));
       return;
     }
-    token = (await Notifications.getExpoPushTokenAsync()).data;
-    console.log("Expo Push Token:", token);
+
+    try {
+      console.log("Geting token...");
+      const tokenData = await Notifications.getExpoPushTokenAsync();
+      token = tokenData.data;
+      console.log("Expo Push Token:", token);
+    } catch (error) {
+      console.error("Error getting push token:", error);
+    }
   } else {
     alert(t('mustUsePhysicalDevice'));
   }
@@ -289,23 +301,35 @@ const deduplicateMessages = (msgs: IMessage[]): IMessage[] => {
 
   useEffect(() => {
     async function initPushNotifications() {
+      console.log("init push notification")
       const storedPushToken = await AsyncStorage.getItem("pushToken");
+      let token;
       if (!storedPushToken) {
-        const token = await registerForPushNotificationsAsync();
-        if (token) {
-          await AsyncStorage.setItem("pushToken", token);
-          // Send the token along with userId to your backend.
-          fetch(`${SERVER_URL}/api/register-push-token`, {
-            method: "POST",
-            headers: HttpAuthHeader,
-            body: JSON.stringify({ userId, token }),
-          })
-            .then((res) => res.json())
-            .then((data) =>
-              console.log("Token registration response:", data)
-            )
-            .catch((err) => console.error(err));
-        }
+        console.log("get token")
+        token = await registerForPushNotificationsAsync();
+        console.log("got token", token)
+      }
+      else {
+        token = storedPushToken;
+      }
+     
+      if (token && token!=storedPushToken) {      
+        console.log("saving token to server")
+        
+        // Send the token along with userId to your backend.
+        fetch(`${SERVER_URL}/api/register-push-token`, {
+          method: "POST",
+          headers: HttpAuthHeader,
+          body: JSON.stringify({ userId, token }),
+        })
+          .then((res) => res.json())
+          .then(async (data) => {
+              console.log("Token registration response:", data);
+              await AsyncStorage.setItem("pushToken", token);
+            } 
+          )
+          .catch((err) => console.error(err));
+        
       } else {
         console.log("Push token already registered:", storedPushToken);
       }

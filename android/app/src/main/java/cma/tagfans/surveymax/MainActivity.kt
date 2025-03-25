@@ -1,4 +1,4 @@
-package com.tagfans.surveymax
+package cma.tagfans.surveymax
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build

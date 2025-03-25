@@ -17,7 +17,8 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.tagfans.surveymax"
+      "package": "cma.tagfans.surveymax",
+	    "googleServicesFile": "./android/app/google-services.json"
     },
     "web": {
       "bundler": "metro",

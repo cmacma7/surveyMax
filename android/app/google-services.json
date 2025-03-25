@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1082170340543",
+    "project_id": "surveymax-f6f03",
+    "storage_bucket": "surveymax-f6f03.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1082170340543:android:cc2f32a066ed594c29c20a",
+        "android_client_info": {
+          "package_name": "cma.tagfans.surveymax"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDsCEqR8kD6r0hOS6LwuzTfdPuayNjNq40"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

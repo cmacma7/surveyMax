@@ -1,4 +1,4 @@
-package com.tagfans.surveymax
+package cma.tagfans.surveymax
 
 import android.app.Application
 import android.content.res.Configuration
