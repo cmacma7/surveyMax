@@ -32,7 +32,38 @@ import { Modal, ScrollView, Animated} from "react-native";
 
 
 import { io } from "socket.io-client";
-const socket = io(SERVER_URL);
+
+
+
+//const socket = io(SERVER_URL);
+//const socket = io(SERVER_URL, {
+//  transports: ['polling']
+//});
+
+
+
+const socketOptions = Platform.OS === 'android'
+  ? {
+      transports: ['polling'],
+      // Disable the upgrade so it sticks with polling.
+      upgrade: false,
+      // The following options are passed to engine.io,
+      // though note that the client-side polling interval isn’t always officially supported.
+      transportOptions: {
+        polling: {
+          // For example, try setting a custom polling interval (in milliseconds)
+          pollingInterval: 5000, // Adjust this value as needed
+        }
+      }
+    }
+  : {
+      transports: ['websocket']
+    };
+
+const socket = io(SERVER_URL, socketOptions);
+
+
+
 
 import * as ImagePicker from "expo-image-picker";
 import { GiftedChat, IMessage, Send, Message } from "react-native-gifted-chat";
@@ -402,8 +433,9 @@ const deduplicateMessages = (msgs: IMessage[]): IMessage[] => {
     });
     // Create a copy of the message without sendStatus for transmission
     const { sendStatus, ...messagePayload } = messageWithChannel;
-  
+    console.log("sendMessage");
     socket.emit("sendMessage", messagePayload, (ack: any) => {
+      console.log("sendMessage callback");
       if (ack && ack.error) {
         updateMessageStatus(messageWithChannel._id, "failed");
       } else {
