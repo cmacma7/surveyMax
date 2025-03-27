@@ -1,5 +1,6 @@
 const express = require("express");
 const http = require("http");
+const request = require('request');
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const { Server } = require("socket.io");
@@ -136,7 +137,7 @@ app.use(express.urlencoded({ extended: true }));
 //app.use(cors());
 
 app.use(cors({
-  origin: ["https://b200.tagfans.com", "http://b200.tagfans.com", "https://eat.tagfans.com", "http://eat.tagfans.com", "http://127.0.0.1"], // Allow frontend domains
+  origin: ["https://b200.tagfans.com", "http://b200.tagfans.com", "https://eat.tagfans.com", "http://eat.tagfans.com", "http://127.0.0.1:8081","http://localhost:8081"], // Allow frontend domains
   credentials: true // Allows cookies to be sent with requests
 }));
 
@@ -852,6 +853,29 @@ app.post("/api/send-data", async (req, res) => {
   const payload = req.body;
   if (!payload._type) {
     return res.status(400).json({ error: "_type field is required." });
+  }
+
+  // We may server as a proxy to forward the data to third party server, e.g. the http server that does not accept https
+  if (payload._forwardingUrl && payload._forwardingData){
+    request.post(
+      {
+        url: payload._forwardingUrl,
+        json: payload._forwardingData, // Automatically stringifies the JSON and sets the Content-Type header
+        headers: {
+          "Content-Type": "application/json",
+        },
+      },
+      (error, response, body) => {
+        if (error) {
+          console.error("Error forwarding data:", error.message);
+          return;
+        }
+        console.log("Forwarded data response:", body);
+      }
+    );        
+    // no need for forwawrding data any further
+    delete payload._forwardingUrl;
+    delete payload._forwardingData;
   }
 
   if (payload._type === 'survey') {

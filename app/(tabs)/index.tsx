@@ -16,10 +16,17 @@ import {
   Dimensions,
   Pressable,
   TouchableNativeFeedback, 
+  Keyboard, 
+  TouchableWithoutFeedback,
+  useWindowDimensions 
 } from "react-native";
 
 const SERVER_URL = 'https://b200.tagfans.com:5301';
 // const SERVER_URL = 'http://192.168.100.125:5300';
+
+
+import Modal from "react-native-modal";
+import ImageZoom from 'react-native-image-pan-zoom';
 import { t, setLanguage } from "../i18n/translations";
 import * as ImageManipulator from 'expo-image-manipulator';
 import CachedImage from '../i18n/cachedImage';
@@ -27,7 +34,7 @@ import CachedImage from '../i18n/cachedImage';
 import { Image } from "react-native";
 
 // Inside ChatScreen component
-import { Modal, ScrollView, Animated} from "react-native";
+import { ScrollView, Animated} from "react-native";
 
 
 
@@ -77,6 +84,11 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 
 const { width, height } = Dimensions.get("window");
+const screen = Dimensions.get('screen');
+// At the top of your file or inside your component:
+const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
+
+
 
 var HttpAuthHeader = {};
 
@@ -168,6 +180,8 @@ async function registerForPushNotificationsAsync() {
 
 // ------------------ ChatScreen ------------------
 const ChatScreen: React.FC<any> = ({ route, navigation }) => {
+
+ 
   const { chatroomId, chatroomName, userId } = route.params;
   const [messages, setMessages] = useState<IMessage[]>([]);
  
@@ -287,8 +301,11 @@ const deduplicateMessages = (msgs: IMessage[]): IMessage[] => {
 
   // Function to open full screen image
   const openFullScreen = (uri) => {
-    setFullScreenImageUri(uri);
-    setModalVisible(true);
+    Keyboard.dismiss();
+    setTimeout(() => {
+      setFullScreenImageUri(uri);
+      setModalVisible(true);
+    }, 50); // Adjust the delay if needed
   };
 
 
@@ -560,27 +577,6 @@ const deduplicateMessages = (msgs: IMessage[]): IMessage[] => {
     </TouchableOpacity>
   );
 
-  // NEW: Add settings icon at top right of chat screen for channel settings.
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerRight: () => (
-        <Pressable
-          onPress={() => {
-              navigation.navigate("ChatRoomSettings", { chatroomId, chatroomName, userId })
-            }
-          }
-          style={({ pressed }) => ({
-            marginRight: 0,
-            padding: 10, // Increase padding to enlarge the touch area.
-            opacity: pressed ? 0.6 : 1,
-          })}
-        >
-          <Icon name="settings" size={28} color="#007AFF" />
-        </Pressable>
-      ),
-    });
-  }, [navigation, chatroomId, chatroomName, userId]);
-
 
   // Then define a custom renderer:
   const renderMessage = (props: any) => {
@@ -656,14 +652,16 @@ const deduplicateMessages = (msgs: IMessage[]): IMessage[] => {
     AsyncStorage.setItem(`chat_${chatroomId}_messages`, JSON.stringify(messages));
   }, [messages]);  
 
+ 
 // Add the Modal component (e.g., at the bottom of ChatScreen's return statement)
 return (
   <>
+  
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
         style={{ flex: 1,  marginBottom: 51}} // the keyboard will cover the message input without this
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={-1000} // this will push up the chat area
+        keyboardVerticalOffset={0} // this will push up the chat area
       >
       
       {/* Inside your ChatScreen component's return statement: */}
@@ -697,6 +695,7 @@ return (
         
         listViewProps={{
           contentContainerStyle: styles.contentContainer,
+          keyboardShouldPersistTaps: 'handled',
         }}
         // Add custom image renderer
         renderMessageImage={renderCustomImage}
@@ -704,41 +703,55 @@ return (
       </KeyboardAvoidingView>
      
     </SafeAreaView>
+  
 
-    <Modal visible={modalVisible} transparent={true}>
-      <View style={{ flex: 1, backgroundColor: "black" }}>
-        {/* Close button at top left */}
-        <TouchableOpacity
-          onPress={() => setModalVisible(false)}
-          style={{
-            position: "absolute",
-            top: 40,
-            left: 20,
-            zIndex: 1,
-          }}
-        >
-          <Icon name="close" size={28} color="#fff" />
-        </TouchableOpacity>
-        <ScrollView
-          maximumZoomScale={3}
-          minimumZoomScale={1}
-          contentContainerStyle={{
-            flex: 1,
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-          style={{ width, height }}
-        >
-          <Animated.View style={{ transform: [{ scale: scaleValue }], width, height }}>
-            <CachedImage
-              style={{ width, height }}
-              source={{ uri: fullScreenImageUri }}
-              resizeMode="contain"
-              chatroomId={chatroomId}
-            />
-          </Animated.View>
-        </ScrollView>
-      </View>
+    <Modal
+      isVisible={modalVisible}
+      onBackdropPress={() => setModalVisible(false)}
+      style={{ margin: 0 }} // Ensures the modal occupies the full screen
+      animationIn="fadeIn"
+      animationOut="fadeOut"
+      useNativeDriver
+      hideModalContentWhileAnimating
+      backdropColor="black"
+      backdropOpacity={1}
+    >
+      <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
+        <Animated.View style={[StyleSheet.absoluteFill, { transform: [{ scale: scaleValue }] }]}>
+          {/* Close button at top left */}
+          <TouchableOpacity
+            onPress={() => setModalVisible(false)}
+            style={{
+              position: "absolute",
+              top: 40,
+              left: 20,
+              zIndex: 1,
+            }}
+          >
+            <Icon name="close" size={28} color="#fff" />
+          </TouchableOpacity>
+       
+            <ImageZoom
+              cropWidth={screenWidth}
+              cropHeight={screenHeight}
+              imageWidth={screenWidth}
+              imageHeight={screenHeight}
+            >          
+        
+
+              <CachedImage
+                style={{
+                  width: screen.width,
+                  height: screen.height
+                }}
+                source={{ uri: fullScreenImageUri }}
+                resizeMode="contain"
+                chatroomId={chatroomId}
+              />
+          
+          </ImageZoom>
+        </Animated.View>
+      </TouchableWithoutFeedback>
     </Modal>
   </>
   );
@@ -771,26 +784,6 @@ const ChatroomListScreen: React.FC<any> = ({ navigation, route }) => {
    
   const [chatrooms, setChatrooms] = useState<{ id: string; name: string }[]>([]);
 
-
-  const AddChatRoomButton = React.memo(({ onPress }) => (
-    <TouchableNativeFeedback
-    onPress={onPress}
-    background={TouchableNativeFeedback.SelectableBackgroundBorderless()}
-  >
-    <View style={{ marginRight: 10, padding: 10 }}>
-      <Icon name="add" size={28} color="#007AFF" />
-    </View>
-  </TouchableNativeFeedback>
-  ));
-
-  // NEW: Set headerRight with add chat room icon.
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerRight: () => (
-        <AddChatRoomButton onPress={() => navigation.navigate("AddChatRoom", { userId: userIdentifier })} />
-      ),
-    });
-  }, [navigation, userIdentifier]);
 
   // Sample implementation to fetch chatrooms from listAdmin endpoint.
   const [refreshing, setRefreshing] = useState(false);
@@ -1387,18 +1380,46 @@ const App: React.FC = () => {
         <Stack.Screen
           name="ChatroomList"
           component={ChatroomListScreen}
-          options={{ 
+          options={({ navigation, route }) => ({
             title: "Chat Rooms",
-            // Hide the back button so the user can’t go back to Login.
-            headerLeft: () => null 
-          }}
+            // Hide the left back button
+            headerLeft: () => null,
+            headerRight: () => (
+              <TouchableOpacity
+                onPress={() =>
+                  navigation.navigate("AddChatRoom", { userId: route.params.userId })
+                }
+                style={{ paddingHorizontal: 10 }}
+              >
+                <Icon name="add" size={28} color="#007AFF" />
+              </TouchableOpacity>
+            ),
+          })}
           initialParams={{ userId: storedUserId }}
         />
+
         <Stack.Screen
           name="Chat"
           component={ChatScreen}
-          options={({ route }) => ({ title: route.params.chatroomName })}
+          options={({ route, navigation }) => ({
+            title: route.params.chatroomName,
+            headerRight: () => (
+              <TouchableOpacity
+                onPress={() =>
+                  navigation.navigate("ChatRoomSettings", {
+                    chatroomId: route.params.chatroomId,
+                    chatroomName: route.params.chatroomName,
+                    userId: route.params.userId,
+                  })
+                }
+                style={{ paddingHorizontal: 10 }}
+              >
+                <Icon name="settings" size={28} color="#007AFF" />
+              </TouchableOpacity>
+            ),
+          })}
         />
+
         {/* New screens for registration, forgot password, add chat room, and chat room settings */}
         <Stack.Screen name="Register" component={RegisterScreen} options={{ title: t('register') }} />
         <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} options={{ title: t('forgotPassword') }} />
