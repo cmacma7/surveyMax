@@ -193,7 +193,7 @@ const ChatScreen: React.FC<any> = ({ route, navigation }) => {
   // State to manage full screen view
   const [modalVisible, setModalVisible] = useState(false);
   const [fullScreenImageUri, setFullScreenImageUri] = useState("");
-  const [scaleValue] = useState(new Animated.Value(0.8)); // initial scale value
+  const [scaleValue] = useState(new Animated.Value(0.5)); // initial scale value
 
 
 // 1. --- Helper: update message status and persist ---
@@ -308,18 +308,29 @@ const deduplicateMessages = (msgs: IMessage[]): IMessage[] => {
     }, 50); // Adjust the delay if needed
   };
 
+  // 1. Define the closeModal function:
+  const closeModal = () => {
+    Animated.timing(scaleValue, {
+      toValue: 0,
+      duration: 600,
+      useNativeDriver: true,
+    }).start(() => {
+      setModalVisible(false);
+    });
+  };
 
   // Animate when the modal is visible
   useEffect(() => {
+    //console.log("modalVisible", modalVisible)
     if (modalVisible) {
       Animated.timing(scaleValue, {
         toValue: 1,
-        duration: 300,
+        duration: 600,
         useNativeDriver: true,
       }).start();
     } else {
       // Reset scale for next time
-      scaleValue.setValue(0.8);
+      //scaleValue.setValue(0.5);
     }
   }, [modalVisible, scaleValue]);
 
@@ -652,7 +663,7 @@ const deduplicateMessages = (msgs: IMessage[]): IMessage[] => {
     AsyncStorage.setItem(`chat_${chatroomId}_messages`, JSON.stringify(messages));
   }, [messages]);  
 
- 
+// console.log("modalVisible --", modalVisible) 
 // Add the Modal component (e.g., at the bottom of ChatScreen's return statement)
 return (
   <>
@@ -707,20 +718,20 @@ return (
 
     <Modal
       isVisible={modalVisible}
-      onBackdropPress={() => setModalVisible(false)}
+      onBackdropPress={closeModal}
       style={{ margin: 0 }} // Ensures the modal occupies the full screen
       animationIn="fadeIn"
       animationOut="fadeOut"
       useNativeDriver
       hideModalContentWhileAnimating
       backdropColor="black"
-      backdropOpacity={1}
+      backdropOpacity={0.9}
     >
-      <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
+      <TouchableWithoutFeedback onPress={closeModal}>
         <Animated.View style={[StyleSheet.absoluteFill, { transform: [{ scale: scaleValue }] }]}>
           {/* Close button at top left */}
           <TouchableOpacity
-            onPress={() => setModalVisible(false)}
+            onPress={closeModal}
             style={{
               position: "absolute",
               top: 40,
