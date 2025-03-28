@@ -195,6 +195,14 @@ const ChatScreen: React.FC<any> = ({ route, navigation }) => {
   const [fullScreenImageUri, setFullScreenImageUri] = useState("");
   const [scaleValue] = useState(new Animated.Value(0.5)); // initial scale value
 
+  // read/unread message divider
+  const flatListRef = useRef<FlatList<any>>(null);
+  const lastVisibleMessageRef = useRef<string | null>(null);   // Track the last visible message, the last message user is focus on
+  const lastReadMessageRef = useRef<string | null>(null);  // Track the last read message, the last message of last enter the chat room
+  const lastFechedMessageRef = useRef<string | null>(null);  // Track the last fetched message, the last message user has fetched from server
+
+  // initial scroll done
+  const initialScrollDone = useRef(false);
 
 // 1. --- Helper: update message status and persist ---
 const updateMessageStatus = (messageId: string, status: "pending" | "failed" | "sent" | "giveup") => {
@@ -213,8 +221,8 @@ const updateMessageStatus = (messageId: string, status: "pending" | "failed" | "
     });
     updatedMessages = deduplicateMessages(updatedMessages);
     // Persist updated messages without the sendStatus for sent messages.
-    AsyncStorage.setItem(`chat_${chatroomId}_messages`, JSON.stringify(updatedMessages));
-    return updatedMessages;
+    // AsyncStorage.setItem(`chat_${chatroomId}_messages`, JSON.stringify(updatedMessages));
+    return (updatedMessages);
   });
 };
 
@@ -237,8 +245,8 @@ const handleResend = (message: IMessage) => {
 const handleGiveUp = (message: IMessage) => {
   setMessages((prevMessages) => {
     const updatedMessages = prevMessages.filter((msg) => msg._id !== message._id);
-    AsyncStorage.setItem(`chat_${chatroomId}_messages`, JSON.stringify(updatedMessages));
-    return updatedMessages;
+    // AsyncStorage.setItem(`chat_${chatroomId}_messages`, JSON.stringify(updatedMessages));
+    return (updatedMessages);
   });  
 };
 
@@ -272,7 +280,12 @@ const deduplicateMessages = (msgs: IMessage[]): IMessage[] => {
       if (saved) {
         localMessages = JSON.parse(saved);
         localMessages = deduplicateMessages(localMessages);
-        setMessages(localMessages);
+        lastReadMessageRef.current = await AsyncStorage.getItem(`chat_${chatroomId}_lastReadMessageId`);
+        if (!lastReadMessageRef.current) {
+          lastReadMessageRef.current = localMessages[0]?._id;
+        }
+        const tmpMessage = insertUnreadDivider(localMessages);
+        setMessages(tmpMessage);
       }
     } catch (err) {
       console.error("Error loading local messages", err);
@@ -290,8 +303,9 @@ const deduplicateMessages = (msgs: IMessage[]): IMessage[] => {
       if (data.messages && data.messages.length) {
         const newMessages = data.messages.reverse();
         const updatedMessages = GiftedChat.append(localMessages, newMessages);
-        setMessages(updatedMessages);
-        await AsyncStorage.setItem(`chat_${chatroomId}_messages`, JSON.stringify(updatedMessages));
+        const finalMessages = insertUnreadDivider(updatedMessages);
+        setMessages(finalMessages);
+        // await AsyncStorage.setItem(`chat_${chatroomId}_messages`, JSON.stringify(updatedMessages));
       }
     } catch (err) {
       console.error("Error fetching new messages", err);
@@ -418,6 +432,55 @@ const deduplicateMessages = (msgs: IMessage[]): IMessage[] => {
     };
   }, [userId]);
 
+
+
+  // leave the chat room when the component is unmounted
+  useEffect(() => {
+    return () => {
+      if (lastVisibleMessageRef.current) {
+        AsyncStorage.setItem(`chat_${chatroomId}_lastVisableMessageId`, lastVisibleMessageRef.current)
+          .catch((err) => console.error("Error saving last visible id", err));
+      }
+      if (lastFechedMessageRef.current) {
+        AsyncStorage.setItem(`chat_${chatroomId}_lastReadMessageId`, lastFechedMessageRef.current)
+          .catch((err) => console.error("Error saving last read id", err));
+      }      
+    };
+  }, [chatroomId]);  
+
+  // Use onViewableItemsChanged to track the bottom-most (read) message
+  const onViewableItemsChanged = useCallback(({ viewableItems }) => {
+    // Filter out divider items
+    const visibleMsgs = viewableItems.filter(item => !item.item.isDivider);
+    if (visibleMsgs.length > 0) {
+      // In an inverted list, the last visible item in the array is the one at the beginning.
+      const lastVisible = visibleMsgs[0];
+      if (lastVisible?.item?._id) {
+        lastVisibleMessageRef.current = lastVisible.item._id;
+      }
+    }
+  }, []);
+
+  const insertUnreadDivider = (msgs: IMessage[]): IMessage[] => {
+    if (!lastReadMessageRef.current) return msgs;
+
+    const visibleMsgs = msgs.filter(item => !item.isDivider); // remove all dividers
+    const index = msgs.findIndex(msg => msg._id === lastReadMessageRef.current);
+    if (index <= 0) return msgs;
+
+    // Create a divider object (ensure its _id is unique and does not conflict)
+    const divider = {
+      _id: `divider_${lastReadMessageRef.current}`,
+      isDivider: true,
+      text: t('unread Messages') // Use a translation or a fixed string such as "Unread messages"
+    };
+    // Insert the divider immediately before the last read message.
+    visibleMsgs.splice(index, 0, divider);
+    return visibleMsgs;
+  };
+
+
+
   useEffect(() => {
     const handleReceiveMessage = (incomingMessage: IMessage) => {
       if (incomingMessage.channelId === chatroomId) {
@@ -433,8 +496,8 @@ const deduplicateMessages = (msgs: IMessage[]): IMessage[] => {
             newMessages = GiftedChat.append(prev, { ...incomingMessage, sendStatus: "sent" });
           }
           newMessages = deduplicateMessages(newMessages);
-          AsyncStorage.setItem(`chat_${chatroomId}_messages`, JSON.stringify(newMessages));
-          return newMessages;
+          // AsyncStorage.setItem(`chat_${chatroomId}_messages`, JSON.stringify(newMessages));
+          return (newMessages);
         });
       }
     };
@@ -456,8 +519,8 @@ const deduplicateMessages = (msgs: IMessage[]): IMessage[] => {
       const filtered = prev.filter(msg => msg._id !== messageWithChannel._id);
       const newMsgList = GiftedChat.append(filtered, messageWithChannel);
       const deduped = deduplicateMessages(newMsgList);
-      AsyncStorage.setItem(`chat_${chatroomId}_messages`, JSON.stringify(deduped));
-      return deduped;
+      // AsyncStorage.setItem(`chat_${chatroomId}_messages`, JSON.stringify(deduped));
+      return (deduped);
     });
     // Create a copy of the message without sendStatus for transmission
     const { sendStatus, ...messagePayload } = messageWithChannel;
@@ -591,6 +654,14 @@ const deduplicateMessages = (msgs: IMessage[]): IMessage[] => {
 
   // Then define a custom renderer:
   const renderMessage = (props: any) => {
+    if (props.currentMessage.isDivider) {
+      return (
+        <View style={styles.unreadDivider}>
+          <Text style={styles.unreadDividerText}>{props.currentMessage.text}</Text>
+        </View>
+      );
+    }
+    // Otherwise, render the normal message with resend/giveup UI as before:
     const isCurrentUser = props.currentMessage?.user?._id === props?.user?._id;
     return (
       <View style={{ flexDirection: 'column' }}>
@@ -613,55 +684,43 @@ const deduplicateMessages = (msgs: IMessage[]): IMessage[] => {
       </View>
     );
   };
-   
-
-
-  const renderMessage1 = (props: any) => {
-    // Check if the message is from the current user
-    const isCurrentUser = props.currentMessage?.user?._id === props?.user?._id;
-    
-    return (
-      <>
-        <Message {...props} />
-        { (props.currentMessage.sendStatus === "failed" || props.currentMessage.sendStatus === "pending") && (
-          <View
-            style={[
-              styles.resendContainer,
-              isCurrentUser ? { alignSelf: 'flex-end' } : { alignSelf: 'flex-start' },
-            ]}
-          >
-            <TouchableOpacity onPress={() => handleResend(props.currentMessage)}>
-              <Icon name="replay" size={20} color="red" style={styles.iconStyle} />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => handleGiveUp(props.currentMessage)}>
-              <Icon name="cancel" size={20} color="red" style={styles.iconStyle} />
-            </TouchableOpacity>
-          </View>
-        )}
-      </>
-    );
-  };
   
-  
-  
-
-  // Modify your renderCustomImage function:
-  const renderCustomImage = (props) => {
-    return (
-      <TouchableOpacity onPress={() => openFullScreen(props.currentMessage.image)}>
-        <CachedImage
-          style={[{ width: 200, height: 150, borderRadius: 13 }]}
-          source={{ uri: props.currentMessage.image }}
-          resizeMode="contain"
-          chatroomId={chatroomId}
-        />
-      </TouchableOpacity>
-    );
-  };
-
+ // Modify your renderCustomImage function:
+ const renderCustomImage = (props) => {
+  return (
+    <TouchableOpacity onPress={() => openFullScreen(props.currentMessage.image)}>
+      <CachedImage
+        style={[{ width: 200, height: 150, borderRadius: 13 }]}
+        source={{ uri: props.currentMessage.image }}
+        resizeMode="contain"
+        chatroomId={chatroomId}
+      />
+    </TouchableOpacity>
+  );
+};
   useEffect(() => {
-    AsyncStorage.setItem(`chat_${chatroomId}_messages`, JSON.stringify(messages));
+    if (messages.length > 0) {
+      const visibleMsgs = messages.filter(item => !item.isDivider); // remove all dividers
+      AsyncStorage.setItem(`chat_${chatroomId}_messages`, JSON.stringify(visibleMsgs));  
+      lastFechedMessageRef.current = messages[0]?._id; 
+    }
   }, [messages]);  
+  
+  useEffect(() => {
+    if (flatListRef.current && !initialScrollDone.current) { 
+      initialScrollDone.current = true; 
+      const dividerIndex = messages.findIndex(msg => msg.isDivider);
+      if (dividerIndex !== -1 && flatListRef.current.scrollToIndex) {
+        // Use a short delay to ensure the list is rendered.
+        setTimeout(() => {
+          flatListRef.current?.scrollToIndex({ index: dividerIndex, animated: true });
+        }, 500);
+      }
+    }
+  }, [messages]);
+  
+
+
 
 // console.log("modalVisible --", modalVisible) 
 // Add the Modal component (e.g., at the bottom of ChatScreen's return statement)
@@ -682,7 +741,7 @@ return (
         user={{ _id: userId }}
         placeholder={t('typeMessage')}
         renderActions={renderCustomActions}
-        renderMessage={renderMessage}  // our custom message renderer
+        renderMessage={renderMessage} // our custom renderer now handles divider messages
         textInputProps={{
           multiline: true,
           style: {
@@ -703,12 +762,15 @@ return (
             </View>
           </Send>
         )}
-        
         listViewProps={{
+          ref: flatListRef,
+          onViewableItemsChanged: onViewableItemsChanged,
+          viewabilityConfig: {
+            itemVisiblePercentThreshold: 50,
+          },
           contentContainerStyle: styles.contentContainer,
           keyboardShouldPersistTaps: 'handled',
         }}
-        // Add custom image renderer
         renderMessageImage={renderCustomImage}
       />
       </KeyboardAvoidingView>
@@ -1492,4 +1554,17 @@ const styles = StyleSheet.create({
   iconStyle: {
     marginHorizontal: 5,
   },
+  unreadDivider: {
+    alignSelf: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    backgroundColor: '#e0e0e0',
+    borderRadius: 12,
+    marginVertical: 10,
+  },
+  unreadDividerText: {
+    fontSize: 12,
+    color: '#333',
+  },
+  
 });
