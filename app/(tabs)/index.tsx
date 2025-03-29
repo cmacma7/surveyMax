@@ -190,10 +190,12 @@ const ChatScreen: React.FC<any> = ({ route, navigation }) => {
   const responseListener = useRef<Notifications.Subscription>();
 
 
-  // State to manage full screen view
+  // handle image full screen view
   const [modalVisible, setModalVisible] = useState(false);
   const [fullScreenImageUri, setFullScreenImageUri] = useState("");
   const [scaleValue] = useState(new Animated.Value(0.5)); // initial scale value
+  const [modalBackdropOpacity] = useState(new Animated.Value(1.0)); // initial opacity value
+
 
   // read/unread message divider
   const flatListRef = useRef<FlatList<any>>(null);
@@ -324,11 +326,18 @@ const deduplicateMessages = (msgs: IMessage[]): IMessage[] => {
 
   // 1. Define the closeModal function:
   const closeModal = () => {
-    Animated.timing(scaleValue, {
-      toValue: 0,
-      duration: 600,
-      useNativeDriver: true,
-    }).start(() => {
+    Animated.parallel([
+      Animated.timing(scaleValue, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(modalBackdropOpacity, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
       setModalVisible(false);
     });
   };
@@ -339,7 +348,7 @@ const deduplicateMessages = (msgs: IMessage[]): IMessage[] => {
     if (modalVisible) {
       Animated.timing(scaleValue, {
         toValue: 1,
-        duration: 600,
+        duration: 300,
         useNativeDriver: true,
       }).start();
     } else {
@@ -786,8 +795,21 @@ return (
       animationOut="fadeOut"
       useNativeDriver
       hideModalContentWhileAnimating
-      backdropColor="black"
-      backdropOpacity={0.9}
+      backdropColor="black"  // Use transparent since customBackdrop defines the color.
+      backdropOpacity={1.0}
+      customBackdrop={
+        <Animated.View
+          style={[
+            StyleSheet.absoluteFill,
+            { backgroundColor: "black", opacity: modalBackdropOpacity },
+          ]}
+        />
+      }
+      onModalHide={() => {
+        // Reset values only after modal has fully closed
+        scaleValue.setValue(0.5);
+        modalBackdropOpacity.setValue(1.0);
+      }}
     >
       <TouchableWithoutFeedback onPress={closeModal}>
         <Animated.View style={[StyleSheet.absoluteFill, { transform: [{ scale: scaleValue }] }]}>
