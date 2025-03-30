@@ -1,6 +1,10 @@
 import "react-native-get-random-values";
 import React, { useState, useEffect, useRef, useLayoutEffect, useMemo, useCallback} from "react";
 import { useFocusEffect } from '@react-navigation/native';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import * as FileSystem from 'expo-file-system';
+import * as Crypto from "expo-crypto";
+
 import {
   View,
   Text,
@@ -293,11 +297,25 @@ const deduplicateMessages = (msgs: IMessage[]): IMessage[] => {
       console.error("Error loading local messages", err);
     }
 
-    const lastMessage = localMessages[0];
-    let url = `${SERVER_URL}/api/messages/${chatroomId}`;
-    if (lastMessage && lastMessage.createdAt) {
-      url += `?after=${encodeURIComponent(lastMessage.createdAt)}`;
+
+    // Determine the reference timestamp
+    let referenceTimestamp;
+    let lastFetchedTimestamp;
+    if (localMessages.length > 0) {
+      referenceTimestamp   = localMessages[0]?.createdAt;
+      lastFetchedTimestamp = localMessages[0]?.createdAt; // keep the last fetched timestamp in the local messages
+    } else {
+      // If there are no messages locally, try to get the last fetched timestamp
+      referenceTimestamp = await AsyncStorage.getItem(`chat_${chatroomId}_lastFetchedTimestamp`);
+      // Optionally, you can default to the current time to avoid loading older messages
+      if (!referenceTimestamp) {
+        referenceTimestamp = new Date().toISOString();
+      }
     }
+    
+    let url = `${SERVER_URL}/api/messages/${chatroomId}?after=${encodeURIComponent(referenceTimestamp)}`;
+ 
+
 
     try {
       const res = await fetch(url, { headers: HttpAuthHeader });
@@ -305,10 +323,16 @@ const deduplicateMessages = (msgs: IMessage[]): IMessage[] => {
       if (data.messages && data.messages.length) {
         const newMessages = data.messages.reverse();
         const updatedMessages = GiftedChat.append(localMessages, newMessages);
-        const finalMessages = insertUnreadDivider(updatedMessages);
+        lastFetchedTimestamp = updatedMessages[0]?.createdAt;
+        const finalMessages = insertUnreadDivider(updatedMessages);       
         setMessages(finalMessages);
         // await AsyncStorage.setItem(`chat_${chatroomId}_messages`, JSON.stringify(updatedMessages));
       }
+
+      if (lastFetchedTimestamp) {
+        AsyncStorage.setItem(`chat_${chatroomId}_lastFetchedTimestamp`, lastFetchedTimestamp);
+      }
+
     } catch (err) {
       console.error("Error fetching new messages", err);
     }
@@ -360,7 +384,7 @@ const deduplicateMessages = (msgs: IMessage[]): IMessage[] => {
   useEffect(() => {
     console.log("Entered ChatRoom:", chatroomName, "ID:", chatroomId);
     socket.emit("joinRoom", chatroomId);
-    loadAndFetchMessages();
+    //loadAndFetchMessages();
 
     const handleReconnect = () => {
       console.log("Socket reconnected. Rejoining room:", chatroomId);
@@ -376,7 +400,7 @@ const deduplicateMessages = (msgs: IMessage[]): IMessage[] => {
 
   useFocusEffect(
     useCallback(() => {
-      //loadAndFetchMessages();
+      loadAndFetchMessages();
     }, [loadAndFetchMessages])
   );
 
@@ -1323,6 +1347,7 @@ const ChatRoomSettingsScreen: React.FC<any> = ({ route, navigation }) => {
   const [newName, setNewName] = useState(chatroomName);
   const [inviteEmail, setInviteEmail] = useState("");
   const [removeEmail, setRemoveEmail] = useState("");
+  const [selectedDate, setSelectedDate] = useState(new Date());
 
   const handleChangeName = async () => {
     if (newName.trim() === "") {
@@ -1396,6 +1421,67 @@ const ChatRoomSettingsScreen: React.FC<any> = ({ route, navigation }) => {
     }
   };
 
+// Inside your ChatRoomSettingsScreen (or wherever you handle deletion):
+const handleDeleteLocalMessages = async () => {
+  try {
+    const storageKey = `chat_${chatroomId}_messages`;
+    const storedMessagesStr = await AsyncStorage.getItem(storageKey);
+    if (!storedMessagesStr) {
+      Alert.alert(t('Info'), 'No local messages found.');
+      return;
+    }
+    const storedMessages = JSON.parse(storedMessagesStr);
+    const cutoffTime = selectedDate.getTime();
+
+    const messagesToKeep = [];
+    const messagesToDelete = [];
+    for (const msg of storedMessages) {
+      const msgTime = new Date(msg.createdAt).getTime();
+      if (msgTime < cutoffTime) {
+        messagesToDelete.push(msg);
+      } else {
+        messagesToKeep.push(msg);
+      }
+    }
+
+    // Delete cached images for messages to delete.
+    for (let i = 0; i < messagesToDelete.length; i++) {
+      const msg = messagesToDelete[i];
+      if (msg.image) {
+        let filePath = msg.image;
+        // If the image URL is remote, compute the cached file path.
+        if (!msg.image.startsWith("file://")) {
+          const directory = `${FileSystem.cacheDirectory}${chatroomId}/`;
+          const filename = await Crypto.digestStringAsync(
+            Crypto.CryptoDigestAlgorithm.SHA256,
+            msg.image
+          );
+          filePath = `${directory}${filename}`;
+        }
+        try {
+          const fileInfo = await FileSystem.getInfoAsync(filePath);
+          if (fileInfo.exists) {
+            await FileSystem.deleteAsync(filePath, { idempotent: true });
+            console.log("Deleted cached image:", filePath);
+          }
+        } catch (error) {
+          console.error("Error deleting cached image:", filePath, error);
+        }
+      }
+    }
+
+    // Save the remaining messages.
+    await AsyncStorage.setItem(storageKey, JSON.stringify(messagesToKeep));
+    Alert.alert(
+      t('Success'),
+      `Deleted ${messagesToDelete.length} messages before ${selectedDate.toLocaleDateString()}`
+    );
+  } catch (error) {
+    console.error("Error deleting local messages:", error);
+    Alert.alert(t('Error'), 'Failed to delete local messages.');
+  }
+};
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={{ padding: 20 }}>
@@ -1433,6 +1519,31 @@ const ChatRoomSettingsScreen: React.FC<any> = ({ route, navigation }) => {
           keyboardType="email-address"
         />
         <Button title={t('remove')} onPress={handleRemoveUser} />
+
+        <View style={{ marginTop: 30, padding: 20, borderTopWidth: 1, borderColor: '#ccc' }}>
+          <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>
+            Delete Local Messages
+          </Text>
+          <Text style={{ marginBottom: 10 }}>
+            Select a date. All messages before this date (and their local images) will be deleted.
+          </Text>
+          <View style={{ height: 100, justifyContent: 'center' }}>
+            <DateTimePicker
+              value={selectedDate}
+              mode="date"
+              display="default"
+              onChange={(event, date) => {
+                if (date) {
+                  setSelectedDate(date);
+                }
+              }}
+            />
+          </View>
+          <Button title="Delete Messages" onPress={handleDeleteLocalMessages} />
+ 
+        </View>
+
+
       </View>
     </SafeAreaView>
   );
