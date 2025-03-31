@@ -33,7 +33,11 @@ import Modal from "react-native-modal";
 import ImageZoom from 'react-native-image-pan-zoom';
 import { t, setLanguage } from "../i18n/translations";
 import * as ImageManipulator from 'expo-image-manipulator';
-import CachedImage from '../i18n/cachedImage';
+
+
+// UI components
+import CachedImage from '../components/CachedImage';
+import ChatRoomSettingsScreen from "../components/ChatRoomSettingsScreen";
 
 import { Image } from "react-native";
 
@@ -83,7 +87,6 @@ import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
 import Constants from "expo-constants";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-// NEW: Import AsyncStorage for token persistence.
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 
@@ -876,6 +879,8 @@ return (
   );
 };
 
+
+// ********************************************************
 // ------------------ ChatroomListScreen ------------------
 const ChatroomListScreen: React.FC<any> = ({ navigation, route }) => {
   // Modified: If route.params is undefined, try to load userId from AsyncStorage.
@@ -1006,8 +1011,9 @@ const ChatroomListScreen: React.FC<any> = ({ navigation, route }) => {
     </SafeAreaView>
   );
 };
+// ********************************************************
+// ------------------ LoginScreen -------------------------
 
-// ------------------ LoginScreen ------------------
 const LoginScreen: React.FC<any> = ({ navigation }) => {
   // Modified: Using email instead of username.
   const [email, setEmail] = useState("");
@@ -1089,6 +1095,7 @@ const LoginScreen: React.FC<any> = ({ navigation }) => {
   );
 };
 
+// ********************************************************
 // ------------------ RegisterScreen ------------------
 const RegisterScreen: React.FC<any> = ({ navigation }) => {
   const [email, setEmail] = useState("");
@@ -1184,7 +1191,7 @@ const RegisterScreen: React.FC<any> = ({ navigation }) => {
     </SafeAreaView>
   );
 };
-
+// ********************************************************
 // ------------------ ForgotPasswordScreen ------------------
 const ForgotPasswordScreen: React.FC<any> = ({ navigation }) => {
   const [email, setEmail] = useState("");
@@ -1281,8 +1288,9 @@ const ForgotPasswordScreen: React.FC<any> = ({ navigation }) => {
   );
 };
 
+// **********************************************************
 // ------------------ AddChatRoomScreen ------------------
-// NEW: Screen to add a new chat room (channel)
+
 const AddChatRoomScreen: React.FC<any> = ({ navigation, route }) => {
   const [channelName, setChannelName] = useState("");
 
@@ -1340,214 +1348,6 @@ const AddChatRoomScreen: React.FC<any> = ({ navigation, route }) => {
   );
 };
 
-// ------------------ ChatRoomSettingsScreen ------------------
-// NEW: Screen for chat room settings: change channel name, invite and remove users.
-const ChatRoomSettingsScreen: React.FC<any> = ({ route, navigation }) => {
-  const { chatroomId, chatroomName } = route.params;
-  const [newName, setNewName] = useState(chatroomName);
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [removeEmail, setRemoveEmail] = useState("");
-  const [selectedDate, setSelectedDate] = useState(new Date());
-
-  const handleChangeName = async () => {
-    if (newName.trim() === "") {
-      Alert.alert(t('Error'), t('pleaseEnterValidChannelName'));
-      return;
-    }
-    try {
-      const response = await fetch(`${SERVER_URL}/api/update-channel`, {
-        method: "POST",
-        headers: HttpAuthHeader,
-        body: JSON.stringify({ channelId: chatroomId, channelDescription: newName }),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        Alert.alert(t('Error'), data.error || t('updateChannelNameFailed'));
-        return;
-      }
-      Alert.alert(t('Success'), t('channelNameUpdated'));
-      navigation.setParams({ chatroomName: newName });
-    } catch (error) {
-      console.error(error);
-      Alert.alert(t('Error'), t('updateChannelNameError'));
-    }
-  };
-
-  const handleInviteUser = async () => {
-    if (inviteEmail.trim() === "") {
-      Alert.alert(t('Error'), t('pleaseEnterEmailToInvite'));
-      return;
-    }
-    try {
-      const response = await fetch(`${SERVER_URL}/api/add-channel-admin`, {
-        method: "POST",
-        headers: HttpAuthHeader,
-        body: JSON.stringify({ channelId: chatroomId, email: inviteEmail }),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        Alert.alert(t('Error'), data.error || t('inviteUserFailed'));
-        return;
-      }
-      Alert.alert(t('Success'), t('userInvited'));
-      setInviteEmail("");
-    } catch (error) {
-      console.error(error);
-      Alert.alert(t('Error'), t('inviteUserError'));
-    }
-  };
-
-  const handleRemoveUser = async () => {
-    if (removeEmail.trim() === "") {
-      Alert.alert(t('Error'), t('pleaseEnterEmailToRemove'));
-      return;
-    }
-    try {
-      const response = await fetch(`${SERVER_URL}/api/add-channel-admin`, {
-        method: "POST",
-        headers: HttpAuthHeader,
-        body: JSON.stringify({ channelId: chatroomId, email: removeEmail, deleteAdmin: "Yes" }),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        Alert.alert(t('Error'), data.error || t('removeUserFailed'));
-        return;
-      }
-      Alert.alert(t('Success'), t('userRemoved'));
-      setRemoveEmail("");
-    } catch (error) {
-      console.error(error);
-      Alert.alert(t('Error'), t('removeUserError'));
-    }
-  };
-
-// Inside your ChatRoomSettingsScreen (or wherever you handle deletion):
-const handleDeleteLocalMessages = async () => {
-  try {
-    const storageKey = `chat_${chatroomId}_messages`;
-    const storedMessagesStr = await AsyncStorage.getItem(storageKey);
-    if (!storedMessagesStr) {
-      Alert.alert(t('Info'), 'No local messages found.');
-      return;
-    }
-    const storedMessages = JSON.parse(storedMessagesStr);
-    const cutoffTime = selectedDate.getTime();
-
-    const messagesToKeep = [];
-    const messagesToDelete = [];
-    for (const msg of storedMessages) {
-      const msgTime = new Date(msg.createdAt).getTime();
-      if (msgTime < cutoffTime) {
-        messagesToDelete.push(msg);
-      } else {
-        messagesToKeep.push(msg);
-      }
-    }
-
-    // Delete cached images for messages to delete.
-    for (let i = 0; i < messagesToDelete.length; i++) {
-      const msg = messagesToDelete[i];
-      if (msg.image) {
-        let filePath = msg.image;
-        // If the image URL is remote, compute the cached file path.
-        if (!msg.image.startsWith("file://")) {
-          const directory = `${FileSystem.cacheDirectory}${chatroomId}/`;
-          const filename = await Crypto.digestStringAsync(
-            Crypto.CryptoDigestAlgorithm.SHA256,
-            msg.image
-          );
-          filePath = `${directory}${filename}`;
-        }
-        try {
-          const fileInfo = await FileSystem.getInfoAsync(filePath);
-          if (fileInfo.exists) {
-            await FileSystem.deleteAsync(filePath, { idempotent: true });
-            console.log("Deleted cached image:", filePath);
-          }
-        } catch (error) {
-          console.error("Error deleting cached image:", filePath, error);
-        }
-      }
-    }
-
-    // Save the remaining messages.
-    await AsyncStorage.setItem(storageKey, JSON.stringify(messagesToKeep));
-    Alert.alert(
-      t('Success'),
-      `Deleted ${messagesToDelete.length} messages before ${selectedDate.toLocaleDateString()}`
-    );
-  } catch (error) {
-    console.error("Error deleting local messages:", error);
-    Alert.alert(t('Error'), 'Failed to delete local messages.');
-  }
-};
-
-  return (
-    <SafeAreaView style={styles.container}>
-      <View style={{ padding: 20 }}>
-        <Text style={styles.title}>{t('chatRoomSettings')}</Text>
-        {/* Change Channel Name */}
-        <Text style={{ marginTop: 10 }}>{t('changeChannelName')}</Text>
-        <TextInput
-          placeholder={t('newChannelName')}
-          value={newName}
-          onChangeText={setNewName}
-          style={styles.input}
-        />
-        <Button title={t('updateName')} onPress={handleChangeName} />
-
-        {/* Invite User */}
-        <Text style={{ marginTop: 20 }}>{t('inviteUser')}</Text>
-        <TextInput
-          placeholder={t('userEmail')}
-          value={inviteEmail}
-          onChangeText={setInviteEmail}
-          style={styles.input}
-          autoCapitalize="none"
-          keyboardType="email-address"
-        />
-        <Button title={t('invite')} onPress={handleInviteUser} />
-
-        {/* Remove User */}
-        <Text style={{ marginTop: 20 }}>{t('removeUser')}</Text>
-        <TextInput
-          placeholder={t('userEmail')}
-          value={removeEmail}
-          onChangeText={setRemoveEmail}
-          style={styles.input}
-          autoCapitalize="none"
-          keyboardType="email-address"
-        />
-        <Button title={t('remove')} onPress={handleRemoveUser} />
-
-        <View style={{ marginTop: 30, padding: 20, borderTopWidth: 1, borderColor: '#ccc' }}>
-          <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>
-            Delete Local Messages
-          </Text>
-          <Text style={{ marginBottom: 10 }}>
-            Select a date. All messages before this date (and their local images) will be deleted.
-          </Text>
-          <View style={{ height: 100, justifyContent: 'center' }}>
-            <DateTimePicker
-              value={selectedDate}
-              mode="date"
-              display="default"
-              onChange={(event, date) => {
-                if (date) {
-                  setSelectedDate(date);
-                }
-              }}
-            />
-          </View>
-          <Button title="Delete Messages" onPress={handleDeleteLocalMessages} />
- 
-        </View>
-
-
-      </View>
-    </SafeAreaView>
-  );
-};
 
 // ------------------ Navigation Setup ------------------
 const Stack = createNativeStackNavigator();

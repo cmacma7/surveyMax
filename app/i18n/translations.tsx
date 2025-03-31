@@ -20,7 +20,7 @@ export const translations = {
       chatRoomSettings: "Chat Room Settings",
       changeChannelName: "Change Channel Name",
       newChannelName: "New Channel Name",
-      updateName: "Update Name",
+      updateName: "Update Name",      
       inviteUser: "Invite User",
       userEmail: "User Email",
       invite: "Invite",
@@ -88,6 +88,8 @@ export const translations = {
       surveyAdmin: "Survey Admin",
       applicationDescription: "These are the applications you can access.",
       applications: "Applications",
+      deleteLocalMessagesTitle: "Delete Local Messages",
+      deleteLocalMessagesDescription: "Select a date. All messages before this date (and their local images) will be deleted.",
     },
     zh: {
         languageSettings: "語言設定",
@@ -178,7 +180,8 @@ export const translations = {
       surveyAdmin: "調查管理員",
       applicationDescription: "這些是您可以存取的應用程式。",
       applications: "應用程式",
-      
+      deleteLocalMessagesTitle: "刪除本地訊息",
+      deleteLocalMessagesDescription: "請選擇一個日期。所有在該日期之前的訊息（及其本地圖片）都將被刪除。"
     },
     ja: {
         languageSettings: "言語設定",
@@ -270,7 +273,8 @@ export const translations = {
       surveyAdmin: "アンケート管理者",
       applicationDescription: "これらは、あなたがアクセス可能なアプリケーションです。",
       applications: "アプリケーション",
-
+      deleteLocalMessagesTitle: "ローカルメッセージを削除",
+      deleteLocalMessagesDescription: "日付を選択してください。この日付より前のすべてのメッセージ（およびそのローカル画像）が削除されます。"      
     },
   };
   
