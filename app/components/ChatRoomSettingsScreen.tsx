@@ -192,21 +192,21 @@ const ChatRoomSettingsScreen = ({ route, navigation }) => {
             onPress={() => toggleSection("updateName")}
             style={{ alignItems: "center" }}
           >
-            <Icon name="edit" size={24} color="#007AFF" />
+            <Icon name="edit" size={28} color="#007AFF" />
             <Text style={{marginTop:5}}>{t("updateName")}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => toggleSection("inviteUser")}
             style={{ alignItems: "center" }}
           >
-            <Icon name="person-add" size={24} color="#007AFF" />
+            <Icon name="person-add" size={28} color="#007AFF" />
             <Text  style={{marginTop:5}}>{t("inviteUser")}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => toggleSection("removeUser")}
             style={{ alignItems: "center" }}
           >
-            <Icon name="person-remove" size={24} color="#007AFF" />
+            <Icon name="person-remove" size={28} color="#007AFF" />
             <Text  style={{marginTop:5}}>{t("removeUser")}</Text>
           </TouchableOpacity>
         </View>
