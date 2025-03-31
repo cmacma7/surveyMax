@@ -9,6 +9,7 @@ import ParallaxScrollView from '@/components/ParallaxScrollView';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
+import * as Updates from 'expo-updates';
 
 const SERVER_URL = 'https://b200.tagfans.com:5301';
 const SURVEY_ADMIN_URL = 'https://b200.tagfans.com/surveyMax/admin.html';
@@ -40,16 +41,16 @@ export default function TabTwoScreen() {
     const fetchData = async () => {
       try {
         const token = await AsyncStorage.getItem("userToken");
-        const userId = await AsyncStorage.getItem("userId");
-        if (userId) setUserId(userId);
+        const storedUserId = await AsyncStorage.getItem("userId");
+        if (storedUserId) setUserId(storedUserId);
         if (token) setUserToken(token);
-        console.log('survey admin url', SURVEY_ADMIN_URL+"?userId="+userId+"&userToken="+userToken)
-      } catch (error) {
-        console.error('Error reading AsyncStorage:', error);
-      } finally {
-        if (!userId || !userToken) {
-          router.push("/login");
+        console.log('survey admin url', SURVEY_ADMIN_URL + "?userId=" + storedUserId + "&userToken=" + token);
+        if (!storedUserId || !token) {
+          router.replace("/");
         }
+      } catch (error) {
+        console.error("Error reading AsyncStorage:", error);
+        router.replace("/");
       }
     };
 
@@ -114,35 +115,49 @@ export default function TabTwoScreen() {
       {/* NEW: Logout button added here */}
       <ThemedView style={{ padding: 20 }}>
         <ThemedText
-          onPress={async () => {
-            try {
-              const pushToken = await AsyncStorage.getItem("pushToken");
-              const userId = await AsyncStorage.getItem("userId");
-              if (pushToken && userId) {
-                const response = await fetch(`${SERVER_URL}/api/logout`, {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ userId, token: pushToken }),
-                  credentials: "include"
-                });
-                if (!response.ok) {
-                  // Handle non-OK responses (e.g., server errors)
-                  console.error("Logout API failed with status:", response.status);
-                  Alert.alert(t('logoutErrorTitle'), t('failedLogoutMessage'));
-                  return; // Stop the logout process if API call failed.
+          onPress={() => {
+            Alert.alert(
+              t('Logout'),
+              t('Confirm to logout your account'),
+              [
+                { text: t('cancel'), style: 'cancel' },
+                { text: t('confirm'), onPress: async () => {
+                    // Place your existing logout code here.
+                    try {
+                      const pushToken = await AsyncStorage.getItem("pushToken");
+                      const userId = await AsyncStorage.getItem("userId");
+                      if (pushToken && userId) {
+                        const response = await fetch(`${SERVER_URL}/api/logout`, {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ userId, token: pushToken }),
+                          credentials: "include"
+                        });
+                        if (!response.ok) {
+                          console.error("Logout API failed with status:", response.status);
+                          Alert.alert(t('logoutErrorTitle'), t('failedLogoutMessage'));
+                          return;
+                        }
+                        await AsyncStorage.removeItem("pushToken");
+                      }
+                    } catch (error) {
+                      console.error("Error during logout API call:", error);
+                      Alert.alert(t('logoutErrorTitle'), t('logoutErrorMessage'));
+                      return;
+                    }
+                    await AsyncStorage.removeItem("userToken");
+                    await AsyncStorage.removeItem("userId");
+                    if (Platform.OS === 'web') {
+                      window.location.reload();
+                    } else {
+                      await Updates.reloadAsync();
+                    }
+                  }
                 }
-                await AsyncStorage.removeItem("pushToken");
-              }
-            } catch (error) {
-              console.error("Error during logout API call:", error);
-              Alert.alert(t('logoutErrorTitle'), t('logoutErrorMessage'));
-              return;
-            }
-            // Clear local tokens and navigate to login.
-            await AsyncStorage.removeItem("userToken");
-            await AsyncStorage.removeItem("userId");
-            router.push("/login");
+              ]
+            );
           }}
+
           style={{ color: 'red', textAlign: 'center', paddingVertical: 10 }}
         >
           {t('logout')}

@@ -91,6 +91,9 @@ export const translations = {
       deleteLocalMessagesTitle: "Delete Local Messages",
       deleteLocalMessagesDescription: "Select a date. All messages before this date (and their local images) will be deleted.",
       deleteMessages: "Delete Messages",
+      confirm: "Confirm",
+      cancel: "Cancel",
+      deleteMessageBefore: "Are you sure you want to delete all messages before",
     },
     zh: {
         languageSettings: "語言設定",
@@ -184,6 +187,9 @@ export const translations = {
       deleteLocalMessagesTitle: "刪除本地訊息",
       deleteLocalMessagesDescription: "請選擇一個日期。所有在該日期之前的訊息（及其本地圖片）都將被刪除。",
       deleteMessages: "刪除訊息",
+      confirm: "確認",
+      cancel: "取消",
+      deleteMessageBefore: "您確定要刪除此日期之前的所有訊息",
     },
     ja: {
         languageSettings: "言語設定",
@@ -277,7 +283,10 @@ export const translations = {
       applications: "アプリケーション",
       deleteLocalMessagesTitle: "ローカルメッセージを削除",
       deleteLocalMessagesDescription: "日付を選択してください。この日付より前のすべてのメッセージ（およびそのローカル画像）が削除されます。",
-      deleteMessages: "メッセージを削除",       
+      deleteMessages: "メッセージを削除",    
+      confirm: "確認",
+      cancel: "キャンセル",
+      deleteMessageBefore: "この日付以前のすべてのメッセージを削除してもよろしいですか",   
     },
   };
   

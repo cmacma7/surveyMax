@@ -115,63 +115,80 @@ const ChatRoomSettingsScreen = ({ route, navigation }) => {
   };
 
   const handleDeleteLocalMessages = async () => {
-    try {
-      const storageKey = `chat_${chatroomId}_messages`;
-      const storedMessagesStr = await AsyncStorage.getItem(storageKey);
-      if (!storedMessagesStr) {
-        Alert.alert(t("Info"), "No local messages found.");
-        return;
-      }
-      const storedMessages = JSON.parse(storedMessagesStr);
-      const cutoffTime = selectedDate.getTime();
-
-      const messagesToKeep = [];
-      const messagesToDelete = [];
-      for (const msg of storedMessages) {
-        const msgTime = new Date(msg.createdAt).getTime();
-        if (msgTime < cutoffTime) {
-          messagesToDelete.push(msg);
-        } else {
-          messagesToKeep.push(msg);
-        }
-      }
-
-      // Delete cached images for messages to delete.
-      for (let i = 0; i < messagesToDelete.length; i++) {
-        const msg = messagesToDelete[i];
-        if (msg.image) {
-          let filePath = msg.image;
-          if (!msg.image.startsWith("file://")) {
-            const directory = `${FileSystem.cacheDirectory}${chatroomId}/`;
-            const filename = await Crypto.digestStringAsync(
-              Crypto.CryptoDigestAlgorithm.SHA256,
-              msg.image
-            );
-            filePath = `${directory}${filename}`;
-          }
-          try {
-            const fileInfo = await FileSystem.getInfoAsync(filePath);
-            if (fileInfo.exists) {
-              await FileSystem.deleteAsync(filePath, { idempotent: true });
-              console.log("Deleted cached image:", filePath);
+    Alert.alert(
+      t("deleteLocalMessagesTitle"),
+      `${t("deleteMessageBefore")} ${selectedDate.toLocaleDateString()}?`,
+      [
+        {
+          text: t("cancel"),
+          style: "cancel",
+        },
+        {
+          text: t("confirm"),
+          onPress: async () => {
+            try {
+              const storageKey = `chat_${chatroomId}_messages`;
+              const storedMessagesStr = await AsyncStorage.getItem(storageKey);
+              if (!storedMessagesStr) {
+                Alert.alert(t("Info"), "No local messages found.");
+                return;
+              }
+              const storedMessages = JSON.parse(storedMessagesStr);
+              const cutoffTime = selectedDate.getTime();
+  
+              const messagesToKeep = [];
+              const messagesToDelete = [];
+              for (const msg of storedMessages) {
+                const msgTime = new Date(msg.createdAt).getTime();
+                if (msgTime < cutoffTime) {
+                  messagesToDelete.push(msg);
+                } else {
+                  messagesToKeep.push(msg);
+                }
+              }
+  
+              // Delete cached images for messages to delete.
+              for (let i = 0; i < messagesToDelete.length; i++) {
+                const msg = messagesToDelete[i];
+                if (msg.image) {
+                  let filePath = msg.image;
+                  if (!msg.image.startsWith("file://")) {
+                    const directory = `${FileSystem.cacheDirectory}${chatroomId}/`;
+                    const filename = await Crypto.digestStringAsync(
+                      Crypto.CryptoDigestAlgorithm.SHA256,
+                      msg.image
+                    );
+                    filePath = `${directory}${filename}`;
+                  }
+                  try {
+                    const fileInfo = await FileSystem.getInfoAsync(filePath);
+                    if (fileInfo.exists) {
+                      await FileSystem.deleteAsync(filePath, { idempotent: true });
+                      console.log("Deleted cached image:", filePath);
+                    }
+                  } catch (error) {
+                    console.error("Error deleting cached image:", filePath, error);
+                  }
+                }
+              }
+  
+              // Save the remaining messages.
+              await AsyncStorage.setItem(storageKey, JSON.stringify(messagesToKeep));
+              Alert.alert(
+                t("Success"),
+                `Deleted ${messagesToDelete.length} messages before ${selectedDate.toLocaleDateString()}`
+              );
+            } catch (error) {
+              console.error("Error deleting local messages:", error);
+              Alert.alert(t("Error"), "Failed to delete local messages.");
             }
-          } catch (error) {
-            console.error("Error deleting cached image:", filePath, error);
-          }
-        }
-      }
-
-      // Save the remaining messages.
-      await AsyncStorage.setItem(storageKey, JSON.stringify(messagesToKeep));
-      Alert.alert(
-        t("Success"),
-        `Deleted ${messagesToDelete.length} messages before ${selectedDate.toLocaleDateString()}`
-      );
-    } catch (error) {
-      console.error("Error deleting local messages:", error);
-      Alert.alert(t("Error"), "Failed to delete local messages.");
-    }
+          },
+        },
+      ],
+      { cancelable: true }
+    );
   };
+  
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
