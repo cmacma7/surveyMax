@@ -1387,7 +1387,7 @@ const App: React.FC = () => {
           name="ChatroomList"
           component={ChatroomListScreen}
           options={({ navigation, route }) => ({
-            title: "Chat Rooms",
+            title: t("chatRooms"),
             // Hide the left back button
             headerLeft: () => null,
             headerRight: () => (

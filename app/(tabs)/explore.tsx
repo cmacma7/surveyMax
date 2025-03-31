@@ -83,7 +83,26 @@ export default function TabTwoScreen() {
         <ThemedText type="title">{t('explore')}</ThemedText>
       </ThemedView>
       <ThemedText>{t('exploreDescription')}</ThemedText>
-      
+
+      <Collapsible title={t('applications')}>
+        <ThemedText>
+          {t('applicationDescription')}
+        </ThemedText>
+        <ExternalLink href={SURVEY_ADMIN_URL+"?userId="+userId+"&userToken="+userToken}>
+          <ThemedText type="link">{t('surveyAdmin')}</ThemedText>
+        </ExternalLink>
+      </Collapsible>
+
+
+      <Collapsible title={t('languageSettings')}>
+        <ThemedText>{t('chooseLanguage')}</ThemedText>
+        <View style={styles.languageContainer}>
+          <Button title="English" onPress={() => updateLanguage("en")} />
+          <Button title="中文" onPress={() => updateLanguage("zh")} />
+          <Button title="日本語" onPress={() => updateLanguage("ja")} />
+        </View>
+      </Collapsible>
+
    
       <Collapsible title={t('images')}>
         <ThemedText>
@@ -94,25 +113,10 @@ export default function TabTwoScreen() {
           <ThemedText type="link">{t('learnMore')}</ThemedText>
         </ExternalLink>
       </Collapsible>
-      <Collapsible title={t('applications')}>
-        <ThemedText>
-          {t('applicationDescription')}
-        </ThemedText>
-        <ExternalLink href={SURVEY_ADMIN_URL+"?userId="+userId+"&userToken="+userToken}>
-          <ThemedText type="link">{t('surveyAdmin')}</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      
-      
-      <Collapsible title={t('languageSettings')}>
-        <ThemedText>{t('chooseLanguage')}</ThemedText>
-        <View style={styles.languageContainer}>
-          <Button title="English" onPress={() => updateLanguage("en")} />
-          <Button title="中文" onPress={() => updateLanguage("zh")} />
-          <Button title="日本語" onPress={() => updateLanguage("ja")} />
-        </View>
-      </Collapsible>
-      {/* NEW: Logout button added here */}
+
+        
+
+      {/* Logout button added here */}
       <ThemedView style={{ padding: 20 }}>
         <ThemedText
           onPress={() => {
@@ -158,7 +162,7 @@ export default function TabTwoScreen() {
             );
           }}
 
-          style={{ color: 'red', textAlign: 'center', paddingVertical: 10 }}
+          style={{ color: 'red', textAlign: 'left', paddingVertical: 10 }}
         >
           {t('logout')}
       </ThemedText>
