@@ -313,9 +313,11 @@ const ChatRoomSettingsScreen = ({ route, navigation }) => {
           <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10, marginTop: 10 }}>
             <View style={{ flex: 1, marginRight: 10 }}>
               {/* Somewhere in your UI, add a button or touchable element to trigger the picker: */}
-              <TouchableOpacity onPress={() => setShowDatePicker(true)}>
+              {Platform.OS === 'android' && (
+                <TouchableOpacity onPress={() => setShowDatePicker(true)}>
                 <ThemedText>{selectedDate.toLocaleDateString()}</ThemedText>
-              </TouchableOpacity>
+              </TouchableOpacity>)} 
+              
 
               {/* Conditionally render the DateTimePicker: */}
               {(Platform.OS === 'ios' || showDatePicker) && (
