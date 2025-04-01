@@ -312,7 +312,11 @@ const deduplicateMessages = (msgs: IMessage[]): IMessage[] => {
       referenceTimestamp = await AsyncStorage.getItem(`chat_${chatroomId}_lastFetchedTimestamp`);
       // Optionally, you can default to the current time to avoid loading older messages
       if (!referenceTimestamp) {
-        referenceTimestamp = new Date().toISOString();
+        const now = new Date();
+        const threeMonthsAgo = new Date(now);
+        threeMonthsAgo.setMonth(now.getMonth() - 3);
+        console.log("first time fetch, fetch 3 month's data",threeMonthsAgo.toISOString());
+        referenceTimestamp = threeMonthsAgo.toISOString();
       }
     }
     
