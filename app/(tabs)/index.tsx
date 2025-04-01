@@ -747,13 +747,15 @@ const deduplicateMessages = (msgs: IMessage[]): IMessage[] => {
   }, [messages]);  
   
   useEffect(() => {
-    if (flatListRef.current && !initialScrollDone.current) { 
-      initialScrollDone.current = true; 
+    if (flatListRef.current && !initialScrollDone.current) {      
       const dividerIndex = messages.findIndex(msg => msg.isDivider);
       if (dividerIndex !== -1 && flatListRef.current.scrollToIndex) {
         // Use a short delay to ensure the list is rendered.
+        initialScrollDone.current = true; 
         setTimeout(() => {
-          flatListRef.current?.scrollToIndex({ index: dividerIndex, animated: true });
+          // Scroll to the divider index.
+          const toIndex = Math.max(0, dividerIndex - 3); // Scroll to the message before the divider
+          flatListRef.current?.scrollToIndex({ index: toIndex, animated: true });
         }, 500);
       }
     }
