@@ -1396,7 +1396,7 @@ const App: React.FC = () => {
             headerLeft: () => null,
             headerRight: () => (
               <TouchableOpacity
-                onPress={() =>
+                onPressIn={() =>
                   navigation.navigate("AddChatRoom", { userId: route.params.userId })
                 }
                 style={{ paddingHorizontal: 10 }}
@@ -1415,7 +1415,7 @@ const App: React.FC = () => {
             title: route.params.chatroomName,
             headerRight: () => (
               <TouchableOpacity
-                onPress={() =>
+                onPressIn={() =>
                   navigation.navigate("ChatRoomSettings", {
                     chatroomId: route.params.chatroomId,
                     chatroomName: route.params.chatroomName,
