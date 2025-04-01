@@ -97,6 +97,7 @@ export const translations = {
       confirm: "Confirm",
       cancel: "Cancel",
       deleteMessageBefore: "Are you sure you want to delete all messages before",
+      unreadMessages: "The following are unread messages",
     },
     zh: {
       settings: "設定",
@@ -196,6 +197,7 @@ export const translations = {
       confirm: "確認",
       cancel: "取消",
       deleteMessageBefore: "您確定要刪除此日期之前的所有訊息",
+      unreadMessages: "以下為尚未閱讀的訊息",
     },
     ja: {
       settings: "設定",
@@ -296,6 +298,7 @@ export const translations = {
       confirm: "確認",
       cancel: "キャンセル",
       deleteMessageBefore: "この日付以前のすべてのメッセージを削除してもよろしいですか",   
+      unreadMessages: "以下は未読のメッセージです",
     },
   };
   

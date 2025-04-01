@@ -512,7 +512,7 @@ const deduplicateMessages = (msgs: IMessage[]): IMessage[] => {
     const divider = {
       _id: `divider_${lastReadMessageRef.current}`,
       isDivider: true,
-      text: t('unread Messages') // Use a translation or a fixed string such as "Unread messages"
+      text: t('unreadMessages') // Use a translation or a fixed string such as "Unread messages"
     };
     // Insert the divider immediately before the last read message.
     visibleMsgs.splice(index, 0, divider);
