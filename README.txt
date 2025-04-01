@@ -39,7 +39,7 @@ You can use node sendMessage.js <message> <user>  to send a system message that 
    when the iOS app of Expo open, it need to connect to the npx expo start  server, the IP address need to enter at the iOS app Expo menu at the bottom to connect. 
    * you can manage credentials by:  eas credentials
 
-5. To deploy
+5. To deploy iOS
    npx expo build:ios
    In XCode, go to the surveymax project, make sure in 'signing and capabilities', release build has the push notification cap. 
    To build and archive the code, click production tab of Xcode, click archive.
@@ -48,3 +48,12 @@ You can use node sendMessage.js <message> <user>  to send a system message that 
      https://appstoreconnect.apple.com/teams/69a6de84-62fe-47e3-e053-5b8c7c11a4d1/apps/6742369482/testflight/ios 
    to agree the encryption to activate the upload version.
   
+
+6. To deploy Android
+To generate the APK for device testing
+cd android && gradlew assembleRelease
+The output APK will under android\app\build\outputs\apk\release
+
+To install the APK to device, connect your device via usb
+adb install android/app/build/outputs/apk/release/app-release.apk 
+
