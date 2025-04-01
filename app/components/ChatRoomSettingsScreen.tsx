@@ -1,13 +1,12 @@
 import React, { useState } from "react";
 import {
-  SafeAreaView,
   ScrollView,
   View,
-  Text,
   TextInput,
   Button,
   Alert,
-  TouchableOpacity
+  TouchableOpacity,
+  Platform,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -16,6 +15,9 @@ import * as Crypto from "expo-crypto";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { t } from "../i18n/translations";
 import { getAuthHeaders } from "../shared/utils"; // adjust path as needed
+
+import { ThemedText } from "../../components/ThemedText";
+import { ThemedView } from "../../components/ThemedView";
 
 // Ensure SERVER_URL and HttpAuthHeader are imported or defined as needed.
 const SERVER_URL = "https://b200.tagfans.com:5301";
@@ -26,10 +28,16 @@ const ChatRoomSettingsScreen = ({ route, navigation }) => {
   const [inviteEmail, setInviteEmail] = useState("");
   const [removeEmail, setRemoveEmail] = useState("");
   const [selectedDate, setSelectedDate] = useState(new Date());
-
+  const [showDatePicker, setShowDatePicker] = useState(false);
   // Instead of individual booleans, use one state to track the active section.
   // Valid values: "updateName", "inviteUser", "removeUser", or null.
   const [activeSection, setActiveSection] = useState(null);
+
+  // Detect the color scheme (dark or light)
+  // With Themed components, this may not be necessary since they handle dark mode automatically
+  // const colorScheme = useColorScheme();
+  // const textColor = colorScheme === "dark" ? "#fff" : "#000";
+  // const backgroundColor = colorScheme === "dark" ? "#000" : "#fff";
 
   const toggleSection = (section) => {
     if (activeSection === section) {
@@ -191,11 +199,11 @@ const ChatRoomSettingsScreen = ({ route, navigation }) => {
   
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <ThemedView style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={{ padding: 20 }}>
-        <Text style={{ fontSize: 24, textAlign: "center", marginVertical: 20 }}>
+        <ThemedText style={{ fontSize: 24, textAlign: "center", marginVertical: 20 }}>
           {t("chatRoomSettings")}
-        </Text>
+        </ThemedText>
 
         {/* Condensed Action Icons */}
         <View
@@ -210,28 +218,28 @@ const ChatRoomSettingsScreen = ({ route, navigation }) => {
             style={{ alignItems: "center" }}
           >
             <Icon name="edit" size={28} color="#007AFF" />
-            <Text style={{marginTop:5}}>{t("updateName")}</Text>
+            <ThemedText style={{ marginTop: 5 }}>{t("updateName")}</ThemedText>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => toggleSection("inviteUser")}
             style={{ alignItems: "center" }}
           >
             <Icon name="person-add" size={28} color="#007AFF" />
-            <Text  style={{marginTop:5}}>{t("inviteUser")}</Text>
+            <ThemedText style={{ marginTop: 5 }}>{t("inviteUser")}</ThemedText>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => toggleSection("removeUser")}
             style={{ alignItems: "center" }}
           >
             <Icon name="person-remove" size={28} color="#007AFF" />
-            <Text  style={{marginTop:5}}>{t("removeUser")}</Text>
+            <ThemedText style={{ marginTop: 5 }}>{t("removeUser")}</ThemedText>
           </TouchableOpacity>
         </View>
 
         {/* Expandable Section: Change Channel Name */}
         {activeSection === "updateName" && (
           <View style={{ marginBottom: 20 }}>
-            <Text style={{ marginBottom: 10 }}>{t("changeChannelName")}</Text>
+            <ThemedText style={{ marginBottom: 10 }}>{t("changeChannelName")}</ThemedText>
             <TextInput
               placeholder={t("newChannelName")}
               value={newName}
@@ -251,7 +259,7 @@ const ChatRoomSettingsScreen = ({ route, navigation }) => {
         {/* Expandable Section: Invite User */}
         {activeSection === "inviteUser" && (
           <View style={{ marginBottom: 20 }}>
-            <Text style={{ marginBottom: 10 }}>{t("inviteUser")}</Text>
+            <ThemedText style={{ marginBottom: 10 }}>{t("inviteUser")}</ThemedText>
             <TextInput
               placeholder={t("userEmail")}
               value={inviteEmail}
@@ -273,7 +281,7 @@ const ChatRoomSettingsScreen = ({ route, navigation }) => {
         {/* Expandable Section: Remove User */}
         {activeSection === "removeUser" && (
           <View style={{ marginBottom: 20 }}>
-            <Text style={{ marginBottom: 10 }}>{t("removeUser")}</Text>
+            <ThemedText style={{ marginBottom: 10 }}>{t("removeUser")}</ThemedText>
             <TextInput
               placeholder={t("userEmail")}
               value={removeEmail}
@@ -294,35 +302,47 @@ const ChatRoomSettingsScreen = ({ route, navigation }) => {
 
         {/* Separated Section: Delete Local Messages */}
         <View style={{ marginTop: 30, padding: 20, borderTopWidth: 1, borderColor: "#ccc" }}>
-          <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 10 }}>
+          <ThemedText style={{ fontSize: 18, fontWeight: "bold", marginBottom: 10 }}>
             {t("deleteLocalMessagesTitle") || "Delete Local Messages"}
-          </Text>
-          <Text style={{ marginBottom: 10 }}>
+          </ThemedText>
+          <ThemedText style={{ marginBottom: 10 }}>
             {t("deleteLocalMessagesDescription") ||
               "Select a date. All messages before this date (and their local images) will be deleted."}
-          </Text>
+          </ThemedText>
+
           <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10, marginTop: 10 }}>
             <View style={{ flex: 1, marginRight: 10 }}>
+              {/* Somewhere in your UI, add a button or touchable element to trigger the picker: */}
+              <TouchableOpacity onPress={() => setShowDatePicker(true)}>
+                <ThemedText>{selectedDate.toLocaleDateString()}</ThemedText>
+              </TouchableOpacity>
+
+              {/* Conditionally render the DateTimePicker: */}
+              {(Platform.OS === 'ios' || showDatePicker) && (
                 <DateTimePicker
-                value={selectedDate}
-                mode="date"
-                display="default"
-                onChange={(event, date) => {
+                  value={selectedDate}
+                  mode="date"
+                  display="default"
+                  onChange={(event, date) => {
                     if (date) {
-                    setSelectedDate(date);
+                      setSelectedDate(date);
                     }
-                }}
+                    // For Android, hide the picker after selecting a date
+                    if (Platform.OS === 'android') {
+                      setShowDatePicker(false);
+                    }
+                  }}
                 />
+              )}
             </View>
             <Button
-                title={t("deleteMessages") || "Delete Messages"}
-                onPress={handleDeleteLocalMessages}
+              title={t("deleteMessages") || "Delete Messages"}
+              onPress={handleDeleteLocalMessages}
             />
-            </View>
-
+          </View>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </ThemedView>
   );
 };
 
