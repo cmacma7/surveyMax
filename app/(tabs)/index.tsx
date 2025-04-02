@@ -1188,41 +1188,47 @@ const RegisterScreen: React.FC<any> = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ThemedView style={styles.loginContainer}>
-        <ThemedText style={styles.title}>{t('register')}</ThemedText>
-        {step === 1 && (
-          <>
-            <ThemedTextInput
-              placeholder={t('email')}
-              value={email}
-              onChangeText={setEmail}
-              style={styles.input}
-              autoCapitalize="none"
-              keyboardType="email-address"
-            />
-            <Button title={t('register')} onPress={handleRegister} />
-          </>
-        )}
-        {step === 2 && (
-          <>
-            <ThemedTextInput
-              placeholder={t('verificationToken')}
-              value={token}
-              onChangeText={setToken}
-              style={styles.input}
-              autoCapitalize="none"
-            />
-            <ThemedTextInput
-              placeholder={t('password')}
-              value={password}
-              onChangeText={setPassword}
-              style={styles.input}
-              secureTextEntry
-            />
-            <Button title={t('verifyEmail')} onPress={handleVerify} />
-          </>
-        )}
-      </ThemedView>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 20}
+      >
+        <ThemedView style={styles.loginContainer}>
+          <ThemedText style={styles.title}>{t('register')}</ThemedText>
+          {step === 1 && (
+            <>
+              <ThemedTextInput
+                placeholder={t('email')}
+                value={email}
+                onChangeText={setEmail}
+                style={styles.input}
+                autoCapitalize="none"
+                keyboardType="email-address"
+              />
+              <Button title={t('register')} onPress={handleRegister} />
+            </>
+          )}
+          {step === 2 && (
+            <>
+              <ThemedTextInput
+                placeholder={t('verificationToken')}
+                value={token}
+                onChangeText={setToken}
+                style={styles.input}
+                autoCapitalize="none"
+              />
+              <ThemedTextInput
+                placeholder={t('password')}
+                value={password}
+                onChangeText={setPassword}
+                style={styles.input}
+                secureTextEntry
+              />
+              <Button title={t('verifyEmail')} onPress={handleVerify} />
+            </>
+          )}
+        </ThemedView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
@@ -1284,41 +1290,49 @@ const ForgotPasswordScreen: React.FC<any> = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ThemedView style={styles.loginContainer}>
-        <ThemedText style={styles.title}>{t('forgotPassword')}</ThemedText>
-        {step === 1 && (
-          <>
-            <ThemedTextInput
-              placeholder={t('email')}
-              value={email}
-              onChangeText={setEmail}
-              style={styles.input}
-              autoCapitalize="none"
-              keyboardType="email-address"
-            />
-            <Button title={t('sendResetEmail')} onPress={handleRequestReset} />
-          </>
-        )}
-        {step === 2 && (
-          <>
-            <ThemedTextInput
-              placeholder={t('resetToken')}
-              value={token}
-              onChangeText={setToken}
-              style={styles.input}
-              autoCapitalize="none"
-            />
-            <ThemedTextInput
-              placeholder={t('newPassword')}
-              value={newPassword}
-              onChangeText={setNewPassword}
-              style={styles.input}
-              secureTextEntry
-            />
-            <Button title={t('resetPassword')} onPress={handleResetPassword} />
-          </>
-        )}
-      </ThemedView>
+      <KeyboardAvoidingView
+              style={styles.container}
+              behavior={Platform.OS === "ios" ? "padding" : "height"}
+              keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 20}
+            >
+        <ThemedView style={styles.loginContainer}>
+          <ThemedText style={styles.title}>{t('forgotPassword')}</ThemedText>
+          {step === 1 && (
+            <>
+              
+                <ThemedTextInput
+                  placeholder={t('email')}
+                  value={email}
+                  onChangeText={setEmail}
+                  style={styles.input}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                />
+                <Button title={t('sendResetEmail')} onPress={handleRequestReset} />
+            
+            </>
+          )}
+          {step === 2 && (
+            <>
+              <ThemedTextInput
+                placeholder={t('resetToken')}
+                value={token}
+                onChangeText={setToken}
+                style={styles.input}
+                autoCapitalize="none"
+              />
+              <ThemedTextInput
+                placeholder={t('newPassword')}
+                value={newPassword}
+                onChangeText={setNewPassword}
+                style={styles.input}
+                secureTextEntry
+              />
+              <Button title={t('resetPassword')} onPress={handleResetPassword} />
+            </>
+          )}
+        </ThemedView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };

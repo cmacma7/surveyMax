@@ -518,7 +518,11 @@ app.post("/api/forgot-password", async (req, res) => {
       from: process.env.AWS_SES_EMAIL_FROM,
       to: email,
       subject: "Password Reset",
-      text: `You requested a password reset. Please click the following link to reset your password: ${resetUrl}`,
+      text: `You requested a password reset. Please click the following link to reset your password: ${resetUrl}
+      
+      Your reset token is: ${resetToken}
+      Please enter the reset token and your new password on your phone to reset password, or follow the link above to reset your password.
+      `,
     };
     await transporter.sendMail(mailOptions);
     console.log(`Sent password reset email to ${email}`);
@@ -574,6 +578,7 @@ app.get("/reset-password", (req, res) => {
           }
           input[type="password"] {
               width: 100%;
+              font-size: 16px;
               padding: 10px;
               margin-bottom: 15px;
               border: 1px solid #ccc;
