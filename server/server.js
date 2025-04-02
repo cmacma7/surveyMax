@@ -651,6 +651,7 @@ app.get("/reset-password", (req, res) => {
           const result = await response.json();
           
           if (result.success) {
+            form.style.display = 'none';
             messageDiv.innerHTML = '<p style="color: green;">Password reset successfully!</p>';
           } else {
             messageDiv.innerHTML = '<p style="color: red;">Password reset failed: ' +
