@@ -769,11 +769,11 @@ const deduplicateMessages = (msgs: IMessage[]): IMessage[] => {
 return (
   <>
   
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={{flex:1, marginBottom: 86}}>
       <KeyboardAvoidingView
-        style={{ flex: 1,  marginBottom: 51}} // the keyboard will cover the message input without this
+        style={{ flex: 1}} // the keyboard will cover the message input without this
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={0} // this will push up the chat area
+        keyboardVerticalOffset={-500} // this will push up the chat area
       >
       
       {/* Inside your ChatScreen component's return statement: */}
@@ -788,13 +788,13 @@ return (
           multiline: true,
           style: {
             // Fixed width so that the input doesn't occupy the entire space
-            width: Dimensions.get("window").width * 0.8,
-            minHeight: 40,
+            width: Dimensions.get("window").width * 0.75,
+            minHeight: 38,
             maxHeight: 120,
-            padding: 10,
-            borderWidth: 1,
-            borderColor: "#ccc",
-            borderRadius: 5,
+            //padding: 0,
+            //borderWidth: 1,
+            //borderColor: "#ccc",
+            //borderRadius: 5,
           },
         }}
         renderSend={(props) => (
