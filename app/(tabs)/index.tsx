@@ -87,7 +87,7 @@ const socket = io(SERVER_URL, socketOptions);
 
 
 import * as ImagePicker from "expo-image-picker";
-import { GiftedChat, IMessage, Send, Message } from "react-native-gifted-chat";
+import { GiftedChat, IMessage, Send, Message, InputToolbar } from "react-native-gifted-chat";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
@@ -190,6 +190,8 @@ async function registerForPushNotificationsAsync() {
   }
   return token;
 }
+
+
 
 // ------------------ ChatScreen ------------------
 const ChatScreen: React.FC<any> = ({ route, navigation }) => {
@@ -768,7 +770,21 @@ const deduplicateMessages = (msgs: IMessage[]): IMessage[] => {
   }, [messages]);
   
 
+  const sendIconColor = useThemeColor({ light: "#007AFF", dark: "#0A84FF" }, 'text');
+  const sendContainerBackground = useThemeColor({ light: "#fff", dark: "#333" }, 'background');
+  const inputTextColor = useThemeColor({ light: '#000', dark: '#fff' }, 'text');
+  const inputBackground = useThemeColor({ light: '#fff', dark: '#333' }, 'background');
 
+  const CustomInputToolbar = (props) => {
+    const backgroundColor = useThemeColor({ light: '#fff', dark: '#333' }, 'background');
+    
+    return (
+      <InputToolbar
+        {...props}
+        containerStyle={[props.containerStyle, { backgroundColor, borderTopColor: backgroundColor }]}
+      />
+    );
+  };
 
 // console.log("modalVisible --", modalVisible) 
 // Add the Modal component (e.g., at the bottom of ChatScreen's return statement)
@@ -790,6 +806,7 @@ return (
         placeholder={t('typeMessage')}
         renderActions={renderCustomActions}
         renderMessage={renderMessage} // our custom renderer now handles divider messages
+        renderInputToolbar={(props) => <CustomInputToolbar {...props} />}
         textInputProps={{
           multiline: true,
           style: {
@@ -797,6 +814,8 @@ return (
             width: Dimensions.get("window").width * 0.75,
             minHeight: 38,
             maxHeight: 120,
+            color: inputTextColor,           // Dynamic text color
+            backgroundColor: inputBackground, // Dynamic background color
             //padding: 0,
             //borderWidth: 1,
             //borderColor: "#ccc",
@@ -805,8 +824,8 @@ return (
         }}
         renderSend={(props) => (
           <Send {...props}>
-            <ThemedView style={{ margin: 10 }}>
-              <Icon name="send" size={28} color="#007AFF" />
+            <ThemedView style={{ margin: 10, backgroundColor: sendContainerBackground }}>
+              <Icon name="send" size={28} color={sendIconColor} />
             </ThemedView>
           </Send>
         )}
