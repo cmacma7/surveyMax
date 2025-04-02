@@ -545,82 +545,125 @@ app.get("/reset-password", (req, res) => {
   
   // Build the HTML string with inline CSS for responsiveness and a modern look.
   const html = `
-  <!DOCTYPE html>
-  <html>
-  <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Reset Your Password</title>
-      <style>
-          body {
-              margin: 0;
-              padding: 0;
-              font-family: Arial, sans-serif;
-              background-color: #f7f7f7;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              height: 100vh;
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reset Your Password</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f7f7f7;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    .container {
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      max-width: 400px;
+      width: 90%;
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin: 10px 0 5px;
+      color: #555;
+    }
+    input[type="password"],
+    input[type="hidden"] {
+      width: 100%;
+      font-size: 16px;
+      padding: 10px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    #message {
+      margin-top: 15px;
+      text-align: center;
+      font-weight: bold;
+    }
+    @media (max-width: 480px) {
+      .container {
+        padding: 15px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Reset Your Password</h1>
+    <form id="resetForm" action="/api/reset-password" method="POST">
+      <input type="hidden" name="token" value="${token}" />
+      <label for="newPassword">New Password</label>
+      <input type="password" name="newPassword" id="newPassword" placeholder="Enter your new password" required />
+      <button type="submit">Reset Password</button>
+    </form>
+    <div id="message"></div>
+  </div>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const form = document.getElementById('resetForm');
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const formData = new FormData(form);
+        
+        // Debug: log each form field key and value
+        for (let [key, value] of formData.entries()) {
+          console.log(key, value);
+        }
+        const formObj = Object.fromEntries(formData.entries());
+
+        const messageDiv = document.getElementById('message');
+        
+        try {
+          const response = await fetch(form.action, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formObj)
+          });
+          
+          const result = await response.json();
+          
+          if (result.success) {
+            messageDiv.innerHTML = '<p style="color: green;">Password reset successfully!</p>';
+          } else {
+            messageDiv.innerHTML = '<p style="color: red;">Password reset failed: ' +
+              (result.message || 'An error occurred.') + '</p>';
           }
-          .container {
-              background-color: #fff;
-              padding: 20px;
-              border-radius: 8px;
-              box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-              max-width: 400px;
-              width: 90%;
-          }
-          h1 {
-              text-align: center;
-              color: #333;
-              margin-bottom: 20px;
-          }
-          label {
-              display: block;
-              margin: 10px 0 5px;
-              color: #555;
-          }
-          input[type="password"] {
-              width: 100%;
-              font-size: 16px;
-              padding: 10px;
-              margin-bottom: 15px;
-              border: 1px solid #ccc;
-              border-radius: 4px;
-              box-sizing: border-box;
-          }
-          button {
-              width: 100%;
-              padding: 10px;
-              background-color: #4CAF50;
-              color: white;
-              border: none;
-              border-radius: 4px;
-              font-size: 16px;
-              cursor: pointer;
-          }
-          button:hover {
-              background-color: #45a049;
-          }
-          @media (max-width: 480px) {
-              .container {
-                  padding: 15px;
-              }
-          }
-      </style>
-  </head>
-  <body>
-      <div class="container">
-          <h1>Reset Your Password</h1>
-          <form action="/api/reset-password" method="POST">
-              <input type="hidden" name="token" value="${token}" />
-              <label for="newPassword">New Password</label>
-              <input type="password" name="newPassword" id="newPassword" placeholder="Enter your new password" required />
-              <button type="submit">Reset Password</button>
-          </form>
-      </div>
-  </body>
-  </html>
+        } catch (error) {
+          messageDiv.innerHTML = '<p style="color: red;">An error occurred. Please try again later.</p>';
+        }
+      });
+    });
+  </script>
+</body>
+</html>
   `;
   
   // Send the HTML back to the client
@@ -648,7 +691,7 @@ app.post("/api/reset-password", async (req, res) => {
     user.isVerified = true; // Automatically verify the email after password reset
     await user.save();
     console.log(`Password reset for user ${user.email}`);
-    return res.status(200).json({ message: "Password has been reset." });
+    return res.status(200).json({ message: "Password has been reset.", success: true });
   } catch (err) {
     console.error("Error resetting password:", err);
     return res.status(500).json({ error: "Internal server error." });
