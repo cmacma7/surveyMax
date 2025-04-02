@@ -22,8 +22,14 @@ import {
   TouchableNativeFeedback, 
   Keyboard, 
   TouchableWithoutFeedback,
-  useWindowDimensions 
+  useWindowDimensions,
+  useColorScheme 
 } from "react-native";
+
+import { useThemeColor } from '@/hooks/useThemeColor';
+import { ThemedText } from "../../components/ThemedText";
+import { ThemedView } from "../../components/ThemedView";
+import { ThemedTextInput } from "../../components/ThemedTextInput";
 
 const SERVER_URL = 'https://b200.tagfans.com:5301';
 // const SERVER_URL = 'http://192.168.100.125:5300';
@@ -696,18 +702,18 @@ const deduplicateMessages = (msgs: IMessage[]): IMessage[] => {
   const renderMessage = (props: any) => {
     if (props.currentMessage.isDivider) {
       return (
-        <View style={styles.unreadDivider}>
+        <ThemedView style={styles.unreadDivider}>
           <Text style={styles.unreadDividerText}>{props.currentMessage.text}</Text>
-        </View>
+        </ThemedView>
       );
     }
     // Otherwise, render the normal message with resend/giveup UI as before:
     const isCurrentUser = props.currentMessage?.user?._id === props?.user?._id;
     return (
-      <View style={{ flexDirection: 'column' }}>
+      <ThemedView style={{ flexDirection: 'column' }}>
         <Message {...props} />
         {(props.currentMessage.sendStatus === "failed" || props.currentMessage.sendStatus === "pending") && (
-          <View
+          <ThemedView
             style={[
               styles.resendContainer,
               isCurrentUser ? { alignSelf: 'flex-end' } : { alignSelf: 'flex-start' },
@@ -719,9 +725,9 @@ const deduplicateMessages = (msgs: IMessage[]): IMessage[] => {
             <TouchableOpacity onPress={() => handleGiveUp(props.currentMessage)}>
               <Icon name="cancel" size={20} color="red" style={styles.iconStyle} />
             </TouchableOpacity>
-          </View>
+          </ThemedView>
         )}
-      </View>
+      </ThemedView>
     );
   };
   
@@ -769,7 +775,7 @@ const deduplicateMessages = (msgs: IMessage[]): IMessage[] => {
 return (
   <>
   
-    <SafeAreaView style={{flex:1, marginBottom: 86}}>
+    <SafeAreaView style={{flex:1, marginBottom: Platform.OS === "ios" ? 86 : 0}}>
       <KeyboardAvoidingView
         style={{ flex: 1}} // the keyboard will cover the message input without this
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -799,9 +805,9 @@ return (
         }}
         renderSend={(props) => (
           <Send {...props}>
-            <View style={{ margin: 10 }}>
+            <ThemedView style={{ margin: 10 }}>
               <Icon name="send" size={28} color="#007AFF" />
-            </View>
+            </ThemedView>
           </Send>
         )}
         listViewProps={{
@@ -892,6 +898,8 @@ const ChatroomListScreen: React.FC<any> = ({ navigation, route }) => {
   // Modified: If route.params is undefined, try to load userId from AsyncStorage.
   const [storedUserId, setStoredUserId] = useState<string | null>(null);
   const [storedUserEmail, setStoredUserEmail] = useState<string | null>(null);
+  const colorScheme = useColorScheme();
+  const borderColor = colorScheme === 'dark' ? '#444' : '#eee';
   
   useEffect(() => {
     if (route.params) {
@@ -990,7 +998,7 @@ const ChatroomListScreen: React.FC<any> = ({ navigation, route }) => {
 
   const renderItem = ({ item }: { item: { id: string; name: string } }) => (
     <TouchableOpacity
-      style={styles.chatroomItem}
+      style={[styles.chatroomItem,{ borderBottomColor: borderColor }]}
       onPress={() =>
         navigation.navigate("Chat", {
           chatroomId: item.id,
@@ -999,22 +1007,24 @@ const ChatroomListScreen: React.FC<any> = ({ navigation, route }) => {
         })
       }
     >
-      <Text style={styles.chatroomName}>{item.name}</Text>
+      <ThemedText style={styles.chatroomName}>{item.name}</ThemedText>
     </TouchableOpacity>
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>{t('availableChatrooms')}</Text>
-      <FlatList
-        data={chatrooms}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-        contentContainerStyle={styles.chatroomList}
-        onRefresh={fetchChatrooms}      // Trigger refresh when pulling down
-        refreshing={refreshing}          // Bind to the refreshing state        
-      />
-    </SafeAreaView>
+    <ThemedView style={styles.container}>
+      <SafeAreaView style={styles.container}>
+        <ThemedText style={styles.title}>{t('availableChatrooms')}</ThemedText>
+        <FlatList
+          data={chatrooms}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+          contentContainerStyle={styles.chatroomList}
+          onRefresh={fetchChatrooms}      // Trigger refresh when pulling down
+          refreshing={refreshing}          // Bind to the refreshing state        
+        />
+      </SafeAreaView>
+    </ThemedView>
   );
 };
 // ********************************************************
@@ -1066,9 +1076,9 @@ const LoginScreen: React.FC<any> = ({ navigation }) => {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 20}
       >
-        <View style={styles.loginContainer}>
-          <Text style={styles.title}>{t('login')}</Text>
-          <TextInput
+        <ThemedView style={styles.loginContainer}>
+          <ThemedText style={styles.title}>{t('login')}</ThemedText>
+          <ThemedTextInput
             placeholder={t('email')}
             value={email}
             onChangeText={setEmail}
@@ -1076,7 +1086,7 @@ const LoginScreen: React.FC<any> = ({ navigation }) => {
             autoCapitalize="none"
             keyboardType="email-address"
           />
-          <TextInput
+          <ThemedTextInput
             placeholder={t('password')}
             value={password}
             onChangeText={setPassword}
@@ -1085,7 +1095,7 @@ const LoginScreen: React.FC<any> = ({ navigation }) => {
           />
           <Button title={t('login')} onPress={handleLogin} />
         {/* New: Buttons to navigate to Register and Forgot Password screens */}
-          <View style={{ marginTop: 10 }}>
+          <ThemedView style={{ marginTop: 10 }}>
             <Button
               title={t('createAccount')}
               onPress={() => navigation.navigate("Register")}
@@ -1094,8 +1104,8 @@ const LoginScreen: React.FC<any> = ({ navigation }) => {
               title={t('forgotPassword')}
               onPress={() => navigation.navigate("ForgotPassword")}
             />
-          </View>
-        </View>
+          </ThemedView>
+        </ThemedView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -1159,11 +1169,11 @@ const RegisterScreen: React.FC<any> = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.loginContainer}>
-        <Text style={styles.title}>{t('register')}</Text>
+      <ThemedView style={styles.loginContainer}>
+        <ThemedText style={styles.title}>{t('register')}</ThemedText>
         {step === 1 && (
           <>
-            <TextInput
+            <ThemedTextInput
               placeholder={t('email')}
               value={email}
               onChangeText={setEmail}
@@ -1176,14 +1186,14 @@ const RegisterScreen: React.FC<any> = ({ navigation }) => {
         )}
         {step === 2 && (
           <>
-            <TextInput
+            <ThemedTextInput
               placeholder={t('verificationToken')}
               value={token}
               onChangeText={setToken}
               style={styles.input}
               autoCapitalize="none"
             />
-            <TextInput
+            <ThemedTextInput
               placeholder={t('password')}
               value={password}
               onChangeText={setPassword}
@@ -1193,7 +1203,7 @@ const RegisterScreen: React.FC<any> = ({ navigation }) => {
             <Button title={t('verifyEmail')} onPress={handleVerify} />
           </>
         )}
-      </View>
+      </ThemedView>
     </SafeAreaView>
   );
 };
@@ -1255,11 +1265,11 @@ const ForgotPasswordScreen: React.FC<any> = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.loginContainer}>
-        <Text style={styles.title}>{t('forgotPassword')}</Text>
+      <ThemedView style={styles.loginContainer}>
+        <ThemedText style={styles.title}>{t('forgotPassword')}</ThemedText>
         {step === 1 && (
           <>
-            <TextInput
+            <ThemedTextInput
               placeholder={t('email')}
               value={email}
               onChangeText={setEmail}
@@ -1272,14 +1282,14 @@ const ForgotPasswordScreen: React.FC<any> = ({ navigation }) => {
         )}
         {step === 2 && (
           <>
-            <TextInput
+            <ThemedTextInput
               placeholder={t('resetToken')}
               value={token}
               onChangeText={setToken}
               style={styles.input}
               autoCapitalize="none"
             />
-            <TextInput
+            <ThemedTextInput
               placeholder={t('newPassword')}
               value={newPassword}
               onChangeText={setNewPassword}
@@ -1289,7 +1299,7 @@ const ForgotPasswordScreen: React.FC<any> = ({ navigation }) => {
             <Button title={t('resetPassword')} onPress={handleResetPassword} />
           </>
         )}
-      </View>
+      </ThemedView>
     </SafeAreaView>
   );
 };
@@ -1340,16 +1350,16 @@ const AddChatRoomScreen: React.FC<any> = ({ navigation, route }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.loginContainer}>
-        <Text style={styles.title}>{t('addChatRoom')}</Text>
-        <TextInput
+      <ThemedView style={styles.loginContainer}>
+        <ThemedText style={styles.title}>{t('addChatRoom')}</ThemedText>
+        <ThemedTextInput
           placeholder={t('enterChatRoomName')}
           value={channelName}
           onChangeText={setChannelName}
           style={styles.input}
         />
         <Button title={t('createChatRoom')} onPress={handleAddChatRoom} />
-      </View>
+      </ThemedView>
     </SafeAreaView>
   );
 };
@@ -1380,9 +1390,9 @@ const App: React.FC = () => {
 
   if (!initialRoute) {
     return (
-      <View style={styles.container}>
-        <Text style={{ textAlign: "center", marginTop: 50 }}>{t('loading')}</Text>
-      </View>
+      <ThemedView style={styles.container}>
+        <ThemedText style={{ textAlign: "center", marginTop: 50 }}>{t('loading')}</ThemedText>
+      </ThemedView>
     );
   }
 
@@ -1446,8 +1456,7 @@ export default App;
 // ------------------ Styles ------------------
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: "#fff",
+    flex: 1
   },
   loginContainer: {
     flex: 1,
