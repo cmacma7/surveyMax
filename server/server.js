@@ -880,9 +880,9 @@ app.post("/api/send-message", authenticateToken, async (req, res) => {
       messagesToSend.push({
         to: token,
         sound: "default",
-        title: "New Message",
+        title: "SurveyMax",
         body: finalMessage.text ? finalMessage.text : "You received an image",
-        data: { message: finalMessage },
+        data: { message: finalMessage, url: "surveyMax://chatroom?id="+message.channelId },
       });
     });
   });
