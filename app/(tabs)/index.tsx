@@ -1383,16 +1383,22 @@ const AddChatRoomScreen: React.FC<any> = ({ navigation, route }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ThemedView style={styles.loginContainer}>
-        <ThemedText style={styles.title}>{t('addChatRoom')}</ThemedText>
-        <ThemedTextInput
-          placeholder={t('enterChatRoomName')}
-          value={channelName}
-          onChangeText={setChannelName}
-          style={styles.input}
-        />
-        <Button title={t('createChatRoom')} onPress={handleAddChatRoom} />
-      </ThemedView>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 20}
+      >
+        <ThemedView style={styles.loginContainer}>
+          <ThemedText style={styles.title}>{t('addChatRoom')}</ThemedText>
+          <ThemedTextInput
+            placeholder={t('enterChatRoomName')}
+            value={channelName}
+            onChangeText={setChannelName}
+            style={styles.input}
+          />
+          <Button title={t('createChatRoom')} onPress={handleAddChatRoom} />
+        </ThemedView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
