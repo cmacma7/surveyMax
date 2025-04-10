@@ -23,7 +23,8 @@ import {
   Keyboard, 
   TouchableWithoutFeedback,
   useWindowDimensions,
-  useColorScheme 
+  useColorScheme,
+  Linking, 
 } from "react-native";
 
 import { useThemeColor } from '@/hooks/useThemeColor';
@@ -39,6 +40,8 @@ import Modal from "react-native-modal";
 import ImageZoom from 'react-native-image-pan-zoom';
 import { t, setLanguage } from "../i18n/translations";
 import * as ImageManipulator from 'expo-image-manipulator';
+import { useRouter } from "expo-router";
+import { useNavigation, useLocalSearchParams } from 'expo-router';
 
 
 // UI components
@@ -919,7 +922,88 @@ const ChatroomListScreen: React.FC<any> = ({ navigation, route }) => {
   const [storedUserEmail, setStoredUserEmail] = useState<string | null>(null);
   const colorScheme = useColorScheme();
   const borderColor = colorScheme === 'dark' ? '#444' : '#eee';
+
+
+
+  // url scheme for deep linking
+  const router = useRouter();
+  // A helper function to parse and handle the incoming URL.
+  const handleUrl = async (url) => {
+    console.log("Deep link URL:", url);
+    // Example URL formats:
+    // surveyMax://chatroom?id=12345  --> go to a chat room screen
+    // surveyMax://login?mode=reset     --> go to login/reset password screen
+    try {
+      const parsed = new URL(url);
+      const path = parsed.hostname; // For URL "surveyMax://chatroom", hostname is "chatroom"
+      const params = parsed.searchParams;
+
+      // Get chatroom ID from query params
+      const chatroomId = params.get("id");
+      const userId = route.params.userId;
+      
+      if (path === "chatroom") {
+ 
+       
+        if (chatroomId) {
+            navigation.navigate("Chat", {
+              chatroomId: chatroomId,
+              chatroomName: undefined, // pass a default or fetched name
+              userId: userId,          // pass the current user id
+            });
+        } else {
+          Alert.alert("Missing chatroom ID");
+        }          
+      } 
+    } catch (error) {
+      console.error("Error handling URL:", error);
+    }
+  };
+
+  useEffect(() => {
+    // Get the initial URL (cold start)
+    Linking.getInitialURL().then((url) => {
+      if (url) {
+        handleUrl(url);
+      }
+    });
+
+    // Subscribe to URL events (when the app is already running)
+    const subscription = Linking.addEventListener("url", ({ url }) => {
+      handleUrl(url);
+    });
+
+    return () => subscription.remove();
+  }, [router]);
+
+
+  useEffect(() => {
+    const responseListener = Notifications.addNotificationResponseReceivedListener(
+      (response) => {
+        console.log("Notification response received:", response);
+        // Assume the payload has a 'url' field in data.
+        const url = response.notification.request.content.data.url;
+        if (url) {
+          // Handle the URL deep link.
+          router.push(url);
+        }
+      }
+    );
   
+    return () => {
+      Notifications.removeNotificationSubscription(responseListener);
+    };
+  }, [router]);
+
+  // ---- End of deep linking setup ----
+
+
+
+
+
+
+
+
   useEffect(() => {
     if (route.params) {
       if (route.params.userId) setStoredUserId(route.params.userId);
@@ -1054,6 +1138,46 @@ const LoginScreen: React.FC<any> = ({ navigation }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+
+  // Deep link handling inside LoginScreen
+  useEffect(() => {
+    const handleUrl = (url: string) => {
+      try {
+        const parsed = new URL(url);
+        // For a link like "surveyMax://reset-password?token=890kdfkfjdfd00",
+        // the hostname will be "reset-password".
+        const path = parsed.hostname;
+        if (path === "reset-password") {
+          const resetToken = parsed.searchParams.get("token") || "";
+          // Navigate to ForgotPassword screen, passing the reset token
+          navigation.navigate("ForgotPassword", { resetToken });
+        }
+        else if (path === "login") {
+          navigation.navigate("Login", { });
+        }
+      } catch (error) {
+        console.error("Error parsing deep link URL:", error);
+      }
+    };
+
+    // Check if the app was launched with a deep link.
+    Linking.getInitialURL().then((url) => {
+      if (url) {
+        handleUrl(url);
+      }
+    });
+
+    // Listen for incoming deep links while the app is running.
+    const subscription = Linking.addEventListener("url", ({ url }) => {
+      handleUrl(url);
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [navigation]);
+
+
   // Modified: Actual login using the /api/login endpoint.
   // On success, store the token and userId so that the user remains logged in.
   const handleLogin = async () => {
@@ -1080,7 +1204,10 @@ const LoginScreen: React.FC<any> = ({ navigation }) => {
       HttpAuthHeader = await getAuthHeaders();
 
       // Navigate to the ChatroomList screen and pass the userId.
-      navigation.navigate("ChatroomList", { userId: data.userId });
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'ChatroomList', params: { userId: data.userId } }],
+      });
     } catch (err) {
       console.error(err);
       Alert.alert(t('Error'), t('loginError'));
@@ -1234,11 +1361,17 @@ const RegisterScreen: React.FC<any> = ({ navigation }) => {
 };
 // ********************************************************
 // ------------------ ForgotPasswordScreen ------------------
-const ForgotPasswordScreen: React.FC<any> = ({ navigation }) => {
+const ForgotPasswordScreen: React.FC<any> = ({ navigation , route}) => {
   const [email, setEmail] = useState("");
   const [token, setToken] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [step, setStep] = useState(1); // step 1: request reset, step 2: reset password
+
+  const resetToken = route?.params?.resetToken;
+  if (resetToken && token != resetToken) setToken(resetToken);
+  if (resetToken && step === 1) {    
+    setStep(2);
+  }
 
   const handleRequestReset = async () => {
     if (email.trim() === "") {
