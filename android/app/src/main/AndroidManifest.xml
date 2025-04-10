@@ -26,7 +26,7 @@
         <action android:name="android.intent.action.VIEW"/>
         <category android:name="android.intent.category.DEFAULT"/>
         <category android:name="android.intent.category.BROWSABLE"/>
-        <data android:scheme="myapp"/>
+        <data android:scheme="surveyMax"/>
         <data android:scheme="com.tagfans.surveymax"/>
         <data android:scheme="exp+survey-max"/>
         <data android:scheme="cma.tagfans.surveymax"/>
