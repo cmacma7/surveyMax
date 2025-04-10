@@ -1399,9 +1399,9 @@ async function sendAndNotify(socket, channelId, message){
       messagesToSend.push({
         to: token,
         sound: "default",
-        title: "New Message",
+        title: "SurveyMax",
         body: message.text ? message.text : "You received an image or document",
-        data: { message },
+        data: { message, url: "surveyMax://chatroom?id=" + channelId },
       });
     });
   });
