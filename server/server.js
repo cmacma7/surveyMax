@@ -280,8 +280,63 @@ app.post("/api/register", async (req, res) => {
       from: process.env.AWS_SES_EMAIL_FROM,
       to: email,
       subject: "Email Verification",
-      text: `Please verify your email by clicking the following link: ${verificationUrl}`,
+      html: 
+`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Email Verification</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
+    .language-section { margin-bottom: 40px; }
+    .cta-button {
+      display: inline-block;
+      padding: 10px 20px;
+      background-color: orange;
+      color: #f0f0f0;
+      text-decoration: none;
+      border-radius: 4px;
+    }
+    hr { border: none; border-top: 1px solid #ddd; margin: 40px 0; }
+  </style>
+</head>
+<body>
+  <!-- English Section -->
+  <div class="language-section">
+    <h1>Welcome to Our Service</h1>
+    <p>Please verify your email by clicking the button below:</p>
+    <p><a class="cta-button" href="${verificationUrl}">Verify Email</a></p>
+  </div>
+  
+  <hr />
+
+  <!-- Chinese Section -->
+  <div class="language-section">
+    <h1>欢迎使用我们的服务</h1>
+    <p>请点击下面的按钮验证您的邮箱：</p>
+    <p><a class="cta-button" href="${verificationUrl}">验证邮箱</a></p>
+  </div>
+
+  <hr />
+
+  <!-- Japanese Section -->
+  <div class="language-section">
+    <h1>私たちのサービスへようこそ</h1>
+    <p>以下のボタンをクリックしてメールを確認してください：</p>
+    <p><a class="cta-button" href="${verificationUrl}">メール確認</a></p>
+  </div>
+
+  <p style="font-size: 12px; color: #666;">If you're having trouble, please copy and paste the link into your browser.</p>
+</body>
+</html>
+`,
+      text: `[English] Please verify your email here: ${verificationUrl}
+    
+    [中文] 请点击以下链接验证您的邮箱: ${verificationUrl}
+    
+    [日本語] 以下のリンクをクリックしてメールを確認してください: ${verificationUrl}`
     };
+    
     await transporter.sendMail(mailOptions);
     console.log(`Sent verification email to ${email}`);
     return res.status(200).json({ message: "Verification email sent." });
@@ -337,6 +392,7 @@ app.get("/verify-email", (req, res) => {
       input[type="password"],
       input[type="hidden"] {
         width: 100%;
+        font-size: 16px;
         padding: 10px;
         margin-bottom: 15px;
         border: 1px solid #ccc;
