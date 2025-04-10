@@ -514,6 +514,7 @@ app.post("/api/forgot-password", async (req, res) => {
     await user.save();
 
     const resetUrl = `${BASE_URL}/reset-password?token=${resetToken}`;
+    const resetUrl_device = `serverMax://reset-password?token=${resetToken}`;
     const mailOptions = {
       from: process.env.AWS_SES_EMAIL_FROM,
       to: email,
@@ -521,7 +522,7 @@ app.post("/api/forgot-password", async (req, res) => {
       text: 
 `
 You requested a password reset. Please click the link below to reset your password:
-${resetUrl}
+${resetUrl_device}
 After resetting your password, return to your device’s login screen and sign in again.
 
 Alternatively, you can enter the reset token along with your new password on your phone to complete the process.
