@@ -922,7 +922,9 @@ const ChatroomListScreen: React.FC<any> = ({ navigation, route }) => {
   const [storedUserEmail, setStoredUserEmail] = useState<string | null>(null);
   const colorScheme = useColorScheme();
   const borderColor = colorScheme === 'dark' ? '#444' : '#eee';
+  const deepLinkUrlRef = useRef<string | null>(null);
 
+  const [chatrooms, setChatrooms] = useState<{ id: string; name: string }[]>([]);
 
 
   // url scheme for deep linking
@@ -944,11 +946,16 @@ const ChatroomListScreen: React.FC<any> = ({ navigation, route }) => {
       
       if (path === "chatroom") {
  
+
+        // Lookup the chatroom name from the state array.
+        const room = chatrooms.find((item) => item.id === chatroomId);
+        const chatroomName = room ? room.name : chatroomId;
+
        
         if (chatroomId) {
             navigation.navigate("Chat", {
               chatroomId: chatroomId,
-              chatroomName: undefined, // pass a default or fetched name
+              chatroomName: chatroomName, // pass a default or fetched name
               userId: userId,          // pass the current user id
             });
         } else {
@@ -960,21 +967,42 @@ const ChatroomListScreen: React.FC<any> = ({ navigation, route }) => {
     }
   };
 
+  // Deep link listener; if chatrooms are not yet ready, store the URL in deepLinkUrlRef.
   useEffect(() => {
-    // Get the initial URL (cold start)
+    const processDeepLink = (url: string) => {
+      if (chatrooms.length === 0) {
+        // Defer processing until chatrooms are loaded.
+        deepLinkUrlRef.current = url;
+      } else {
+        handleUrl(url);
+      }
+    };
+
+    // Check if the app was launched with a deep link.
     Linking.getInitialURL().then((url) => {
       if (url) {
-        handleUrl(url);
+        console.log("getInitialURL", url);
+        processDeepLink(url);
       }
     });
 
-    // Subscribe to URL events (when the app is already running)
+    // Listen for incoming deep links while the app is running.
     const subscription = Linking.addEventListener("url", ({ url }) => {
-      handleUrl(url);
+      processDeepLink(url);
     });
 
-    return () => subscription.remove();
-  }, [router]);
+    return () => {
+      subscription.remove();
+    };
+  }, [chatrooms]); // Re-run effect when chatrooms change
+
+  // When chatrooms finish loading, check if a deep link URL is pending.
+  useEffect(() => {
+    if (chatrooms.length > 0 && deepLinkUrlRef.current) {
+      handleUrl(deepLinkUrlRef.current);
+      deepLinkUrlRef.current = null;
+    }
+  }, [chatrooms]);
 
 
   useEffect(() => {
@@ -1023,8 +1051,7 @@ const ChatroomListScreen: React.FC<any> = ({ navigation, route }) => {
 
   // Use userId if available; otherwise, fallback to email.
    
-  const [chatrooms, setChatrooms] = useState<{ id: string; name: string }[]>([]);
-
+  
 
   // Sample implementation to fetch chatrooms from listAdmin endpoint.
   const [refreshing, setRefreshing] = useState(false);

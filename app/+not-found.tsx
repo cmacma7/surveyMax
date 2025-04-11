@@ -7,11 +7,11 @@ import { ThemedView } from '@/components/ThemedView';
 export default function NotFoundScreen() {
   return (
     <>
-      <Stack.Screen options={{ title: 'Blank Screen' }} />
+      <Stack.Screen options={{ title: 'Welcome Screen' }} />
       <ThemedView style={styles.container}>
-        <ThemedText type="title">This screen doesn't exist.</ThemedText>
+        <ThemedText type="title">Welcome to SurveyMax</ThemedText>
         <Link href="/" style={styles.link}>
-          <ThemedText type="link">Go to home screen</ThemedText>
+          <ThemedText type="link">Go to Login Page</ThemedText>
         </Link>
       </ThemedView>
     </>
