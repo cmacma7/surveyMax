@@ -44,6 +44,7 @@ const messageSchema = new mongoose.Schema({
   image: { type: String },
   _id: { type: String, default: () => uuidv4() },
 });
+messageSchema.index({ channelId: 1, createdAt: 1 });
 const Message = mongoose.model("Message", messageSchema);
 
 // User Schema
@@ -256,6 +257,41 @@ app.get("/api/messages/:channelId", authenticateToken, async (req, res) => {
     res.status(500).json({ error: "Failed to fetch messages" });
   }
 });
+
+// server.js
+
+app.post("/api/messages/counts", authenticateToken, async (req, res) => {
+  const queries = req.body.queries; // Expect an array of { channelId, after }
+  if (!queries || !Array.isArray(queries)) {
+    return res.status(400).json({ error: "Invalid queries format. Expected an array." });
+  }
+  
+  try {
+    // Option A: Run multiple countDocuments in parallel using Promise.all.
+    const counts = await Promise.all(
+      queries.map(async (q) => {
+        // q.after should be a string representing the timestamp; convert it to a Date.
+        const count = await Message.countDocuments({
+          channelId: q.channelId,
+          createdAt: { $gt: new Date(q.after) }
+        });
+        return { channelId: q.channelId, count };
+      })
+    );
+    
+    return res.status(200).json({ counts });
+    
+    // Option B: Using an aggregation pipeline with $facet
+    // You can also construct a pipeline that creates a facet for each query. 
+    // This is effective for a small fixed number of channels. For many chatrooms, Option A is simpler.
+    
+  } catch (err) {
+    console.error("Error counting messages for multiple channels:", err);
+    return res.status(500).json({ error: "Failed to count unread messages" });
+  }
+});
+
+
 
 
 // NEW: API endpoint for user registration. (Public)
@@ -870,6 +906,25 @@ app.post("/api/add-channel-admin", authenticateToken, async (req, res) => {
   }
 });
 
+// Get channel info by channel id.
+// Optionally, add 'authenticateToken' middleware if you want to protect this endpoint.
+app.get("/api/channel-info", async (req, res) => {
+  const { channelId } = req.query;
+  if (!channelId) {
+    return res.status(400).json({ error: "Channel id is required." });
+  }
+  try {
+    const channelInfo = await ChannelInfo.findOne({ channelId });
+    if (!channelInfo) {
+      return res.status(404).json({ error: "Channel not found." });
+    }
+    // Return the channel name from channelDescription.
+    return res.status(200).json({ channelName: channelInfo.channelDescription });
+  } catch (error) {
+    console.error("Error fetching channel info:", error);
+    return res.status(500).json({ error: "Internal server error." });
+  }
+});
 
 
 // NEW: API endpoint to list all channels that a user can admin. (Protected)

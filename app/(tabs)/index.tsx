@@ -1028,7 +1028,41 @@ const ChatroomListScreen: React.FC<any> = ({ navigation, route }) => {
 
 
 
+  // Function to load unread counts for all chatrooms in one API call
+  const loadUnreadCounts = async (existingChatrooms) => {
+    // Build the queries array from existingChatrooms
+    const queries = await Promise.all(existingChatrooms.map(async (chatroom) => {
+      // Retrieve last-read timestamp from AsyncStorage; default to epoch if not available.
+      let lastRead = await AsyncStorage.getItem(`chat_${chatroom.id}_lastFetchedTimestamp`);
+      if (!lastRead) {
+        lastRead = new Date(0).toISOString();
+      }
+      return { channelId: chatroom.id, after: lastRead };
+    }));
 
+    try {
+      const headers = await getAuthHeaders();
+      const response = await fetch(`${SERVER_URL}/api/messages/counts`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ queries }),
+      });
+      const data = await response.json();
+      if (data.counts && Array.isArray(data.counts)) {
+        // Merge each count into the corresponding chatroom object.
+        const updatedChatrooms = existingChatrooms.map((chatroom) => {
+          const result = data.counts.find((c) => c.channelId === chatroom.id);
+          return { ...chatroom, unreadCount: result ? result.count : 0 };
+        });
+        setChatrooms(updatedChatrooms);
+      }
+    } catch (err) {
+      console.error("Error fetching unread counts:", err);
+    }
+  };
+  useEffect(() => {
+    
+  }, []);
 
 
 
@@ -1083,6 +1117,7 @@ const ChatroomListScreen: React.FC<any> = ({ navigation, route }) => {
           name: channel.channelDescription || channel.channelId,
         }));
         setChatrooms(formattedChannels);
+        loadUnreadCounts(formattedChannels); // add unread counts
       } else {
         console.error("Error fetching admin channels:", data.error);
         setChatrooms([]);
@@ -1138,6 +1173,11 @@ const ChatroomListScreen: React.FC<any> = ({ navigation, route }) => {
       }
     >
       <ThemedText style={styles.chatroomName}>{item.name}</ThemedText>
+      {item.unreadCount > 0 && (
+        <ThemedView style={styles.unreadBadge}>
+          <Text style={styles.unreadBadgeText}>{item.unreadCount}</Text>
+        </ThemedView>
+      )}
     </TouchableOpacity>
   );
 
@@ -1678,11 +1718,14 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   chatroomItem: {
-    padding: 15,
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 10,
     borderBottomWidth: 1,
     borderBottomColor: "#eee",
   },
   chatroomName: {
+    flex: 1,
     fontSize: 18,
   },
   actionButton: {
@@ -1712,6 +1755,20 @@ const styles = StyleSheet.create({
   unreadDividerText: {
     fontSize: 12,
     color: '#333',
+  },
+  unreadBadge: {
+    backgroundColor: "#FF3B30",
+    borderRadius: 10,
+    minWidth: 20,
+    paddingHorizontal: 5,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 10,
+  },
+  unreadBadgeText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "bold",
   },
   
 });
