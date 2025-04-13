@@ -916,6 +916,8 @@ return (
 
 // ********************************************************
 // ------------------ ChatroomListScreen ------------------
+let hasProcessedInitDeepLink = false; // handle deeplink from cool start Android
+
 const ChatroomListScreen: React.FC<any> = ({ navigation, route }) => {
   // Modified: If route.params is undefined, try to load userId from AsyncStorage.
   const [storedUserId, setStoredUserId] = useState<string | null>(null);
@@ -978,19 +980,31 @@ const ChatroomListScreen: React.FC<any> = ({ navigation, route }) => {
       }
     };
 
-    // Check if the app was launched with a deep link.
-    Linking.getInitialURL().then((url) => {
+    async function checkInitialDeepLink() {    
+      let url = await Linking.getInitialURL();
+      if (!url && Platform.OS === "android" && !hasProcessedInitDeepLink) {
+        // If Linking did not return a URL, check if the app was launched via a push notification.
+        const response = await Notifications.getLastNotificationResponseAsync();
+        if (response && response.notification) {
+          // Assume your notification payload has a "url" property inside data.
+          url = response.notification.request.content.data?.url;
+          // Clear the processed notification so it doesn't show again.
+          await Notifications.dismissNotificationAsync(
+            response.notification.request.identifier
+          );
+        }
+      }
+      hasProcessedInitDeepLink = true; // only run once for the App
       if (url) {
-        console.log("getInitialURL", url);
         processDeepLink(url);
       }
-    });
-
+    }
+ 
     // Listen for incoming deep links while the app is running.
     const subscription = Linking.addEventListener("url", ({ url }) => {
       processDeepLink(url);
     });
-
+    checkInitialDeepLink();
     return () => {
       subscription.remove();
     };
@@ -1013,7 +1027,7 @@ const ChatroomListScreen: React.FC<any> = ({ navigation, route }) => {
         const url = response.notification.request.content.data.url;
         if (url) {
           // Handle the URL deep link.
-          router.push(url);
+          handleUrl(url);
         }
       }
     );
