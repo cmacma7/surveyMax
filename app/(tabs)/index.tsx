@@ -349,6 +349,7 @@ const deduplicateMessages = (msgs: IMessage[]): IMessage[] => {
 
       if (lastFetchedTimestamp) {
         AsyncStorage.setItem(`chat_${chatroomId}_lastFetchedTimestamp`, lastFetchedTimestamp);
+        AsyncStorage.setItem(`chat_${chatroomId}_lastReadTimestamp`, lastFetchedTimestamp);
       }
 
     } catch (err) {
@@ -547,7 +548,7 @@ const deduplicateMessages = (msgs: IMessage[]): IMessage[] => {
             newMessages = GiftedChat.append(prev, { ...incomingMessage, sendStatus: "sent" });
           }
           newMessages = deduplicateMessages(newMessages);
-          // AsyncStorage.setItem(`chat_${chatroomId}_messages`, JSON.stringify(newMessages));
+          AsyncStorage.setItem(`chat_${chatroomId}_lastReadTimestamp`, incomingMessage.createdAt);
           return (newMessages);
         });
       }
@@ -1056,14 +1057,15 @@ const ChatroomListScreen: React.FC<any> = ({ navigation, route }) => {
 
   // Function to load unread counts for all chatrooms in one API call
   const loadUnreadCounts = async (existingChatrooms) => {
+    const currentUserId = await AsyncStorage.getItem("userId");
     // Build the queries array from existingChatrooms
     const queries = await Promise.all(existingChatrooms.map(async (chatroom) => {
       // Retrieve last-read timestamp from AsyncStorage; default to epoch if not available.
-      let lastRead = await AsyncStorage.getItem(`chat_${chatroom.id}_lastFetchedTimestamp`);
+      let lastRead = await AsyncStorage.getItem(`chat_${chatroom.id}_lastReadTimestamp`);
       if (!lastRead) {
         lastRead = new Date(0).toISOString();
       }
-      return { channelId: chatroom.id, after: lastRead };
+      return { channelId: chatroom.id, after: lastRead, excludeUserId: currentUserId};
     }));
 
     try {

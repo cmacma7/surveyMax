@@ -259,32 +259,31 @@ app.get("/api/messages/:channelId", authenticateToken, async (req, res) => {
 });
 
 // server.js
-
 app.post("/api/messages/counts", authenticateToken, async (req, res) => {
-  const queries = req.body.queries; // Expect an array of { channelId, after }
+  const queries = req.body.queries; // Expect an array of { channelId, after, excludeUserId }
   if (!queries || !Array.isArray(queries)) {
     return res.status(400).json({ error: "Invalid queries format. Expected an array." });
   }
   
   try {
-    // Option A: Run multiple countDocuments in parallel using Promise.all.
+    // For each query, count messages by channel that are newer than the 'after' timestamp.
+    // If an excludeUserId is provided, exclude messages sent by that user.
     const counts = await Promise.all(
       queries.map(async (q) => {
-        // q.after should be a string representing the timestamp; convert it to a Date.
-        const count = await Message.countDocuments({
+        const filter = {
           channelId: q.channelId,
-          createdAt: { $gt: new Date(q.after) }
-        });
+          createdAt: { $gt: new Date(q.after) },
+        };
+        if (q.excludeUserId) {
+          // Exclude messages sent by the specified user.
+          filter["user._id"] = { $ne: q.excludeUserId };
+        }
+        const count = await Message.countDocuments(filter);
         return { channelId: q.channelId, count };
       })
     );
     
     return res.status(200).json({ counts });
-    
-    // Option B: Using an aggregation pipeline with $facet
-    // You can also construct a pipeline that creates a facet for each query. 
-    // This is effective for a small fixed number of channels. For many chatrooms, Option A is simpler.
-    
   } catch (err) {
     console.error("Error counting messages for multiple channels:", err);
     return res.status(500).json({ error: "Failed to count unread messages" });
