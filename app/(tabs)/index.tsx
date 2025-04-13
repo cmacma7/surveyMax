@@ -929,6 +929,11 @@ const ChatroomListScreen: React.FC<any> = ({ navigation, route }) => {
   const [chatrooms, setChatrooms] = useState<{ id: string; name: string }[]>([]);
 
 
+  const chatroomsRef = useRef(chatrooms); // to keep the latest chatrooms reference
+  useEffect(() => {
+    chatroomsRef.current = chatrooms;
+  }, [chatrooms]);
+
   // url scheme for deep linking
   const router = useRouter();
   // A helper function to parse and handle the incoming URL.
@@ -950,7 +955,7 @@ const ChatroomListScreen: React.FC<any> = ({ navigation, route }) => {
  
 
         // Lookup the chatroom name from the state array.
-        const room = chatrooms.find((item) => item.id === chatroomId);
+        const room = chatroomsRef.current.find((item) => item.id === chatroomId);
         const chatroomName = room ? room.name : chatroomId;
 
        
@@ -969,16 +974,22 @@ const ChatroomListScreen: React.FC<any> = ({ navigation, route }) => {
     }
   };
 
+  const processDeepLink = (url: string) => {
+    if (chatroomsRef.current.length === 0) {
+      // Defer processing until chatrooms are loaded.
+      deepLinkUrlRef.current = url;
+    } else {
+      handleUrl(url);
+    }
+  };
+
+
+
+
+
   // Deep link listener; if chatrooms are not yet ready, store the URL in deepLinkUrlRef.
   useEffect(() => {
-    const processDeepLink = (url: string) => {
-      if (chatrooms.length === 0) {
-        // Defer processing until chatrooms are loaded.
-        deepLinkUrlRef.current = url;
-      } else {
-        handleUrl(url);
-      }
-    };
+ 
 
     async function checkInitialDeepLink() {    
       let url = await Linking.getInitialURL();
@@ -1027,7 +1038,8 @@ const ChatroomListScreen: React.FC<any> = ({ navigation, route }) => {
         const url = response.notification.request.content.data.url;
         if (url) {
           // Handle the URL deep link.
-          handleUrl(url);
+          //router.push(url);
+          processDeepLink(url);
         }
       }
     );
