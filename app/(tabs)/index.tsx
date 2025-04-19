@@ -313,25 +313,27 @@ const deduplicateMessages = (msgs: IMessage[]): IMessage[] => {
 
 
     // Determine the reference timestamp
-    let referenceTimestamp;
+    // lastFetchedTimestamp is used to fetch new messages in the chatroom, and lastReadTimestamp is used to mark the last read message
+    // these two timestamps are different, because the last read message includes the user currently typing messages in the chatroom, 
+    // and these messages need to fetch from server again when enter the chatroom again. But these messages should not count as unread messages.
+    
     let lastFetchedTimestamp;
     if (localMessages.length > 0) {
-      referenceTimestamp   = localMessages[0]?.createdAt;
       lastFetchedTimestamp = localMessages[0]?.createdAt; // keep the last fetched timestamp in the local messages
     } else {
       // If there are no messages locally, try to get the last fetched timestamp
-      referenceTimestamp = await AsyncStorage.getItem(`chat_${chatroomId}_lastFetchedTimestamp`);
+      lastFetchedTimestamp = await AsyncStorage.getItem(`chat_${chatroomId}_lastFetchedTimestamp`);
       // Optionally, you can default to the current time to avoid loading older messages
-      if (!referenceTimestamp) {
+      if (!lastFetchedTimestamp) {
         const now = new Date();
         const threeMonthsAgo = new Date(now);
         threeMonthsAgo.setMonth(now.getMonth() - 3);
         console.log("first time fetch, fetch 3 month's data",threeMonthsAgo.toISOString());
-        referenceTimestamp = threeMonthsAgo.toISOString();
+        lastFetchedTimestamp = threeMonthsAgo.toISOString();
       }
     }
     
-    let url = `${SERVER_URL}/api/messages/${chatroomId}?after=${encodeURIComponent(referenceTimestamp)}`;
+    let url = `${SERVER_URL}/api/messages/${chatroomId}?after=${encodeURIComponent(lastFetchedTimestamp)}`;
  
 
 
@@ -351,7 +353,6 @@ const deduplicateMessages = (msgs: IMessage[]): IMessage[] => {
         AsyncStorage.setItem(`chat_${chatroomId}_lastFetchedTimestamp`, lastFetchedTimestamp);
         AsyncStorage.setItem(`chat_${chatroomId}_lastReadTimestamp`, lastFetchedTimestamp);
       }
-
     } catch (err) {
       console.error("Error fetching new messages", err);
     }
@@ -1076,13 +1077,18 @@ const ChatroomListScreen: React.FC<any> = ({ navigation, route }) => {
         body: JSON.stringify({ queries }),
       });
       const data = await response.json();
+
       if (data.counts && Array.isArray(data.counts)) {
-        // Merge each count into the corresponding chatroom object.
-        const updatedChatrooms = existingChatrooms.map((chatroom) => {
-          const result = data.counts.find((c) => c.channelId === chatroom.id);
-          return { ...chatroom, unreadCount: result ? result.count : 0 };
-        });
-        setChatrooms(updatedChatrooms);
+        const countMap = new Map(data.counts.map(c => [c.channelId, c.count]));
+        // 用 prevChatrooms 來更新，若沒有新的 count，就保留舊值
+        setChatrooms(prev =>
+          prev.map(room => ({
+            ...room,
+            unreadCount: countMap.has(room.id)
+              ? countMap.get(room.id)!
+              : room.unreadCount
+          }))
+        );
       }
     } catch (err) {
       console.error("Error fetching unread counts:", err);
@@ -1139,13 +1145,18 @@ const ChatroomListScreen: React.FC<any> = ({ navigation, route }) => {
       });
       const data = await response.json();
       if (response.ok && data.channels) {
-      // Map channels to expected format: id and name.
-        const formattedChannels = data.channels.map(channel => ({
-          id: channel.channelId,
-          name: channel.channelDescription || channel.channelId,
-        }));
-        setChatrooms(formattedChannels);
-        loadUnreadCounts(formattedChannels); // add unread counts
+        // Map channels to expected format: id and name.
+        const formattedChannelsWithOldCounts = data.channels.map(channel => {
+          // 先在 ref 或者 state 裡面找舊的 unreadCount
+          const prev = chatroomsRef.current.find(r => r.id === channel.channelId);
+          return {
+            id: channel.channelId,
+            name: channel.channelDescription || channel.channelId,
+            unreadCount: prev ? prev.unreadCount : 0,  // 沒有就預設 0
+          };
+        });
+        setChatrooms(formattedChannelsWithOldCounts);
+        loadUnreadCounts(formattedChannelsWithOldCounts);
       } else {
         console.error("Error fetching admin channels:", data.error);
         setChatrooms([]);
@@ -1202,7 +1213,16 @@ const ChatroomListScreen: React.FC<any> = ({ navigation, route }) => {
     >
       <ThemedText style={styles.chatroomName}>{item.name}</ThemedText>
       {item.unreadCount > 0 && (
-        <ThemedView style={styles.unreadBadge}>
+        <ThemedView
+          style={[
+            styles.unreadBadge,
+            {
+              // 單位數：寬度 = 高度，左右內距設 0 → 完全正圓
+              width: item.unreadCount < 10 ? BADGE_SIZE : undefined,
+              paddingHorizontal: item.unreadCount < 10 ? 0 : BADGE_PADDING,
+            },
+          ]}
+        >
           <Text style={styles.unreadBadgeText}>{item.unreadCount}</Text>
         </ThemedView>
       )}
@@ -1721,6 +1741,12 @@ const App: React.FC = () => {
 export default App;
 
 // ------------------ Styles ------------------
+
+// 1. 先在最頂端定義 badge 的常數
+const BADGE_SIZE = 20;
+const BADGE_PADDING = 6;
+
+
 const styles = StyleSheet.create({
   container: {
     flex: 1
@@ -1785,18 +1811,21 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   unreadBadge: {
-    backgroundColor: "#FF3B30",
-    borderRadius: 10,
-    minWidth: 20,
-    paddingHorizontal: 5,
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: 'darkorange',    
+    height: BADGE_SIZE,            // 固定高度
+    minWidth: BADGE_SIZE,          // 最小寬度＝高度
+    paddingHorizontal: BADGE_PADDING, // 預設左右內距
+    borderRadius: BADGE_SIZE / 2,  // 完美圓角
+    justifyContent: 'center',
+    alignItems: 'center',
     marginRight: 10,
   },
   unreadBadgeText: {
-    color: "#fff",
+    color: '#fff',
     fontSize: 12,
-    fontWeight: "bold",
+    fontWeight: '600',
+    lineHeight: BADGE_SIZE,       // 垂直置中
+    textAlign: 'center',
   },
   
 });
