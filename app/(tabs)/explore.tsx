@@ -22,6 +22,7 @@ export default function TabTwoScreen() {
   const [lang, setLang] = useState("zh");
   const [userId, setUserId] = useState("");
   const [userToken, setUserToken] = useState("");
+  const [userEmail, setUserEmail] = useState('');
 
   useEffect(() => {
     AsyncStorage.getItem("language").then((storedLang) => {
@@ -42,8 +43,12 @@ export default function TabTwoScreen() {
       try {
         const token = await AsyncStorage.getItem("userToken");
         const storedUserId = await AsyncStorage.getItem("userId");
+        const storedEmail  = await AsyncStorage.getItem('userEmail');
+
         if (storedUserId) setUserId(storedUserId);
         if (token) setUserToken(token);
+        if (storedEmail)  setUserEmail(storedEmail);
+
         console.log('survey admin url', SURVEY_ADMIN_URL + "?userId=" + storedUserId + "&userToken=" + token);
         if (!storedUserId || !token) {
           router.replace("/");
@@ -71,6 +76,7 @@ export default function TabTwoScreen() {
   return (
     <ParallaxScrollView
       headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
+      
       headerImage={
         <IconSymbol
           size={310}
@@ -79,10 +85,14 @@ export default function TabTwoScreen() {
           style={styles.headerImage}
         />
       }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">{t('explore')}</ThemedText>
+  
+
+      {/* 帳號資訊 */}
+      <ThemedView style={{ padding: 16,  borderRadius: 8, marginVertical: 12 }}>
+        <ThemedText type="title" style={{ marginBottom: 4 }}>帳號資訊</ThemedText>
+        <ThemedText>Email: {userEmail}</ThemedText>
+        <ThemedText>User ID: {userId}</ThemedText>
       </ThemedView>
-      <ThemedText>{t('exploreDescription')}</ThemedText>
 
       <Collapsible title={t('applications')}>
         <ThemedText>

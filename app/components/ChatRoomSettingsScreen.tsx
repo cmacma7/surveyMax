@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   ScrollView,
   View,
@@ -6,7 +6,10 @@ import {
   Button,
   Alert,
   TouchableOpacity,
-  Platform,
+  Platform,  
+  Text, 
+  Switch, 
+  StyleSheet, 
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -32,6 +35,7 @@ const ChatRoomSettingsScreen = ({ route, navigation }) => {
   // Instead of individual booleans, use one state to track the active section.
   // Valid values: "updateName", "inviteUser", "removeUser", or null.
   const [activeSection, setActiveSection] = useState(null);
+  const [enabled, setEnabled] = useState(true);
 
   // Detect the color scheme (dark or light)
   // With Themed components, this may not be necessary since they handle dark mode automatically
@@ -198,12 +202,63 @@ const ChatRoomSettingsScreen = ({ route, navigation }) => {
   };
   
 
+  // 載入目前靜音狀態
+  useEffect(() => {
+    (async () => {
+      try {
+        const headers = await getAuthHeaders();
+        const res = await fetch(
+          `${SERVER_URL}/api/channel-mute?channelId=${chatroomId}`,
+          { headers }
+        );
+        const { muted } = await res.json();
+        setEnabled(!muted);
+      } catch (err) {
+        console.error(err);
+      }
+    })();
+  }, [chatroomId]);
+
+  // 切換開關
+  const onToggle = async (value: boolean) => {
+    setEnabled(value);
+    try {
+      const headers = await getAuthHeaders();
+      const res = await fetch(`${SERVER_URL}/api/channel-mute`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          userId: (await AsyncStorage.getItem('userId')),
+          channelId: chatroomId,
+          mute: !value,       // value=true → 取消靜音(mute=false)
+        }),
+      });
+      if (!res.ok) throw new Error();
+    } catch {
+      Alert.alert('Error', '設定失敗，請稍後再試');
+      // 恢復舊狀態
+      setEnabled(v => !v);
+    }
+  };
+
+
   return (
     <ThemedView style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={{ padding: 20 }}>
-        <ThemedText style={{ fontSize: 24, textAlign: "center", marginVertical: 20 }}>
-          {t("chatRoomSettings")}
-        </ThemedText>
+       
+        <View style={styles.container}>
+            <ThemedText style={styles.title}>{chatroomName}</ThemedText>
+            <ThemedView style={styles.row}>
+                <ThemedText style={styles.label}>接收此聊天室推播</ThemedText>
+                <Switch
+                value={enabled}
+                onValueChange={onToggle}
+                />
+            </ThemedView>
+        </View>
+
+
+
 
         {/* Condensed Action Icons */}
         <View
@@ -347,5 +402,13 @@ const ChatRoomSettingsScreen = ({ route, navigation }) => {
     </ThemedView>
   );
 };
+
+
+const styles = StyleSheet.create({
+    container: { flex:1, padding:16 },
+    title: { fontSize:20, fontWeight:'bold', marginBottom:24 },
+    row: { flexDirection:'row', alignItems:'center', justifyContent:'space-between' },
+    label: { fontSize:16 },
+  });
 
 export default ChatRoomSettingsScreen;

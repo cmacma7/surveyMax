@@ -71,6 +71,7 @@ const adminChannelSchema = new mongoose.Schema({
   channels: { type: [String], default: [] },
   // Modified: Allow multiple push tokens per user.
   pushTokens: { type: [String], default: [] },
+  mutedChannels: { type: [String], default: [] }, //  muted channels
 });
 const AdminChannel = mongoose.model("AdminChannel", adminChannelSchema);
 
@@ -984,6 +985,43 @@ io.on("connection", (socket) => {
   });
 });
 
+// API endpoint to mute/unmute a channel. (Protected)
+app.post("/api/channel-mute", authenticateToken, async (req, res) => {
+  const { userId, channelId, mute } = req.body;
+  if (!userId || !channelId || typeof mute !== 'boolean') {
+    return res.status(400).json({ error: "userId, channelId 及 mute(boolean) 為必填" });
+  }
+  try {
+    const op = mute
+      ? { $addToSet: { mutedChannels: channelId } }
+      : { $pull:    { mutedChannels: channelId } };
+    const doc = await AdminChannel.findOneAndUpdate(
+      { userId },
+      op,
+      { new: true, upsert: true }
+    );
+    return res.json({ success: true, mutedChannels: doc.mutedChannels });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// API endpoint to check if a channel is muted. (Protected)
+app.get("/api/channel-mute", authenticateToken, async (req, res) => {
+  const { userId } = req.user;  // 由 authenticateToken 提供
+  const { channelId } = req.query;
+  if (!channelId) {
+    return res.status(400).json({ error: "channelId is required" });
+  }
+  const doc = await AdminChannel.findOne({ userId });
+  const muted = doc?.mutedChannels.includes(channelId) ?? false;
+  return res.json({ muted });
+});
+
+
+
+
 // POST /api/send-message endpoint. (Protected)
 /**
  * POST /api/send-message endpoint.
@@ -1029,6 +1067,7 @@ app.post("/api/send-message", authenticateToken, async (req, res) => {
   const messagesToSend = [];
   adminDocs.forEach(doc => {
     if (doc.userId === finalMessage.user._id) return;
+    if (doc.mutedChannels.includes(channelId)) return;
     doc.pushTokens.forEach(token => {
       if (!Expo.isExpoPushToken(token)) {
         console.error(`Push token ${token} is not a valid Expo push token`);
@@ -1547,6 +1586,7 @@ async function sendAndNotify(socket, channelId, message){
   adminDocs.forEach(doc => {
     // Skip sending a push notification to the sender.
     if (doc.userId === message.user._id) return;
+    if (doc.mutedChannels.includes(channelId)) return;
     // Iterate over each push token for the user.
     doc.pushTokens.forEach(token => {
       if (!Expo.isExpoPushToken(token)) {
