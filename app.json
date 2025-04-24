@@ -2,7 +2,7 @@
   "expo": {
     "name": "survey-max",
     "slug": "survey-max",
-    "version": "1.0.0",
+    "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "surveyMax",
@@ -10,14 +10,16 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.tagfans.survey-max"
+      "bundleIdentifier": "com.tagfans.survey-max",
+      "buildNumber": "1.0.3" 
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "cma.tagfans.surveymax",
+      "package": "com.tagfans.surveymax",
+      "versionCode": 3,
 	    "googleServicesFile": "./android/app/google-services.json"
     },
     "web": {

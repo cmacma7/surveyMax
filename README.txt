@@ -39,7 +39,7 @@ You can use node sendMessage.js <message> <user>  to send a system message that 
    when the iOS app of Expo open, it need to connect to the npx expo start  server, the IP address need to enter at the iOS app Expo menu at the bottom to connect. 
    * you can manage credentials by:  eas credentials
 
-5. To deploy iOS
+5. To deploy iOS ******************************
    npx expo build:ios
    In XCode, go to the surveymax project, make sure in 'signing and capabilities', release build has the push notification cap. 
    To build and archive the code, click production tab of Xcode, click archive.
@@ -49,11 +49,25 @@ You can use node sendMessage.js <message> <user>  to send a system message that 
    to agree the encryption to activate the upload version.
   
 
-6. To deploy Android
-To generate the APK for device testing
-cd android && gradlew assembleRelease
-The output APK will under android\app\build\outputs\apk\release
+6. To deploy Android *****************************
+   To generate the APK for device testing
+	cd android && gradlew assembleRelease
+	The output APK will under android\app\build\outputs\apk\release
 
-To install the APK to device, connect your device via usb
-adb install android/app/build/outputs/apk/release/app-release.apk 
+   To install the APK to device, connect your device via usb
+	adb install android/app/build/outputs/apk/release/app-release.apk 
+
+   To release the AAB to app store
+	You need to update the versionCode for new upload to Android app store
+	請在更新完 app.json 之後，一定要執行: npx expo prebuild --clean
+	or 
+	in android/app/build.gradle, manually update the versionCode and versionName,  and app.json at roon to update all the necessary versions
+
+	then
+
+	cd android && gradlew.bat bundleRelease
+
+        AAB will be generated under C:\bn\git\surveyMax\android\app\build\outputs\bundle\release
+	
+
 
