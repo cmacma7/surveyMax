@@ -142,6 +142,11 @@
 		  margin-left: 0;
 		}
 
+    .group-index-circle {
+      background-color: #ff9800; /* Distinct color for groups */
+      border-radius: 4px;        /* Square with slightly rounded corners */
+    }
+
       /**********************************************
        * QUESTIONS & STICKY-BOTTOM BUTTONS
        **********************************************/
@@ -2695,7 +2700,7 @@ anchorValuesSelect.style.height = "auto"; // adjust as needed
             groupItem.dataset.index = index;
       
             const indexCircle = document.createElement("span");
-            indexCircle.className = "list-index-circle";
+            indexCircle.className = "list-index-circle group-index-circle";
             indexCircle.textContent = index + 1;
             groupItem.appendChild(indexCircle);
       
