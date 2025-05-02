@@ -175,7 +175,15 @@
     .group-index-circle {
       background-color: #ff9800; /* Distinct color for groups */
       border-radius: 4px;        /* Square with slightly rounded corners */
+	  color: black;
     }
+	
+/* 讓編號圓圈（list-index-circle / group-index-circle）維持固定大小，不會被壓縮或撐開 */
+#questions-list .list-index-circle,
+#questions-list .group-index-circle {
+  flex: 0 0 auto;
+}	
+	
 
     /* 確保 fallback clone 跟 .collection-item 完全相同 */
 .sortable-fallback {
@@ -188,6 +196,90 @@
   box-shadow: none;       /* 如果正常項目沒 shadow，就去掉 */
   /* 如果你有其他像 font-size、line-height 等 custom style，也一起寫進來 */
 }
+
+
+/* ────── 頂層項目 (問題 & 群組) ────── */
+/* 文字靠左，拖拉把手 (handle) 靠右 */
+#questions-list .collection-item[data-type="top"] {
+  justify-content: flex-start;    /* 先排 index circle + 文字，最後 handle */
+}
+#questions-list .collection-item[data-type="top"] .drag-handle {
+  margin-left: auto;              /* 把 handle 推到最右邊 */
+}
+#questions-list .collection-item[data-type="top"] span:nth-child(2) {
+  text-align: left;               /* 文字靠左 */
+  color: #000;                    /* 可自訂頂層文字顏色 */
+}
+
+/* ────── 子題 (sub-questions) ────── */
+/* 拖拉把手靠左，文字靠右，文字顏色較淡 */
+#questions-list .collection-item[data-type="sub"] {
+  display: flex;
+  justify-content: space-between !important;
+  align-items: center;
+  color: #888;                  /* 子題文字顏色 */
+  padding: 6px 16px;              /* 如同 .sortable-fallback */
+}
+
+#questions-list .collection-item[data-type="sub"] .drag-handle {
+  margin-left: auto;            /* 把把手推到最右邊 */
+  margin-right: 0.2em;
+  cursor: grab;
+}
+
+
+#questions-list .collection-item[data-type="sub"] span {
+  text-align: left;             /* 文字靠左 */
+  margin-right: auto;           /* 讓文字撐滿中間 */
+}
+
+/* ────── 群組＋子題連線 ────── */
+/* 1) 群組標題（collection-item 中有 .group-index-circle 的那一行）加左邊粗線 */
+#questions-list > li.collection-item span.group-index-circle {
+  /* 讓整個 li 都被線框影響 */
+  position: relative;
+}
+#questions-list > li.collection-item span.group-index-circle::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -12px;           /* 距離圈圈往左 12px */
+  width: 4px;            /* 線的粗細 */
+  background-color: #2196f3;  /* 你想要的群組色 */
+  border-radius: 2px;
+}
+
+/* 2) 緊跟在那個群組標題後面的 UL（它的 data-group-index 等於上面 li 的 data-index）也加左邊同一條線 */
+#questions-list > li.collection-item + ul[data-group-index] {
+  border-left: 4px solid #2196f3; /* 跟前面一樣的顏色與粗細 */
+  margin-left: 1.5em;             /* 臨時內縮，讓子題往右一點 */
+  padding-left: 1em;              /* 文字不會緊貼線 */
+}
+
+
+
+
+/* allow top-level text to wrap on multiple lines */
+#questions-list .collection-item[data-type="top"] span:nth-child(2) {
+  flex: 1 1 auto;
+  min-width: 0;               /* enable shrinking below content width */
+  white-space: normal;        /* allow line-breaks */
+  overflow-wrap: break-word;  /* break long words if needed */
+}
+
+/* allow sub-question text to wrap on multiple lines */
+#questions-list .collection-item[data-type="sub"] span {
+  white-space: normal;
+  overflow-wrap: break-word;
+}
+
+
+
+
+
+
+
 
       /**********************************************
        * QUESTIONS & STICKY-BOTTOM BUTTONS
