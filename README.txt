@@ -50,6 +50,12 @@ You can use node sendMessage.js <message> <user>  to send a system message that 
   
 
 6. To deploy Android *****************************
+
+   The file path might hit the limit of windows 260 char limit, so we need to map the directory to S:
+   subst S: C:\bn\git\surveyMax
+   cd S:\android
+   .\gradlew.bat assembleRelease
+
    To generate the APK for device testing
 	cd android && gradlew assembleRelease
 	The output APK will under android\app\build\outputs\apk\release

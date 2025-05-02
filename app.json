@@ -20,7 +20,7 @@
       },
       "package": "com.tagfans.surveymax",
       "versionCode": 3,
-	    "googleServicesFile": "./android/app/google-services.json"
+	    "googleServicesFile": "./google-services.json"
     },
     "web": {
       "bundler": "metro",

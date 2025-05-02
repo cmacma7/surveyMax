@@ -29,7 +29,6 @@
         <data android:scheme="surveyMax"/>
         <data android:scheme="com.tagfans.surveymax"/>
         <data android:scheme="exp+survey-max"/>
-        <data android:scheme="com.tagfans.surveymax"/>
       </intent-filter>
     </activity>
   </application>
