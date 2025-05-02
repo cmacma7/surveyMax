@@ -73,6 +73,41 @@
       /**********************************************
        * SIDEBAR
        **********************************************/
+
+
+
+  /* 讓整個列表都能垂直滑動 */
+#sidebar, 
+#questions-list {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;  /* iOS 平滑滾動 */
+  direction: ltr;
+  overscroll-behavior: contain;
+  overscroll-behavior-y: contain;
+}
+
+/* 清除原本 collection-item 的 touch-action:none */
+#questions-list .collection-item {
+  touch-action: pan-y;       /* 只阻擋水平方向，允許垂直捲動 */
+  pointer-events: auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* 把手區域才能攔截手勢，開始拖曳 */
+#questions-list .drag-handle {
+  cursor: grab;
+  touch-action: none;                /* 禁用滑動，以便啟動拖曳 */
+  padding: 0 8px;
+  user-select: none;
+  -webkit-user-select: none;
+  -ms-user-select: none;  
+}
+#questions-list .drag-handle:active {
+  cursor: grabbing;
+}
+     
 	/* Force the sidebar to always show a scrollbar and display it on the left */
 	#sidebar {
 	  position: fixed;
@@ -90,17 +125,12 @@
 	}
 
 	/* Reset the direction for inner content so that text is left-to-right */
-	#questions-list {
-	  direction: ltr;
-	}
+	
 
       #sidebar.collapsed {
         transform: translateX(-110%);
       }
-      #questions-list .collection-item {
-        cursor: grab;
-		touch-action: none;
-      }
+  
 	  
       #questions-list .collection-item:active {
         cursor: grabbing;
@@ -146,6 +176,18 @@
       background-color: #ff9800; /* Distinct color for groups */
       border-radius: 4px;        /* Square with slightly rounded corners */
     }
+
+    /* 確保 fallback clone 跟 .collection-item 完全相同 */
+.sortable-fallback {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;            /* 撐滿側邊欄 */
+  padding: 0 16px;        /* 跟 .collection-item 預設 padding 一致 */
+  background: #fff;       /* 跟列表項一致的背景 */
+  box-shadow: none;       /* 如果正常項目沒 shadow，就去掉 */
+  /* 如果你有其他像 font-size、line-height 等 custom style，也一起寫進來 */
+}
 
       /**********************************************
        * QUESTIONS & STICKY-BOTTOM BUTTONS
@@ -359,7 +401,7 @@
         font-size: 1rem; /* smaller font on small devices */
       }  
       #sidebar.with-gutter {
-        width: 340px; /* original 300px + 40px for gutter */
+        width: 300px; /* original 300px + 40px for gutter */
       }
 
     
@@ -370,7 +412,7 @@
         top: 0;
         bottom: 0;  /* Instead of height: 100%, use top: 0 and bottom: 0 */
         left: 0;
-        width: 40px;
+        width: 0px;
 
       /* Create a grip/dot pattern using radial gradients */
         background: radial-gradient(circle, #aaa 2px, transparent 2px),
@@ -380,15 +422,15 @@
         z-index: 1;
       }
       #sidebar.with-gutter #questions-list {
-        margin-left: 40px;
+        margin-left: 0px;
         position: relative;
         z-index: 2;
       }
       #main-content { 
-        margin-left: 340px;
+        margin-left: 300px;
         width: 100%; 
       }
-      margin-left: 500px; /* On desktop, push right for sidebar */
+      
       .material-icons.left {
         margin-right: 0 !important;
       }  
@@ -899,6 +941,14 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ace.js"></script>
 
+
+
+<!-- 在頁面底部引入 SortableJS -->
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+
+
+
+
     <script>
     // Global variables
     // Global variable for the Ace Editor instance
@@ -1382,7 +1432,6 @@
           // Load existing data from localStorage
           // const existingData = localStorage.getItem("surveyQuestions");
 
-          
 
           surveys = await fetchSurvey(null);
 
@@ -1571,11 +1620,17 @@
           // Handle responsive sidebar on load & resize
           const sidebar = document.getElementById("sidebar");
           const mainContent = document.getElementById("main-content");
+
+         if (window.innerWidth < 992) {
+            sidebar.classList.add('collapsed');
+            mainContent.classList.add('no-sidebar');
+          }
+
           function checkScreenSize() {
               if (window.innerWidth < 992) {
-                  // On mobile, hide (collapse) sidebar
-                  sidebar.classList.add("collapsed");
-                  mainContent.classList.add("no-sidebar");
+                  // Mobile: sidebar is collapsed and should only toggle via the button
+                  // sidebar.classList.add("collapsed");
+                  // mainContent.classList.add("no-sidebar");
                   enableMobileClickOutsideToCloseSidebar();
               } else {
                   // On desktop, show sidebar
@@ -1648,6 +1703,33 @@
             this.selectedIndex = 0;
           });
           
+
+          const rootList = document.getElementById('questions-list');
+// 1. 根列表：只处理顶层项目
+Sortable.create(rootList, {
+  animation: 150,
+  delay: 150,
+  delayOnTouchOnly: true,
+  fallbackTolerance: 5,
+  handle: '.drag-handle',
+  draggable: 'li.collection-item[data-type="top"]',
+  ghostClass: 'sortable-ghost',
+  forceFallback: true,
+  fallbackOnBody: true,
+  onEnd(evt) {
+    // newDraggableIndex / oldDraggableIndex 只计算可拖动的元素
+    const oldIdx = evt.oldDraggableIndex;
+    const newIdx = evt.newDraggableIndex;
+    const [moved] = surveyItems.splice(oldIdx, 1);
+    surveyItems.splice(newIdx, 0, moved);
+    renderAllItems();
+  }
+});
+
+
+
+
+
           window.addEventListener("resize", checkScreenSize);
           checkScreenSize();
       });
@@ -1983,95 +2065,7 @@
         });
       }
 
-      /***********************************************
-       * NEW: DRAG & DROP HANDLERS FOR SIDEBAR ITEMS
-       ***********************************************/
-      // For top-level items (questions and group headers)
-      function handleTopDragStart(e) {
-        e.dataTransfer.setData("text/plain", JSON.stringify({ type: "top", index: parseInt(e.target.dataset.index, 10) }));
-      }
-      function handleTopDragOver(e) {
-        e.preventDefault();
-      }
-// Top-level drop handler: always reorders top-level items.
-function handleTopDrop(e) {
-  e.preventDefault();
-  const targetLI = e.target.closest("li");
-  if (!targetLI || !targetLI.dataset.index) return;
-  const targetIndex = parseInt(targetLI.dataset.index, 10);
-  const draggedData = JSON.parse(e.dataTransfer.getData("text/plain"));
-  if (draggedData.type !== "top") return;
-  const draggedIndex = draggedData.index;
-  if (draggedIndex === targetIndex) return;
-  // Reorder the main surveyItems array.
-  const draggedItem = surveyItems.splice(draggedIndex, 1)[0];
-  surveyItems.splice(targetIndex, 0, draggedItem);
-  renderAllItems();
-}
-
-
-// Sub-question drop handler: handles reordering of sub–questions
-// and allows a standalone question (dragged as "top") to be dropped into a group.
-function handleSubDrop(e) {
-  e.preventDefault();
-  const targetLI = e.target.closest("li");
-  if (!targetLI || targetLI.dataset.type !== "sub") return;
-  const targetGroupIndex = parseInt(targetLI.dataset.groupIndex, 10);
-  const targetSubIndex = parseInt(targetLI.dataset.subIndex, 10);
-  const draggedData = JSON.parse(e.dataTransfer.getData("text/plain"));
-      
-  if (draggedData.type === "sub") {
-    // Reorder within (or between) groups:
-    const sourceGroup = surveyItems[draggedData.groupIndex];
-    if (!sourceGroup || !sourceGroup.subQuestions) return;
-    const draggedSub = sourceGroup.subQuestions.splice(draggedData.subIndex, 1)[0];
-    surveyItems[targetGroupIndex].subQuestions.splice(targetSubIndex, 0, draggedSub);
-    renderAllItems();
-  } else if (draggedData.type === "top") {
-    // Dragged item is a standalone question.
-    const draggedItem = surveyItems.splice(draggedData.index, 1)[0];
-    surveyItems[targetGroupIndex].subQuestions.splice(targetSubIndex, 0, draggedItem);
-    renderAllItems();
-  }
-}
-
-
-
-
-      /***********************************************
-		 * MODIFY DRAG & DROP HANDLERS FOR SUB–QUESTIONS
-		 * Allow moving a sub–question from one group to another.
-		 ***********************************************/
-		function handleSubDragStart(e) {
-		  const targetLI = e.target.closest("li");
-		  const groupIndex = parseInt(targetLI.dataset.groupIndex, 10);
-		  const subIndex = parseInt(targetLI.dataset.subIndex, 10);
-		  e.dataTransfer.setData("text/plain", JSON.stringify({ type: "sub", groupIndex: groupIndex, subIndex: subIndex }));
-		}
-
-		function handleSubDragOver(e) {
-		  e.preventDefault();
-		}
-
-		function handleSubDrop(e) {
-		  e.preventDefault();
-		  const targetLI = e.target.closest("li");
-		  if (!targetLI || targetLI.dataset.type !== "sub") return;
-		  const targetGroupIndex = parseInt(targetLI.dataset.groupIndex, 10);
-		  const targetSubIndex = parseInt(targetLI.dataset.subIndex, 10);
-		  const draggedData = JSON.parse(e.dataTransfer.getData("text/plain"));
-		  if (draggedData.type !== "sub") return;
-		  // Remove the dragged sub–question from its original group:
-		  const sourceGroup = surveyItems[draggedData.groupIndex];
-		  if (!sourceGroup || !sourceGroup.subQuestions) return;
-		  const draggedSub = sourceGroup.subQuestions.splice(draggedData.subIndex, 1)[0];
-		  // Insert the dragged sub–question into the target group's subQuestions array:
-		  const targetGroup = surveyItems[targetGroupIndex];
-		  targetGroup.subQuestions.splice(targetSubIndex, 0, draggedSub);
-		  renderAllItems();
-		}
-
-      
+ 
       /***********************************************
        * RENDER MASTER
        ***********************************************/
@@ -2658,7 +2652,6 @@ anchorValuesSelect.style.height = "auto"; // adjust as needed
       // Render top-level standalone question
             const listItem = document.createElement("li");
             listItem.className = "collection-item";
-            listItem.draggable = true;
             listItem.dataset.type = "top";
             listItem.dataset.index = index;
       
@@ -2674,10 +2667,17 @@ anchorValuesSelect.style.height = "auto"; // adjust as needed
               : i18n_local[currentLang].questionPlaceholder + (index + 1);
             listItem.appendChild(textSpan);
       
-      // Attach top-level drag events
-            listItem.addEventListener("dragstart", handleTopDragStart);
-            listItem.addEventListener("dragover", handleTopDragOver);
-            listItem.addEventListener("drop", handleTopDrop);
+            // drag-and-drop handle
+            const handleSpan = document.createElement("span");
+            handleSpan.className = "drag-handle material-icons";
+            handleSpan.textContent = "drag_indicator";
+
+
+            listItem.appendChild(handleSpan);
+
+
+
+    
       
       // On click, scroll to question card
             listItem.onclick = () => {
@@ -2692,13 +2692,12 @@ anchorValuesSelect.style.height = "auto"; // adjust as needed
             addContextMenuAndSwipeForStandalone(listItem, index);
             listContainer.appendChild(listItem);
           } else if (item.type === "group") {
-      // Render group header
+           // Render group header
             const groupItem = document.createElement("li");
             groupItem.className = "collection-item";
-            groupItem.draggable = true;
             groupItem.dataset.type = "top";
             groupItem.dataset.index = index;
-      
+            
             const indexCircle = document.createElement("span");
             indexCircle.className = "list-index-circle group-index-circle";
             indexCircle.textContent = index + 1;
@@ -2709,11 +2708,16 @@ anchorValuesSelect.style.height = "auto"; // adjust as needed
               ? item.groupTitle.substring(0, 40) + (item.groupTitle.length > 40 ? "..." : "")
               : i18n_local[currentLang].groupPlaceholder + (index + 1);
             groupItem.appendChild(textSpan);
+
+
+            // Drag handle for group
+            const handleSpan = document.createElement("span");
+            handleSpan.className = "drag-handle material-icons";
+            handleSpan.textContent = "drag_indicator";
+            groupItem.appendChild(handleSpan);
+
       
-            groupItem.addEventListener("dragstart", handleTopDragStart);
-            groupItem.addEventListener("dragover", handleTopDragOver);
-            groupItem.addEventListener("drop", handleTopDrop);
-      
+   
             groupItem.onclick = () => {
               const cardId = `group-card-${index}`;
               const targetCard = document.getElementById(cardId);
@@ -2726,49 +2730,23 @@ anchorValuesSelect.style.height = "auto"; // adjust as needed
 
             listContainer.appendChild(groupItem);
 
-      // Render the group's sub–questions in a nested list (UL)
+            // Render the group's sub–questions in a nested list (UL)
             if (item.subQuestions && item.subQuestions.length > 0) {
               const subList = document.createElement("ul");
               subList.style.listStyle = "none";
               subList.style.paddingLeft = "20px";
-        // Save the parent group index so we can use it in the drop handler.
+              // Save the parent group index so we can use it in the drop handler.
               subList.dataset.groupIndex = index;
-
-        // Attach drop handler on the UL to catch drops in the empty area.
-              subList.addEventListener("dragover", (e) => { e.preventDefault(); });
-              subList.addEventListener("drop", (e) => {
-                e.preventDefault();
-                const draggedData = JSON.parse(e.dataTransfer.getData("text/plain"));
-                if (draggedData.type === "top") {
-                  const groupIdx = parseInt(subList.dataset.groupIndex, 10);
-			// Check if the target group exists:
-                  if (!surveyItems[groupIdx]) {
-                    console.error("Group at index", groupIdx, "not found.");
-                    return;
-                  }
-			// Ensure the group has a subQuestions array:
-                  if (!surveyItems[groupIdx].subQuestions) {
-                    surveyItems[groupIdx].subQuestions = [];
-                  }
-			// Remove the dragged item from the top-level array:
-                  const targetGroup = surveyItems[groupIdx];
-                  const draggedItem = surveyItems.splice(draggedData.index, 1)[0];
-			// Push the dragged standalone question into the target group's subQuestions:
-                  targetGroup.subQuestions.push(draggedItem);
-                  renderAllItems();
-                }
-              });
-
 
         // For each sub–question, create an LI with its own drop handler.
               item.subQuestions.forEach((subItem, subIndex) => {
                 const subListItem = document.createElement("li");
                 subListItem.className = "collection-item";
-                subListItem.draggable = true;
                 subListItem.dataset.type = "sub";
                 subListItem.dataset.groupIndex = index;
                 subListItem.dataset.subIndex = subIndex;
 
+ 
           // Display text for the sub–question
                 let subDisplayText = "";
                 if (subItem.questionText) {
@@ -2780,11 +2758,15 @@ anchorValuesSelect.style.height = "auto"; // adjust as needed
                 subTextSpan.textContent = subDisplayText;
                 subListItem.appendChild(subTextSpan);
 
-          // Attach sub–question drag events
-                subListItem.addEventListener("dragstart", handleSubDragStart);
-                subListItem.addEventListener("dragover", handleSubDragOver);
-                subListItem.addEventListener("drop", handleSubDrop);
 
+               // Drag handle for subitem
+               const subHandleSpan = document.createElement("span");
+                subHandleSpan.className = "drag-handle material-icons";
+                subHandleSpan.textContent = "drag_indicator";
+                subListItem.appendChild(subHandleSpan);
+
+
+        
           // On click, scroll to sub–question card.
                 subListItem.onclick = () => {
                   const targetCard = document.getElementById(`question-card-${index}-${subIndex}-sub`);
@@ -2802,6 +2784,48 @@ anchorValuesSelect.style.height = "auto"; // adjust as needed
             }
           }
         });
+
+
+
+// 2. 子列表：每个组内部子问题可拖拽，禁止跨组
+function initNestedSortables() {
+  document
+    .querySelectorAll('#questions-list ul[data-group-index]')
+    .forEach(subList => {
+      const groupIndex = parseInt(subList.dataset.groupIndex, 10);
+      Sortable.create(subList, {
+        animation: 150,
+        delay: 150,
+        delayOnTouchOnly: true,
+        fallbackTolerance: 5,
+        handle: '.drag-handle',
+        draggable: 'li.collection-item[data-type="sub"]',
+        ghostClass: 'sortable-ghost',
+        // (you can drop forceFallback & fallbackOnBody here if you prefer native dragging)
+        group: { name: `group-${groupIndex}`, pull: false, put: false },
+        onEnd(evt) {
+          // ← use the draggable indices, not oldIndex/newIndex
+          const oldIdx = evt.oldDraggableIndex;
+          const newIdx = evt.newDraggableIndex;
+          if (oldIdx == null || newIdx == null) return;
+          // 1) remove from old position
+          const moved = surveyItems[groupIndex].subQuestions.splice(oldIdx, 1)[0];
+          // 2) insert at new position
+          surveyItems[groupIndex].subQuestions.splice(newIdx, 0, moved);
+          // 3) re-render and re-bind
+          renderAllItems();
+        }
+      });
+    });
+}
+
+
+initNestedSortables();
+
+
+
+
+
       }
 
 // For standalone questions: attach right-click and swipe handlers to convert to group
