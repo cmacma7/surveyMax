@@ -15,235 +15,231 @@
     />
 
     <style>
-      /* Base resets */
-      body, html {
-        margin: 0;
-        padding: 0;
-        height: 100%;
-      }
-      main {
-        margin-top: 0px;
-      }
-      .navbar-fixed {
-        z-index: 1000;
-      }
-      body.no-scroll {
-        overflow: hidden;
-      }
-
-      /**********************************************
-       * NAV BAR
-       **********************************************/		
-		#nav-title {
-		  font-size: 1.1rem; /* default size */
-		  cursor: pointer;
-      display: inline-block;
-      max-width: 70%;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-		}
-
-    .truncated {
-      display: inline-block;  /* Allows width to be applied */
-      width: 50vw;             /* Sets a fixed width relative to the parent */
-      white-space: nowrap;    /* Keeps the text on a single line */
-      overflow: hidden;       /* Hides overflow text */
-      text-overflow: ellipsis;/* Displays an ellipsis for overflow */
-      margin-left:5px;
-    }
-     
-
-
-      /**********************************************
-       * MAIN CONTENT
-       **********************************************/
-      #main-content {
-        margin-left: 500px; /* On desktop, push right for sidebar */
-        transition: margin-left 0.3s ease;
-        padding: 0 20px;
-      }
-      /* This class forcibly sets margin-left to 0 */
-      #main-content.no-sidebar {
-        margin-left: 0 !important;
-        transition: margin-left 0.3s ease;
-      }
-
-
-      /**********************************************
-       * SIDEBAR
-       **********************************************/
-
-
-
-  /* 讓整個列表都能垂直滑動 */
-#sidebar, 
-#questions-list {
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;  /* iOS 平滑滾動 */
-  direction: ltr;
-  overscroll-behavior: contain;
-  overscroll-behavior-y: contain;
+/* Base resets */
+body, html {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+main {
+  margin-top: 0;
+}
+.navbar-fixed {
+  z-index: 1000;
+}
+body.no-scroll {
+  overflow: hidden;
 }
 
-/* 清除原本 collection-item 的 touch-action:none */
+/* NAV BAR */
+#nav-title {
+  display: inline-block;
+  max-width: 70%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+.truncated {
+  display: inline-block;
+  width: 50vw;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-left: 5px;
+}
+
+/* MAIN CONTENT */
+#main-content {
+  margin-left: 500px;
+  padding: 0 20px;
+  transition: margin-left 0.3s ease;
+}
+#main-content.no-sidebar {
+  margin-left: 0 !important;
+}
+
+/* GROUP CARD STYLING */
+.group-card {
+  border-left: 4px solid #2196F3 !important;
+  margin-top: 1.5rem;
+}
+
+.group-title-header {
+  background-color: #e3f2fd;
+  padding: 1rem;
+  margin: -1rem -1rem 1rem -1rem;
+  border-radius: 4px 4px 0 0;
+}
+
+.group-title-header label {
+  color: #0d47a1 !important;
+  font-size: 1.1rem !important;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.group-title-input {
+  font-size: 1.2rem !important;
+  font-weight: 600 !important;
+  border-bottom: 2px solid #2196F3 !important;
+  padding: 0.5rem 0 !important;
+}
+
+.group-title-input:focus {
+  border-bottom: 2px solid #1565C0 !important;
+  box-shadow: 0 1px 0 0 #1565C0 !important;
+}
+
+/* Add some spacing between groups */
+.group-card + .group-card {
+  margin-top: 2rem;
+}
+
+
+/* SIDEBAR & QUESTIONS LIST */
+#sidebar,
+#questions-list {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+#sidebar {
+  position: fixed;
+  top: 64px;
+  left: 0;
+  width: 500px;
+  height: calc(100% - 64px);
+  transition: transform 0.3s ease;
+  z-index: 999;
+  background: #fff;
+  box-shadow: 0 0 12px 0;
+  direction: rtl;
+}
+#sidebar > * {
+  direction: ltr;
+}
+#sidebar.collapsed {
+  transform: translateX(-110%);
+}
+#sidebar.with-gutter {
+  width: 500px;
+}
+#sidebar.with-gutter .scroll-gutter {
+  display: none;
+}
+#sidebar.with-gutter #questions-list {
+  margin-left: 0;
+}
+
+/* Questions list items */
 #questions-list .collection-item {
-  touch-action: pan-y;       /* 只阻擋水平方向，允許垂直捲動 */
-  pointer-events: auto;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  touch-action: pan-y;
+  pointer-events: auto;
+}
+#questions-list .collection-item:hover {
+  background-color: #e0e0e0;
+}
+#questions-list .collection-item:active {
+  cursor: grabbing;
 }
 
-/* 把手區域才能攔截手勢，開始拖曳 */
+/* Drag handle */
 #questions-list .drag-handle {
   cursor: grab;
-  touch-action: none;                /* 禁用滑動，以便啟動拖曳 */
-  padding: 0 8px;
+  touch-action: none;
   user-select: none;
-  -webkit-user-select: none;
-  -ms-user-select: none;  
 }
+
+#questions-list .collection-item[data-type="sub"] .drag-handle {
+  margin-left: auto;
+  text-align: right;
+  /* undo the generic padding */
+  padding: 0;
+}
+
 #questions-list .drag-handle:active {
   cursor: grabbing;
 }
-     
-	/* Force the sidebar to always show a scrollbar and display it on the left */
-	#sidebar {
-	  position: fixed;
-	  top: 64px;
-	  left: 0;
-	  width: 500px;
-	  height: calc(100% - 64px);
-	  overflow-y: scroll;              /* Always show scrollbar */
-	  -webkit-overflow-scrolling: touch;
-	  transition: transform 0.3s ease;
-	  z-index: 999;
-	  background: white;
-	  box-shadow: 0 0 12px 0px;
-	  direction: rtl;                  /* Force scrollbar to the left */
-	}
 
-	/* Reset the direction for inner content so that text is left-to-right */
-	
-
-      #sidebar.collapsed {
-        transform: translateX(-110%);
-      }
-  
-	  
-      #questions-list .collection-item:active {
-        cursor: grabbing;
-      }
-      #questions-list .collection-item:hover {
-        background-color: #e0e0e0;
-      }
-
-      /* A small circle to display question (or group) index number */
-      .list-index-circle {
-        display: inline-block;
-        border-radius: 50%;
-        width: 24px;
-        height: 24px;
-        line-height: 24px;
-        text-align: center;
-        background-color: #2196f3;
-        color: #fff;
-        margin-right: 8px;
-        font-size: 14px;
-      }
-
-		/* Default (desktop): no gutter */
-		#sidebar.with-gutter {
-		  position: fixed;
-		  top: 64px;
-		  left: 0;
-		  width: 500px;
-		  height: calc(100% - 64px);
-		  overflow-y: scroll;
-		  -webkit-overflow-scrolling: touch;
-		  background: white;
-		  box-shadow: 0 0 12px 0px;
-		}
-		#sidebar.with-gutter .scroll-gutter {
-		  display: none;
-		}
-		#sidebar.with-gutter #questions-list {
-		  margin-left: 0;
-		}
-
-    .group-index-circle {
-      background-color: #ff9800; /* Distinct color for groups */
-      border-radius: 4px;        /* Square with slightly rounded corners */
-	  color: black;
-    }
-	
-/* 讓編號圓圈（list-index-circle / group-index-circle）維持固定大小，不會被壓縮或撐開 */
-#questions-list .list-index-circle,
-#questions-list .group-index-circle {
-  flex: 0 0 auto;
-}	
-	
-
-    /* 確保 fallback clone 跟 .collection-item 完全相同 */
+/* Sortable fallback style */
 .sortable-fallback {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  width: 100%;            /* 撐滿側邊欄 */
-  padding: 0 16px;        /* 跟 .collection-item 預設 padding 一致 */
-  background: #fff;       /* 跟列表項一致的背景 */
-  box-shadow: none;       /* 如果正常項目沒 shadow，就去掉 */
-  /* 如果你有其他像 font-size、line-height 等 custom style，也一起寫進來 */
+  width: 100%;
+  padding: 0 16px;
+  background: #fff;
 }
 
+/* Index circles */
+#questions-list .list-index-circle,
+#questions-list .group-index-circle {
+  flex: 0 0 auto;
+}
+.list-index-circle {
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  line-height: 24px;
+  text-align: center;
+  background-color: #2196f3;
+  color: #fff;
+  margin-right: 8px;
+  font-size: 14px;
+}
+.group-index-circle {
+  background-color: #ff9800;
+  border-radius: 4px;
+  color: #000;
+}
 
-/* ────── 頂層項目 (問題 & 群組) ────── */
-/* 文字靠左，拖拉把手 (handle) 靠右 */
+/* Top-level items */
 #questions-list .collection-item[data-type="top"] {
-  justify-content: flex-start;    /* 先排 index circle + 文字，最後 handle */
-}
-#questions-list .collection-item[data-type="top"] .drag-handle {
-  margin-left: auto;              /* 把 handle 推到最右邊 */
-}
-#questions-list .collection-item[data-type="top"] span:nth-child(2) {
-  text-align: left;               /* 文字靠左 */
-  color: #000;                    /* 可自訂頂層文字顏色 */
-}
-
-#questions-list .collection-item[data-type="top"] {
+  justify-content: flex-start;
   padding-left: 8px;
 }
+#questions-list .collection-item[data-type="top"] .drag-handle {
+  margin-left: auto;
+}
+#questions-list .collection-item[data-type="top"] span:nth-child(2) {
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: break-word;
+  text-align: left;
+  color: #000;
+}
+
+/* Group header items */
 #questions-list .collection-item.is-group-item {
   padding-left: 20px;
 }
 
-/* ────── 子題 (sub-questions) ────── */
-/* 拖拉把手靠左，文字靠右，文字顏色較淡 */
+/* Sub-questions */
 #questions-list .collection-item[data-type="sub"] {
-  display: flex;
+  display: flex !important;
   justify-content: space-between !important;
   align-items: center;
-  color: #888;                  /* 子題文字顏色 */
-  padding: 6px 16px;              /* 如同 .sortable-fallback */
+  color: #888;
+  padding: 6px 16px;
 }
-
 #questions-list .collection-item[data-type="sub"] .drag-handle {
-  margin-left: auto;            /* 把把手推到最右邊 */
+  margin-left: auto;
   margin-right: 0.2em;
-  cursor: grab;
 }
-
-
 #questions-list .collection-item[data-type="sub"] span {
-  text-align: left;             /* 文字靠左 */
-  margin-right: auto;           /* 讓文字撐滿中間 */
+  flex: 1 1 auto;
+  white-space: normal;
+  overflow-wrap: break-word;
 }
 
-/* ────── 群組＋子題連線 ────── */
-/* 1) 群組標題（collection-item 中有 .group-index-circle 的那一行）加左邊粗線 */
+/* Group-subquestions connection line */
 #questions-list > li.collection-item span.group-index-circle {
-  /* 讓整個 li 都被線框影響 */
   position: relative;
 }
 #questions-list > li.collection-item span.group-index-circle::before {
@@ -251,378 +247,209 @@
   position: absolute;
   top: 0;
   bottom: 0;
-  left: -12px;           /* 距離圈圈往左 12px */
-  width: 4px;            /* 線的粗細 */
-  background-color: #2196f3;  /* 你想要的群組色 */
+  left: -12px;
+  width: 4px;
+  background-color: #2196f3;
   border-radius: 2px;
 }
-
-/* 2) 緊跟在那個群組標題後面的 UL（它的 data-group-index 等於上面 li 的 data-index）也加左邊同一條線 */
 #questions-list > li.collection-item + ul[data-group-index] {
-  border-left: 4px solid #2196f3; /* 跟前面一樣的顏色與粗細 */
-  margin-left: 2.8em;             /* 臨時內縮，讓子題往右一點 */
-  padding-left: 1em;              /* 文字不會緊貼線 */
+  border-left: 4px solid #2196f3;
+  margin-left: 2.8em;
+  padding-left: 1em;
 }
 
-
-
-
-/* allow top-level text to wrap on multiple lines */
-#questions-list .collection-item[data-type="top"] span:nth-child(2) {
-  flex: 1 1 auto;
-  min-width: 0;               /* enable shrinking below content width */
-  white-space: normal;        /* allow line-breaks */
-  overflow-wrap: break-word;  /* break long words if needed */
+/* QUESTIONS & STICKY-BOTTOM BUTTONS */
+.question-card { 
+  margin-bottom: 20px;
+  position: relative;
 }
-
-/* allow sub-question text to wrap on multiple lines */
-#questions-list .collection-item[data-type="sub"] span {
-  white-space: normal;
-  overflow-wrap: break-word;
+.question-type-select {
+  display: block;
+  margin-top: 10px;
 }
-
-
-
-
-
-
-
-
-      /**********************************************
-       * QUESTIONS & STICKY-BOTTOM BUTTONS
-       **********************************************/
-      .question-card {
-        margin-bottom: 20px;
-        position: relative;
-      }
-      .question-type-select {
-        display: block;
-        margin-top: 10px;
-      }
-      .question-actions {
-        position: absolute;
-        background: antiquewhite;
-        border: 0px !important;
-      }
-
-      .sticky-bottom {
-        position: sticky;
-        bottom: 0;
-        background-color: #fff;
-        z-index: 998;
-        padding: 10px 0;
-        box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
-      }
-
-      .sticky-bottom .col.s12 > * {
-        margin-bottom: 10px;
-      }
-
-      /* Floating action buttons in each question or group. */
-      .question-actions, .group-actions {
-        position: absolute;
-        background: #fafafa;
-        border: 0px !important;
-        z-index: 100;
-      }
-      .question-actions button,
-      .group-actions button {
-        margin-right: 5px;
-      }
-
-	  .recording-btn {
-		background-color: red !important;
-	  }
-
-
+.question-actions,
+.group-actions {
+  position: absolute;
+  background: #fafafa;
+  border: none !important;
+  z-index: 100;
+}
+.sticky-bottom {
+  position: sticky;
+  bottom: 0;
+  background: #fff;
+  z-index: 998;
+  padding: 10px 0;
+  box-shadow: 0 -2px 4px rgba(0,0,0,0.1);
+}
 .sticky-bottom .col.s12 {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
-
-/* On small screens, hide the text in the Survey Data button, showing only the icon */
-@media only screen and (max-width: 600px) {
-  #fetch-data-btn span {
-    display: none;
-  }
+.sticky-bottom .col.s12 > * {
+  margin-bottom: 10px;
 }
 
-/* Left group remains a flex container */
+.right-buttons,
 .left-buttons {
   display: flex;
   gap: 10px;
-  margin-right: 1em;
-}
-.right-buttons {
-  display: flex;
-  gap: 10px;
 }
 
-  /*********************************************
-   * event trigger page
-   *********************************************/
-#triggersList {
-  overflow-y: auto;
-  transition: max-height 0.5s ease;
+/* Responsive adjustments */
+@media only screen and (max-width: 600px) {
+  #fetch-data-btn span { display: none; }
 }
-.hideTriggerList {
-  max-height: 0px;
-  overflow: hidden;
-  transition: max-height 0.5s ease;
+@media only screen and (max-width: 768px) {
+  #nav-title { font-size: 1rem; }
+  #sidebar.with-gutter { width: 300px; }
+  #sidebar.with-gutter .scroll-gutter {
+    display: block;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    background: radial-gradient(circle, #aaa 2px, transparent 2px),
+                radial-gradient(circle, #aaa 2px, transparent 2px);
+    background-size: 10px 10px;
+    background-position: 0 0, 5px 5px;
+    z-index: 1;
+  }
+  #sidebar.with-gutter #questions-list {
+    margin-left: 0;
+    position: relative;
+    z-index: 2;
+  }
+  #main-content { margin-left: 300px; width: 100%; }
+  .material-icons.left { margin-right: 0 !important; }
+  #add-question-text, #add-group-text, #undo-text, #redo-text,
+  #fetch-data-text, #event-trigger-text, #generate-text {
+    display: none !important;
+  }
+}
+@media only screen and (min-width: 1200px) {
+  #sidebar { width: 500px; }
+  #main-content { margin-left: 500px; }
 }
 
-.height100 {
+/* Keyframes for animations */
+@keyframes highlightFade {
+  0% { background-color: lightgrey; }
+  100% { background-color: transparent; }
+}
+.highlight-new { animation: highlightFade 0.5s ease-out; }
+@keyframes slideIn {
+  0% { transform: translateX(150px); opacity: 0; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+.slide-in { animation: slideIn 0.6s ease-out; }
+
+/* Utility */
+#loadingSpinner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
   height: 100%;
+  background-color: rgba(255,255,255,0.8);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: all;
 }
+.spinner-wrapper { text-align: center; }
+.spinner { font-size: 2em; animation: spin 1s linear infinite; }
+.loading-text { font-size: 2em; margin-left: 0.5em; }
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
+/* Event triggers list */
+#triggersList { overflow-y: auto; transition: max-height 0.5s ease; }
+.hideTriggerList { max-height: 0; overflow: hidden; transition: max-height 0.5s ease; }
+.height100 { height: 100%; }
 .sticky-footer {
   position: sticky;
   bottom: 0;
-  background-color: #fff; /* or any background to match the modal */
-  z-index: 1000;  /* ensure it stays on top */
+  background: #fff;
+  z-index: 1000;
   padding: 10px 0;
 }
 
+/* Summary page */
+#surveyDataContent {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+  padding: 1rem;
+  box-sizing: border-box;
+}
+.full-page-overlay {
+  position: fixed;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: #fff;
+  overflow-y: auto;
+  z-index: 10000;
+  transition: left 0.3s ease;
+  box-shadow: 2px 0 5px rgba(0,0,0,0.3);
+}
+.full-page-overlay.active { left: 0; }
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #9e9e9e;
+  color: #fff;
+  box-shadow: 0 0 6px 0 rgba(0,0,0,0.3);
+  position: sticky;
+  top: 0;
+}
+.page-header h5 { margin: 0.4em; }
+.close-btn {
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 1.2rem;
+  cursor: pointer;
+  margin-right: 1em;
+}
+.page-content { padding: 1rem; }
 
-
-   /*********************************************
-   * summary page
-   *********************************************/
-
-    /* Container for survey summaries */
-    #surveyDataContent {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 1rem;
-      padding: 1rem;
-      box-sizing: border-box;
-    }
-   .full-page-overlay {
-      position: fixed;
-      top: 0;
-      left: -100%;
-      width: 100%;
-      height: 100%;
-      background: #fff;
-      overflow-y: auto;
-      z-index: 10000;
-      transition: left 0.3s ease;
-      box-shadow: 2px 0 5px rgba(0,0,0,0.3);
-    }
-
-    .full-page-overlay.active {
-      left: 0;
-    }
-
-    .page-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: #9e9e9e;
-      color: #fff;
-      box-shadow: 0 0 6px 0px black;
-      position: sticky;
-      top: 0;
-    }
-    .page-header H5 {
-      margin: 0.4em;
-    
-    }
-
-    .close-btn {
-      background: transparent;
-      border: none;
-      color: #fff;
-      font-size: 1.2rem;
-      cursor: pointer;
-      margin-right: 1em;
-    }
-
-    .page-content {
-      padding: 1rem;
-    }
-
-
-  /**********************************************
-  * Root Bottom bar
-  **********************************************/
-    .more-select-container {
-      position: relative;
-      width: 50px;            /* Adjust width as needed */
-      height: 40px;           /* Adjust height as needed */
-      background-color: white; /* Button background color (blue) */
-      border-radius: 4px;
-      display: inline-block;
-    }
-
-    /* Hide the native select UI */
-    .more-select {
-      width: 100%;
-      height: 100%;
-      opacity: 0;
-      position: absolute;
-      top: 0;
-      left: 0;
-      border: none;
-      -webkit-appearance: none;
-      -moz-appearance: none;
-      appearance: none;
-      cursor: pointer;
-    }
-
-    /* Use a pseudo-element to display the more_vert icon */
-    .more-select-container::before {
-      content: 'more_vert';
-      font-family: 'Material Icons';
-      font-size: 24px;
-      line-height: 40px;
-      color: #565656;
-      text-align: center;
-      display: block;
-      pointer-events: none;
-    }
-
-
-
-
-
-
-    /**********************************************
-      * RESPONSIVE
-      **********************************************/
-
-  
-    /* Mobile devices: add a 40px gutter */
-    @media only screen and (max-width: 768px) {
-
-      #nav-title {
-        font-size: 1rem; /* smaller font on small devices */
-      }  
-      #sidebar.with-gutter {
-        width: 300px; /* original 300px + 40px for gutter */
-      }
-
-    
-
-      #sidebar.with-gutter .scroll-gutter {
-        display: block;
-        position: absolute;
-        top: 0;
-        bottom: 0;  /* Instead of height: 100%, use top: 0 and bottom: 0 */
-        left: 0;
-        width: 0px;
-
-      /* Create a grip/dot pattern using radial gradients */
-        background: radial-gradient(circle, #aaa 2px, transparent 2px),
-                    radial-gradient(circle, #aaa 2px, transparent 2px);
-        background-size: 10px 10px;
-        background-position: 0 0, 5px 5px;	
-        z-index: 1;
-      }
-      #sidebar.with-gutter #questions-list {
-        margin-left: 0px;
-        position: relative;
-        z-index: 2;
-      }
-      #main-content { 
-        margin-left: 300px;
-        width: 100%; 
-      }
-      
-      .material-icons.left {
-        margin-right: 0 !important;
-      }  
-      
-      /* Hide text on some buttons to save space */
-      #add-question-text,
-      #add-group-text,
-      #undo-text,
-      #redo-text,
-      #fetch-data-text,
-      #event-trigger-text,
-      #generate-text {
-        display: none !important;
-      }
-      .sticky-bottom i.left {
-        margin-right: 0px;
-      }
-   
-    }		    
-  
-    @media only screen and (min-width: 1200px) {
-      /* Increase the sidebar width for large screens */
-      #sidebar {
-      width: 500px; /* Adjust to your desired width */
-      }
-      /* Update main content margin to match the new sidebar width */
-      #main-content {
-      margin-left: 500px;
-      }
-    }
-
-
-		@keyframes highlightFade {
-		  0% { background-color: lightgrey; } /* blue highlight */
-		  100% { background-color: transparent; }
-		}
-
-		.highlight-new {
-		  animation: highlightFade 0.5s ease-out;
-		}
-		
-		@keyframes slideIn {
-		  0% { transform: translateX(150px); opacity: 0; }  /* Start off-screen */
-		  100% { transform: translateX(0); opacity: 1; }  /* End at normal position */
-		}
-
-		.slide-in {
-		  animation: slideIn 0.6s ease-out;
-		}
-		
-		
-
-		
-     /**********************************************
-       * Utility
-       **********************************************/
-
-      /* Full-page overlay spinner */
-      #loadingSpinner {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(255, 255, 255, 0.8); /* semi-transparent overlay */
-        z-index: 10000;  /* make sure it's above all other elements */
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        pointer-events: all;  /* ensures clicks are intercepted */
-      }
-
-      /* Optional: Style for the spinner wrapper if needed */
-      .spinner-wrapper {
-        text-align: center;
-      }
-
-      @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-      }
-
-      .spinner {
-        font-size: 2em;
-        animation: spin 1s linear infinite;
-      }
-
-      .loading-text {
-        font-size: 2em;
-        margin-left: 0.5em; /* Optional spacing */
-      }
-		
-		        
+/* Root bottom bar */
+.more-select-container {
+  position: relative;
+  width: 50px;
+  height: 40px;
+  background: #fff;
+  border-radius: 4px;
+  display: inline-block;
+}
+.more-select {
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  position: absolute;
+  top: 0;
+  left: 0;
+  border: none;
+  appearance: none;
+  cursor: pointer;
+}
+.more-select-container::before {
+  content: 'more_vert';
+  font-family: 'Material Icons';
+  font-size: 24px;
+  line-height: 40px;
+  color: #565656;
+  text-align: center;
+  display: block;
+  pointer-events: none;
+}
+       
 
     </style>
   </head>
@@ -2631,10 +2458,12 @@
         cardContent.className = "card-content";
 
         // GROUP TITLE
-        const groupTitleLabel = document.createElement("label");
-        groupTitleLabel.textContent = i18n_local[currentLang].groupTitleLabel;
-        cardContent.appendChild(groupTitleLabel);
+const groupTitleContainer = document.createElement("div");
+groupTitleContainer.className = "group-title-header";
 
+const groupTitleLabel = document.createElement("label");
+groupTitleLabel.textContent = i18n_local[currentLang].groupTitleLabel;
+groupTitleLabel.style.fontWeight = "bold";
         const groupTitleInput = document.createElement("input");
         groupTitleInput.type = "text";
         groupTitleInput.value = groupObj.groupTitle || "";
@@ -2642,7 +2471,9 @@
             groupObj.groupTitle = e.target.value;
             renderSidebarList();
         };
-        cardContent.appendChild(groupTitleInput);
+groupTitleContainer.appendChild(groupTitleLabel);
+groupTitleContainer.appendChild(groupTitleInput);
+cardContent.appendChild(groupTitleContainer);
 
         // ANCHOR QUESTION SELECT
         const anchorLabel = document.createElement("label");
@@ -2974,7 +2805,11 @@
 				group: {
 				  name: 'shared',
 				  pull: true,    // allow dragging out of this group
-				  put: true      // allow dropping into this group
+				  put: function(to, from, dragEl) {
+						  // Only allow questions to be dropped in subquestion lists
+						  const isGroupItem = dragEl.classList.contains('is-group-item');
+						  return !isGroupItem;
+						}
 				},
 				onAdd(evt) {
 				  // Something was dropped into this sub-list (either from root or another group)
