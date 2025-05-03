@@ -15,59 +15,59 @@
     />
 
     <style>
-      /* Base resets */
-      body, html {
-        margin: 0;
-        padding: 0;
-        height: 100%;
-      }
-      main {
+/* Base resets */
+body, html {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+main {
         margin-top: 0px;
-      }
-      .navbar-fixed {
-        z-index: 1000;
-      }
-      body.no-scroll {
-        overflow: hidden;
-      }
+}
+.navbar-fixed {
+  z-index: 1000;
+}
+body.no-scroll {
+  overflow: hidden;
+}
 
       /**********************************************
        * NAV BAR
        **********************************************/		
-		#nav-title {
+#nav-title {
 		  font-size: 1.1rem; /* default size */
 		  cursor: pointer;
-      display: inline-block;
-      max-width: 70%;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-		}
+  display: inline-block;
+  max-width: 70%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
-    .truncated {
+.truncated {
       display: inline-block;  /* Allows width to be applied */
       width: 50vw;             /* Sets a fixed width relative to the parent */
       white-space: nowrap;    /* Keeps the text on a single line */
       overflow: hidden;       /* Hides overflow text */
       text-overflow: ellipsis;/* Displays an ellipsis for overflow */
       margin-left:5px;
-    }
-     
+}
+
 
 
       /**********************************************
        * MAIN CONTENT
        **********************************************/
-      #main-content {
+#main-content {
         margin-left: 500px; /* On desktop, push right for sidebar */
         transition: margin-left 0.3s ease;
-        padding: 0 20px;
-      }
+  padding: 0 20px;
+}
       /* This class forcibly sets margin-left to 0 */
-      #main-content.no-sidebar {
-        margin-left: 0 !important;
+#main-content.no-sidebar {
+  margin-left: 0 !important;
         transition: margin-left 0.3s ease;
-      }
+}
 
 /* GROUP CARD STYLING */
 .group-card {
@@ -107,14 +107,25 @@
 }
 
 
-      /**********************************************
-       * SIDEBAR
-       **********************************************/
+/* Card highlight effect */
+/* Card highlight effect */
+.question-card.highlighted,
+.group-card.highlighted {
+  box-shadow: 0 0 12px rgba(33, 150, 243, 0.6);
+  border: 2px solid #2196F3 !important;
+  transform: scale(1.02);
+  transition: all 0.3s ease;
+}
+
+
+/**********************************************
+  * SIDEBAR
+  **********************************************/
 
 
 
   /* 讓整個列表都能垂直滑動 */
-#sidebar, 
+#sidebar,
 #questions-list {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;  /* iOS 平滑滾動 */
@@ -146,16 +157,16 @@
 }
      
 	/* Force the sidebar to always show a scrollbar and display it on the left */
-	#sidebar {
-	  position: fixed;
-	  top: 64px;
-	  left: 0;
-	  width: 500px;
-	  height: calc(100% - 64px);
+#sidebar {
+  position: fixed;
+  top: 64px;
+  left: 0;
+  width: 500px;
+  height: calc(100% - 64px);
 	  overflow-y: scroll;              /* Always show scrollbar */
 	  -webkit-overflow-scrolling: touch;
-	  transition: transform 0.3s ease;
-	  z-index: 999;
+  transition: transform 0.3s ease;
+  z-index: 999;
 	  background: white;
 	  box-shadow: 0 0 12px 0px;
 	  direction: rtl;                  /* Force scrollbar to the left */
@@ -164,9 +175,9 @@
 	/* Reset the direction for inner content so that text is left-to-right */
 	
 
-      #sidebar.collapsed {
-        transform: translateX(-110%);
-      }
+#sidebar.collapsed {
+  transform: translateX(-110%);
+}
   
 	  
       #questions-list .collection-item:active {
@@ -191,36 +202,36 @@
       }
 
 		/* Default (desktop): no gutter */
-		#sidebar.with-gutter {
+#sidebar.with-gutter {
 		  position: fixed;
 		  top: 64px;
 		  left: 0;
-		  width: 500px;
+  width: 500px;
 		  height: calc(100% - 64px);
 		  overflow-y: scroll;
 		  -webkit-overflow-scrolling: touch;
 		  background: white;
 		  box-shadow: 0 0 12px 0px;
-		}
-		#sidebar.with-gutter .scroll-gutter {
-		  display: none;
-		}
-		#sidebar.with-gutter #questions-list {
-		  margin-left: 0;
-		}
+}
+#sidebar.with-gutter .scroll-gutter {
+  display: none;
+}
+#sidebar.with-gutter #questions-list {
+  margin-left: 0;
+}
 
     .group-index-circle {
       background-color: #ff9800; /* Distinct color for groups */
       border-radius: 4px;        /* Square with slightly rounded corners */
 	  color: black;
-    }
-	
+}
+
 /* 讓編號圓圈（list-index-circle / group-index-circle）維持固定大小，不會被壓縮或撐開 */
 #questions-list .list-index-circle,
 #questions-list .group-index-circle {
   flex: 0 0 auto;
-}	
-	
+}
+
 
     /* 確保 fallback clone 跟 .collection-item 完全相同 */
 .sortable-fallback {
@@ -316,40 +327,49 @@
 #questions-list .collection-item[data-type="sub"] span {
   white-space: normal;
   overflow-wrap: break-word;
+  }
+
+
+
+/* Highlight style for sidebar items */
+#questions-list .collection-item.highlighted {
+  background-color: #e3f2fd;
+  border-left: 4px solid #2196F3;
 }
 
 
 
+ 
 
 
 
 
 
-      /**********************************************
-       * QUESTIONS & STICKY-BOTTOM BUTTONS
-       **********************************************/
-      .question-card {
-        margin-bottom: 20px;
-        position: relative;
-      }
-      .question-type-select {
-        display: block;
-        margin-top: 10px;
-      }
+/**********************************************
+  * QUESTIONS & STICKY-BOTTOM BUTTONS
+  **********************************************/
+.question-card { 
+  margin-bottom: 20px;
+  position: relative;
+}
+.question-type-select {
+  display: block;
+  margin-top: 10px;
+}
       .question-actions {
-        position: absolute;
+  position: absolute;
         background: antiquewhite;
         border: 0px !important;
-      }
+}
 
-      .sticky-bottom {
-        position: sticky;
-        bottom: 0;
+.sticky-bottom {
+  position: sticky;
+  bottom: 0;
         background-color: #fff;
-        z-index: 998;
-        padding: 10px 0;
+  z-index: 998;
+  padding: 10px 0;
         box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
-      }
+}
 
       .sticky-bottom .col.s12 > * {
         margin-bottom: 10px;
@@ -382,7 +402,7 @@
 @media only screen and (max-width: 600px) {
   #fetch-data-btn span {
     display: none;
-  }
+}
 }
 
 /* Left group remains a flex container */
@@ -428,53 +448,53 @@
    *********************************************/
 
     /* Container for survey summaries */
-    #surveyDataContent {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 1rem;
-      padding: 1rem;
-      box-sizing: border-box;
-    }
-   .full-page-overlay {
-      position: fixed;
-      top: 0;
-      left: -100%;
-      width: 100%;
-      height: 100%;
-      background: #fff;
-      overflow-y: auto;
-      z-index: 10000;
-      transition: left 0.3s ease;
-      box-shadow: 2px 0 5px rgba(0,0,0,0.3);
-    }
+#surveyDataContent {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+  padding: 1rem;
+  box-sizing: border-box;
+}
+.full-page-overlay {
+  position: fixed;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: #fff;
+  overflow-y: auto;
+  z-index: 10000;
+  transition: left 0.3s ease;
+  box-shadow: 2px 0 5px rgba(0,0,0,0.3);
+}
 
     .full-page-overlay.active {
       left: 0;
     }
 
-    .page-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: #9e9e9e;
-      color: #fff;
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #9e9e9e;
+  color: #fff;
       box-shadow: 0 0 6px 0px black;
-      position: sticky;
-      top: 0;
-    }
+  position: sticky;
+  top: 0;
+}
     .page-header H5 {
       margin: 0.4em;
     
     }
 
-    .close-btn {
-      background: transparent;
-      border: none;
-      color: #fff;
-      font-size: 1.2rem;
-      cursor: pointer;
-      margin-right: 1em;
-    }
+.close-btn {
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 1.2rem;
+  cursor: pointer;
+  margin-right: 1em;
+}
 
     .page-content {
       padding: 1rem;
@@ -484,42 +504,42 @@
   /**********************************************
   * Root Bottom bar
   **********************************************/
-    .more-select-container {
-      position: relative;
+.more-select-container {
+  position: relative;
       width: 50px;            /* Adjust width as needed */
       height: 40px;           /* Adjust height as needed */
       background-color: white; /* Button background color (blue) */
-      border-radius: 4px;
-      display: inline-block;
-    }
+  border-radius: 4px;
+  display: inline-block;
+}
 
     /* Hide the native select UI */
-    .more-select {
-      width: 100%;
-      height: 100%;
-      opacity: 0;
-      position: absolute;
-      top: 0;
-      left: 0;
-      border: none;
+.more-select {
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  position: absolute;
+  top: 0;
+  left: 0;
+  border: none;
       -webkit-appearance: none;
       -moz-appearance: none;
-      appearance: none;
-      cursor: pointer;
-    }
+  appearance: none;
+  cursor: pointer;
+}
 
     /* Use a pseudo-element to display the more_vert icon */
-    .more-select-container::before {
-      content: 'more_vert';
-      font-family: 'Material Icons';
-      font-size: 24px;
-      line-height: 40px;
-      color: #565656;
-      text-align: center;
-      display: block;
-      pointer-events: none;
-    }
-
+.more-select-container::before {
+  content: 'more_vert';
+  font-family: 'Material Icons';
+  font-size: 24px;
+  line-height: 40px;
+  color: #565656;
+  text-align: center;
+  display: block;
+  pointer-events: none;
+}
+       
 
 
 
@@ -2289,6 +2309,12 @@
         card.className = isSubQuestion ? "card question-card sub-question" : "card question-card";
         // For sub‐questions, include the group index in the ID
         card.id = isSubQuestion ? `question-card-${groupIndex}-${index}-sub` : `question-card-${index}`;
+		card.dataset.itemIndex = isSubQuestion ? `${groupIndex}-${index}` : index.toString();
+
+		card.addEventListener('mouseenter', handleCardFocus);
+		card.addEventListener('mouseleave', handleCardBlur);
+		card.addEventListener('click', handleCardFocus);
+	
 
         const cardContent = document.createElement("div");
         cardContent.className = "card-content";
@@ -2625,6 +2651,35 @@
         return card;
     }
 
+	function handleCardFocus(event) {
+	  const card = event.currentTarget;
+	  const isGroup = card.classList.contains('group-card');
+	  const selector = isGroup ? `[data-group-index="${card.dataset.groupIndex}"]` 
+							 : `[data-item-index="${card.dataset.itemIndex}"]`;
+	  
+	  document.querySelectorAll('#questions-list .highlighted').forEach(el => {
+		el.classList.remove('highlighted');
+	  });
+	  
+	  const listItem = document.querySelector(`#questions-list ${selector}`);
+	  if (listItem) {
+		listItem.classList.add('highlighted');
+		// Smooth scroll sidebar to show the item
+		listItem.scrollIntoView({
+		  behavior: 'smooth',
+		  block: 'nearest'
+		});
+	  }
+	}
+
+	function handleCardBlur() {
+	  // Optional: Remove highlight after delay if needed
+	  setTimeout(() => {
+		document.querySelectorAll('#questions-list .highlighted').forEach(el => {
+		  el.classList.remove('highlighted');
+		});
+	  }, 2000);
+	}
     /***********************************************
      * NEW FUNCTIONS: CONVERT & UNPACK
      ***********************************************/
@@ -2663,17 +2718,23 @@
         const card = document.createElement("div");
         card.className = "card group-card";
         card.id = `group-card-${index}`;
+		card.dataset.groupIndex = index.toString();
+		
+		
+		card.addEventListener('mouseenter', handleCardFocus);
+		card.addEventListener('mouseleave', handleCardBlur);
+		card.addEventListener('click', handleCardFocus);
 
         const cardContent = document.createElement("div");
         cardContent.className = "card-content";
 
         // GROUP TITLE
-const groupTitleContainer = document.createElement("div");
-groupTitleContainer.className = "group-title-header";
+		const groupTitleContainer = document.createElement("div");
+		groupTitleContainer.className = "group-title-header";
 
-        const groupTitleLabel = document.createElement("label");
-        groupTitleLabel.textContent = i18n_local[currentLang].groupTitleLabel;
-groupTitleLabel.style.fontWeight = "bold";
+		const groupTitleLabel = document.createElement("label");
+		groupTitleLabel.textContent = i18n_local[currentLang].groupTitleLabel;
+		groupTitleLabel.style.fontWeight = "bold";
         const groupTitleInput = document.createElement("input");
         groupTitleInput.type = "text";
         groupTitleInput.value = groupObj.groupTitle || "";
@@ -2681,9 +2742,9 @@ groupTitleLabel.style.fontWeight = "bold";
             groupObj.groupTitle = e.target.value;
             renderSidebarList();
         };
-groupTitleContainer.appendChild(groupTitleLabel);
-groupTitleContainer.appendChild(groupTitleInput);
-cardContent.appendChild(groupTitleContainer);
+		groupTitleContainer.appendChild(groupTitleLabel);
+		groupTitleContainer.appendChild(groupTitleInput);
+		cardContent.appendChild(groupTitleContainer);
 
         // ANCHOR QUESTION SELECT
         const anchorLabel = document.createElement("label");
@@ -2859,6 +2920,18 @@ cardContent.appendChild(groupTitleContainer);
     /***********************************************
      * RENDER SIDEBAR
      ***********************************************/
+	 
+	function highlightCorrespondingCard(card) {
+	  // Clear all card highlights
+	  document.querySelectorAll('.question-card.highlighted, .group-card.highlighted').forEach(el => {
+		el.classList.remove('highlighted');
+	  });
+
+	  card.classList.add('highlighted');
+
+
+	}
+	 
     function renderSidebarList() {
         const listContainer = document.getElementById("questions-list");
         listContainer.innerHTML = "";
@@ -2870,6 +2943,8 @@ cardContent.appendChild(groupTitleContainer);
                 listItem.className = "collection-item";
                 listItem.dataset.type = "top";
                 listItem.dataset.index = index;
+				listItem.dataset.itemIndex = index;
+
 
                 // Display index circle and text
                 const indexCircle = document.createElement("span");
@@ -2896,11 +2971,12 @@ cardContent.appendChild(groupTitleContainer);
                     const targetCard = document.getElementById(cardId);
                     if (targetCard) {
                         const elementPosition = targetCard.getBoundingClientRect().top;
-                        const offsetPosition = elementPosition + window.pageYOffset - 50;
+                        const offsetPosition = elementPosition + window.pageYOffset - 100;
                         window.scrollTo({
                             top: offsetPosition,
                             behavior: "smooth"
                         });
+						highlightCorrespondingCard(targetCard);
                     }
                 };
                 addContextMenuAndSwipeForStandalone(listItem, index);
@@ -2911,6 +2987,7 @@ cardContent.appendChild(groupTitleContainer);
                 groupItem.className = "collection-item is-group-item";
                 groupItem.dataset.type = "top";
                 groupItem.dataset.index = index;
+				groupItem.dataset.groupIndex = index;
 
                 const indexCircle = document.createElement("span");
                 indexCircle.className = "list-index-circle group-index-circle";
@@ -2934,7 +3011,7 @@ cardContent.appendChild(groupTitleContainer);
                     const targetCard = document.getElementById(cardId);
                     if (targetCard) {
                         const elementPosition = targetCard.getBoundingClientRect().top;
-                        const offsetPosition = elementPosition + window.pageYOffset - 50;
+                        const offsetPosition = elementPosition + window.pageYOffset - 100;
                         window.scrollTo({
                             top: offsetPosition,
                             behavior: "smooth"
@@ -2959,6 +3036,7 @@ cardContent.appendChild(groupTitleContainer);
                         subListItem.dataset.type = "sub";
                         subListItem.dataset.groupIndex = index;
                         subListItem.dataset.subIndex = subIndex;
+						subListItem.dataset.itemIndex = `${index}-${subIndex}`;
 
                         // Display text for the sub–question
                         let subDisplayText = "";
@@ -2982,11 +3060,12 @@ cardContent.appendChild(groupTitleContainer);
                             const targetCard = document.getElementById(`question-card-${index}-${subIndex}-sub`);
                             if (targetCard) {
                                 const elementPosition = targetCard.getBoundingClientRect().top;
-                                const offsetPosition = elementPosition + window.pageYOffset - 50;
+                                const offsetPosition = elementPosition + window.pageYOffset - 100;
                                 window.scrollTo({
                                     top: offsetPosition,
                                     behavior: "smooth"
                                 });
+								highlightCorrespondingCard(targetCard);
                             }
                         };
                         addContextMenuAndSwipeForSub(subListItem, index, subIndex);
