@@ -211,6 +211,13 @@
   color: #000;                    /* 可自訂頂層文字顏色 */
 }
 
+#questions-list .collection-item[data-type="top"] {
+  padding-left: 8px;
+}
+#questions-list .collection-item.is-group-item {
+  padding-left: 20px;
+}
+
 /* ────── 子題 (sub-questions) ────── */
 /* 拖拉把手靠左，文字靠右，文字顏色較淡 */
 #questions-list .collection-item[data-type="sub"] {
@@ -253,7 +260,7 @@
 /* 2) 緊跟在那個群組標題後面的 UL（它的 data-group-index 等於上面 li 的 data-index）也加左邊同一條線 */
 #questions-list > li.collection-item + ul[data-group-index] {
   border-left: 4px solid #2196f3; /* 跟前面一樣的顏色與粗細 */
-  margin-left: 1.5em;             /* 臨時內縮，讓子題往右一點 */
+  margin-left: 2.8em;             /* 臨時內縮，讓子題往右一點 */
   padding-left: 1em;              /* 文字不會緊貼線 */
 }
 
@@ -1785,25 +1792,45 @@
 
         const rootList = document.getElementById('questions-list');
         // 1. 根列表：只处理顶层项目
-        Sortable.create(rootList, {
-            animation: 150,
-            delay: 150,
-            delayOnTouchOnly: true,
-            fallbackTolerance: 5,
-            handle: '.drag-handle',
-            draggable: 'li.collection-item[data-type="top"]',
-            ghostClass: 'sortable-ghost',
-            forceFallback: true,
-            fallbackOnBody: true,
-            onEnd(evt) {
-                // newDraggableIndex / oldDraggableIndex 只计算可拖动的元素
-                const oldIdx = evt.oldDraggableIndex;
-                const newIdx = evt.newDraggableIndex;
-                const [moved] = surveyItems.splice(oldIdx, 1);
-                surveyItems.splice(newIdx, 0, moved);
-                renderAllItems();
-            }
-        });
+		Sortable.create(rootList, {
+		  animation: 150,
+		  delay: 150,
+		  delayOnTouchOnly: true,
+		  fallbackTolerance: 5,
+		  handle: '.drag-handle',
+		  draggable: 'li.collection-item',      // allow both top and sub items
+		  group: {
+			name: 'shared',
+			pull: true,                          // let roots pull out items
+			put: true                            // let roots accept items
+		  },
+		  onAdd(evt) {
+			// A sub-question was dragged out of a group into root
+			const oldParent = evt.from;
+			const oldIdx    = evt.oldDraggableIndex;
+			const newIdx    = evt.newDraggableIndex;
+			let moved;
+			if (oldParent !== rootList) {
+			  // it came from a sub-list: remove from that group's subQuestions
+			  const groupIndex = parseInt(oldParent.dataset.groupIndex, 10);
+			  moved = surveyItems[groupIndex].subQuestions.splice(oldIdx, 1)[0];
+			} else {
+			  // it came from root → unlikely here, but handle generically:
+			  moved = surveyItems.splice(oldIdx, 1)[0];
+			}
+			// insert into top-level surveyItems
+			surveyItems.splice(newIdx, 0, moved);
+			renderAllItems();
+		  },
+		  onEnd(evt) {
+			// Reorder within root list
+			if (evt.from === rootList && evt.to === rootList) {
+			  const [moved] = surveyItems.splice(evt.oldDraggableIndex, 1);
+			  surveyItems.splice(evt.newDraggableIndex, 0, moved);
+			  renderAllItems();
+			}
+		  }
+		});
 
         window.addEventListener("resize", checkScreenSize);
         checkScreenSize();
@@ -2582,10 +2609,12 @@
     }
 
     function unpackSubQuestion(groupIndex, subIndex) {
-        // Remove a sub‐question from a group and add it as a standalone question.
-        const groupItem = surveyItems[groupIndex];
-        const question = groupItem.subQuestions.splice(subIndex, 1)[0];
-        surveyItems.push(question);
+		// 1) Remove the question from the group’s subQuestions
+		const groupItem = surveyItems[groupIndex];
+		const question = groupItem.subQuestions.splice(subIndex, 1)[0];
+
+		// 2) Insert it into surveyItems immediately after the group
+		surveyItems.splice(groupIndex + 1, 0, question);
         renderAllItems();
     }
 
@@ -2838,7 +2867,7 @@
             } else if (item.type === "group") {
                 // Render group header
                 const groupItem = document.createElement("li");
-                groupItem.className = "collection-item";
+                groupItem.className = "collection-item is-group-item";
                 groupItem.dataset.type = "top";
                 groupItem.dataset.index = index;
 
@@ -2878,7 +2907,7 @@
                 if (item.subQuestions && item.subQuestions.length > 0) {
                     const subList = document.createElement("ul");
                     subList.style.listStyle = "none";
-                    subList.style.paddingLeft = "20px";
+                    subList.style.paddingLeft = "5px";
                     // Save the parent group index so we can use it in the drop handler.
                     subList.dataset.groupIndex = index;
 
@@ -2929,41 +2958,53 @@
         });
 
         // 2. 子列表：每个组内部子问题可拖拽，禁止跨组
-        function initNestedSortables() {
-            document
-            .querySelectorAll('#questions-list ul[data-group-index]')
-            .forEach(subList => {
-                const groupIndex = parseInt(subList.dataset.groupIndex, 10);
-                Sortable.create(subList, {
-                    animation: 150,
-                    delay: 150,
-                    delayOnTouchOnly: true,
-                    fallbackTolerance: 5,
-                    handle: '.drag-handle',
-                    draggable: 'li.collection-item[data-type="sub"]',
-                    ghostClass: 'sortable-ghost',
-                    // (you can drop forceFallback & fallbackOnBody here if you prefer native dragging)
-                    group: {
-                        name: `group-${groupIndex}`,
-                        pull: false,
-                        put: false
-                    },
-                    onEnd(evt) {
-                        // ← use the draggable indices, not oldIndex/newIndex
-                        const oldIdx = evt.oldDraggableIndex;
-                        const newIdx = evt.newDraggableIndex;
-                        if (oldIdx == null || newIdx == null)
-                            return;
-                        // 1) remove from old position
-                        const moved = surveyItems[groupIndex].subQuestions.splice(oldIdx, 1)[0];
-                        // 2) insert at new position
-                        surveyItems[groupIndex].subQuestions.splice(newIdx, 0, moved);
-                        // 3) re-render and re-bind
-                        renderAllItems();
-                    }
-                });
-            });
-        }
+		function initNestedSortables() {
+			const rootList = document.getElementById('questions-list');  
+		  document
+			.querySelectorAll('#questions-list ul[data-group-index]')
+			.forEach(subList => {
+			  const groupIndex = parseInt(subList.dataset.groupIndex, 10);
+			  Sortable.create(subList, {
+				animation: 150,
+				delay: 150,
+				delayOnTouchOnly: true,
+				fallbackTolerance: 5,
+				handle: '.drag-handle',
+				draggable: 'li.collection-item',
+				group: {
+				  name: 'shared',
+				  pull: true,    // allow dragging out of this group
+				  put: true      // allow dropping into this group
+				},
+				onAdd(evt) {
+				  // Something was dropped into this sub-list (either from root or another group)
+				  const oldParent = evt.from;
+				  const oldIdx    = evt.oldDraggableIndex;
+				  const newIdx    = evt.newDraggableIndex;
+				  let moved;
+				  if (oldParent === rootList) {
+					// dragged from root into this group
+					moved = surveyItems.splice(oldIdx, 1)[0];
+				  } else {
+					// dragged from another sub-list: remove from that source group
+					const srcGroup = parseInt(oldParent.dataset.groupIndex, 10);
+					moved = surveyItems[srcGroup].subQuestions.splice(oldIdx, 1)[0];
+				  }
+				  surveyItems[groupIndex].subQuestions.splice(newIdx, 0, moved);
+				  renderAllItems();
+				},
+				onEnd(evt) {
+				  // reorder inside same sub-list
+				  if (evt.from === evt.to) {
+					const arr = surveyItems[groupIndex].subQuestions;
+					const [moved] = arr.splice(evt.oldDraggableIndex, 1);
+					arr.splice(evt.newDraggableIndex, 0, moved);
+					renderAllItems();
+				  }
+				}
+			  });
+			});
+		}
 
         initNestedSortables();
 
