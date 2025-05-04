@@ -340,9 +340,24 @@ body.no-scroll {
 
 
  
+.collection-placeholder {
+	pointer-events: none;
+	height : 2em;
+	border : 2px dashed #ccc;
+	borderRadius : 4px;
+	margin : 4px 0;
+}
 
-
-
+/* Hide index circle in the drag ghost preview */
+.sortable-ghost .list-index-circle,
+.sortable-ghost .group-index-circle {
+  visibility: hidden !important;
+  width:10px;
+}
+/* Disable nesting visual when dragging groups */
+.sortable-ghost.is-group-item [data-group-index]::before {
+  display: none !important;
+}
 
 
 /**********************************************
@@ -1861,12 +1876,19 @@ body.no-scroll {
 			pull: true,                          // let roots pull out items
 			put: true                            // let roots accept items
 		  },
+		  onMove: function(evt) {
+			// Prevent groups from being moved into sub-lists
+			const isGroup = evt.dragged.classList.contains('is-group-item');
+			const isNesting = evt.to.closest('[data-group-index]');
+			return !(isGroup && isNesting);
+		  },
 		  onAdd(evt) {
 			// A sub-question was dragged out of a group into root
 			const oldParent = evt.from;
 			const oldIdx    = evt.oldDraggableIndex;
 			const newIdx    = evt.newDraggableIndex;
 			let moved;
+			if (evt.to !== rootList) return;
 			if (oldParent !== rootList) {
 			  // it came from a sub-list: remove from that group's subQuestions
 			  const groupIndex = parseInt(oldParent.dataset.groupIndex, 10);
@@ -3020,60 +3042,76 @@ body.no-scroll {
                 };
 
                 listContainer.appendChild(groupItem);
+				
+				
+				// 1) Always create a UL for the group, *before* checking length:
+				const subList = document.createElement("ul");
+				subList.dataset.groupIndex = index;
+				subList.style.listStyle    = "none";
+				subList.style.paddingLeft  = "5px";
+				
 
-                // Render the group's sub–questions in a nested list (UL)
-                if (item.subQuestions && item.subQuestions.length > 0) {
-                    const subList = document.createElement("ul");
-                    subList.style.listStyle = "none";
-                    subList.style.paddingLeft = "5px";
-                    // Save the parent group index so we can use it in the drop handler.
-                    subList.dataset.groupIndex = index;
-
+				// 2) If there *are* subQuestions, render them:
+				if (item.subQuestions && item.subQuestions.length > 0) {
                     // For each sub–question, create an LI with its own drop handler.
-                    item.subQuestions.forEach((subItem, subIndex) => {
-                        const subListItem = document.createElement("li");
-                        subListItem.className = "collection-item";
-                        subListItem.dataset.type = "sub";
-                        subListItem.dataset.groupIndex = index;
-                        subListItem.dataset.subIndex = subIndex;
-						subListItem.dataset.itemIndex = `${index}-${subIndex}`;
+					if (item.subQuestions && item.subQuestions.length > 0) {
+					    item.subQuestions.forEach((subItem, subIndex) => {
+					        const subListItem = document.createElement("li");
+					        subListItem.className = "collection-item";
+					        subListItem.dataset.type = "sub";
+					        subListItem.dataset.groupIndex = index;
+					        subListItem.dataset.subIndex = subIndex;
+					        subListItem.dataset.itemIndex = `${index}-${subIndex}`;
 
-                        // Display text for the sub–question
-                        let subDisplayText = "";
-                        if (subItem.questionText) {
-                            subDisplayText = subItem.questionText.substring(0, 40) + (subItem.questionText.length > 40 ? "..." : "");
-                        } else {
-                            subDisplayText = i18n_local[currentLang].questionPlaceholder + (subIndex + 1);
-                        }
-                        const subTextSpan = document.createElement("span");
-                        subTextSpan.textContent = subDisplayText;
-                        subListItem.appendChild(subTextSpan);
+					        // Display text for the sub–question
+					        let subDisplayText = "";
+					        if (subItem.questionText) {
+					            subDisplayText = subItem.questionText.substring(0, 40) + (subItem.questionText.length > 40 ? "..." : "");
+					        } else {
+					            subDisplayText = i18n_local[currentLang].questionPlaceholder + (subIndex + 1);
+					        }
+					        const subTextSpan = document.createElement("span");
+					        subTextSpan.textContent = subDisplayText;
+					        subListItem.appendChild(subTextSpan);
 
-                        // Drag handle for subitem
-                        const subHandleSpan = document.createElement("span");
-                        subHandleSpan.className = "drag-handle material-icons";
-                        subHandleSpan.textContent = "drag_indicator";
-                        subListItem.appendChild(subHandleSpan);
+					        // Drag handle for subitem
+					        const subHandleSpan = document.createElement("span");
+					        subHandleSpan.className = "drag-handle material-icons";
+					        subHandleSpan.textContent = "drag_indicator";
+					        subListItem.appendChild(subHandleSpan);
 
-                        // On click, scroll to sub–question card.
-                        subListItem.onclick = () => {
-                            const targetCard = document.getElementById(`question-card-${index}-${subIndex}-sub`);
-                            if (targetCard) {
-                                const elementPosition = targetCard.getBoundingClientRect().top;
-                                const offsetPosition = elementPosition + window.pageYOffset - 100;
-                                window.scrollTo({
-                                    top: offsetPosition,
-                                    behavior: "smooth"
-                                });
-								highlightCorrespondingCard(targetCard);
-                            }
-                        };
-                        addContextMenuAndSwipeForSub(subListItem, index, subIndex);
-                        subList.appendChild(subListItem);
-                    });
+					        // On click, scroll to sub–question card.
+					        subListItem.onclick = () => {
+					            const targetCard = document.getElementById(`question-card-${index}-${subIndex}-sub`);
+					            if (targetCard) {
+					                const elementPosition = targetCard.getBoundingClientRect().top;
+					                const offsetPosition = elementPosition + window.pageYOffset - 100;
+					                window.scrollTo({
+					                    top: offsetPosition,
+					                    behavior: "smooth"
+					                });
+					                highlightCorrespondingCard(targetCard);
+					            }
+					        };
+					        addContextMenuAndSwipeForSub(subListItem, index, subIndex);
+					        subList.appendChild(subListItem);
+					    });
+					}
+				
+				}
+				
+				
+				// Always create the placeholder but hide if subQuestions exist
+				const placeholder = document.createElement("li");
+				placeholder.className = "collection-placeholder";
+				placeholder.style.display = item.subQuestions?.length ? "none" : "block"; // Add this line
+				// ...rest of placeholder setup...
 
-                    listContainer.appendChild(subList);
-                }
+				subList.appendChild(placeholder);
+				
+				listContainer.appendChild(subList);
+
+
             }
         });
 
@@ -3090,41 +3128,52 @@ body.no-scroll {
 				delayOnTouchOnly: true,
 				fallbackTolerance: 5,
 				handle: '.drag-handle',
-				draggable: 'li.collection-item',
+				draggable: 'li:not(.collection-placeholder)',
+				emptyInsertThreshold: 30,
 				group: {
 				  name: 'shared',
 				  pull: true,    // allow dragging out of this group
-				  put: function(to, from, dragEl) {
-						  // Only allow questions to be dropped in subquestion lists
-						  const isGroupItem = dragEl.classList.contains('is-group-item');
-						  return !isGroupItem;
-						}
+				  put: true
 				},
+				onMove: function(evt) {
+					// Explicitly reject groups in sub-lists
+					return !evt.dragged.classList.contains('is-group-item');
+				  },
 				onAdd(evt) {
-				  // Something was dropped into this sub-list (either from root or another group)
-				  const oldParent = evt.from;
-				  const oldIdx    = evt.oldDraggableIndex;
-				  const newIdx    = evt.newDraggableIndex;
-				  let moved;
-				  if (oldParent === rootList) {
-					// dragged from root into this group
-					moved = surveyItems.splice(oldIdx, 1)[0];
-				  } else {
-					// dragged from another sub-list: remove from that source group
-					const srcGroup = parseInt(oldParent.dataset.groupIndex, 10);
-					moved = surveyItems[srcGroup].subQuestions.splice(oldIdx, 1)[0];
-				  }
-				  surveyItems[groupIndex].subQuestions.splice(newIdx, 0, moved);
-				  renderAllItems();
+					const oldParent = evt.from;
+					const newParent = evt.to;
+					const oldIdx    = evt.oldDraggableIndex;
+					const newIdx    = evt.newDraggableIndex;
+
+					// Remove placeholder if exists (new important logic)
+					const placeholder = newParent.querySelector('.collection-placeholder');
+					if (placeholder) {
+						placeholder.style.display = "none"; // Hide placeholder
+					}
+
+					// re-compute groupIndex now that placeholder is gone
+					let groupIndex = parseInt(newParent.dataset.groupIndex, 10);
+
+					let moved;
+					if (oldParent === rootList) {
+					  moved = surveyItems.splice(oldIdx, 1)[0];
+					  if (oldIdx < groupIndex) groupIndex -= 1;
+					} else {
+					  const srcGroup = parseInt(oldParent.dataset.groupIndex, 10);
+					  moved = surveyItems[srcGroup].subQuestions.splice(oldIdx, 1)[0];
+					}
+
+					surveyItems[groupIndex].subQuestions.splice(newIdx, 0, moved);
+					renderAllItems();
 				},
 				onEnd(evt) {
-				  // reorder inside same sub-list
-				  if (evt.from === evt.to) {
-					const arr = surveyItems[groupIndex].subQuestions;
-					const [moved] = arr.splice(evt.oldDraggableIndex, 1);
-					arr.splice(evt.newDraggableIndex, 0, moved);
-					renderAllItems();
-				  }
+					if (evt.from === evt.to) {
+					  const groupIndex = parseInt(evt.from.dataset.groupIndex, 10);
+					  const arr = surveyItems[groupIndex].subQuestions;
+					  const [moved] = arr.splice(evt.oldDraggableIndex, 1);
+					  arr.splice(evt.newDraggableIndex, 0, moved);
+					  renderAllItems();
+					}
 				}
 			  });
 			});
@@ -3303,7 +3352,17 @@ body.no-scroll {
             }
         }, 0);
     }
-
+	function createEmptyQuestion() {
+		return {
+			type: "question",
+			id: Date.now(),
+			questionText: "",
+			questionType: "text",
+			options: [],
+			required: false,
+			compack: false,
+		};
+	}
     function addGroup() {
         const newGroup = {
             type: "group",
@@ -3311,7 +3370,7 @@ body.no-scroll {
             groupTitle: "",
             anchorQuestionId: null,
             anchorValuesToShow: [],
-            subQuestions: [],
+            subQuestions: [createEmptyQuestion()],
         };
         surveyItems.push(newGroup);
         renderAllItems();
@@ -4148,6 +4207,15 @@ body.no-scroll {
 
             // Update survey items and UI
             surveyItems = importedData.surveyItems;
+			
+			surveyItems = importedData.surveyItems.map(item => {
+			    if (item.type === 'group') {
+			        item.subQuestions = item.subQuestions || []
+			    }
+			    return item
+			})
+			
+			
             document.getElementById("survey-title-input").value = importedData.surveyTitle || "";
             // Update banner image if available
             document.getElementById("survey-banner-input").value = importedData.bannerImage || "";
