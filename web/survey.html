@@ -57,10 +57,28 @@
 	  }
 
       /* Highlight invalid question panels */
-      .invalid-question {
-        border-left: 4px solid #ff7043 !important; /* warm, soft orange */
-        background-color: #fff3e0; /* light warm background */
-      }
+     .invalid-question {
+		  border-left: 4px solid #ff4081 !important; /* More vibrant pink */
+		  background-color: #ffe4ec; /* Light pink background */
+		  animation: pulse 0.5s ease-in-out;
+		}
+	@keyframes pulse {
+	  0% { transform: translateX(0); }
+	  25% { transform: translateX(5px); }
+	  50% { transform: translateX(-5px); }
+	  100% { transform: translateX(0); }
+	}
+
+	/* Add error message below invalid questions */
+	.error-message {
+	  color: #d32f2f;
+	  font-size: 0.9em;
+	  margin-top: 0.5em;
+	  display: none;
+	}
+	.invalid-question .error-message {
+	  display: block;
+	}		
 
       /* Survey items styling */
       .option-item {
@@ -125,6 +143,24 @@
         border-radius: 5px;
       }
 
+
+	  /* Add to existing CSS */
+	  .required-indicator {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.2em;
+		margin-left: 0.5em;
+	  }
+	  .required-icon {
+		color: #d32f2f; /* Red color */
+		font-size: 1.1em;
+		vertical-align: middle;
+	  }
+	  .required-text {
+		color: #d32f2f;
+		font-size: 0.9em;
+		vertical-align: middle;
+	  }
 
 	  @keyframes spin {
 			0% { transform: rotate(0deg); }
@@ -481,8 +517,20 @@
 	    questionDiv.dataset.qIndex = qIndex; // e.g. "2", or "1_0"
 
 	    const label = document.createElement("h6");
-	    label.textContent =
-	        questionObj.questionText + (questionObj.required ? " *" : "");
+		
+	    label.innerHTML = questionObj.questionText;
+		if (questionObj.required) {
+		  const requiredSpan = document.createElement("span");
+		  requiredSpan.className = "required-indicator";
+		  requiredSpan.innerHTML = `
+			<i class="material-icons required-icon">error_outline</i>
+			<span class="required-text">(必填)</span>
+		  `;
+		  label.appendChild(requiredSpan);
+		}
+			
+			
+			
 	    questionDiv.appendChild(label);
 
 	    if (
@@ -983,8 +1031,16 @@
 
 	            // Validate this question
 	            if (!validateQuestion(item, index, qAnswer)) {
-	                highlightInvalid(index);
-	                allValid = false;
+				  highlightInvalid(index);
+				  allValid = false;
+				  // Add error message
+				  const questionDiv = document.querySelector(`[data-q-index="${index}"]`);
+				  if (questionDiv && !questionDiv.querySelector('.error-message')) {
+					const errorMsg = document.createElement('div');
+					errorMsg.className = 'error-message';
+					errorMsg.textContent = '此為必填問題，請填寫完整'; // "This is a required question"
+					questionDiv.appendChild(errorMsg);
+				  }
 	            }
 
 	            resultData.push({
@@ -1030,7 +1086,8 @@
 	                    }
 
 	                    if (!validateQuestion(subQ, qKey, qAnswer)) {
-	                        highlightInvalid(qKey);
+	                        const qIndexForDiv = qKey.replace('question_', '');
+	                        highlightInvalid(qIndexForDiv);
 	                        allValid = false;
 	                    }
 
