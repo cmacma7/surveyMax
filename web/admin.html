@@ -695,7 +695,36 @@ body.no-scroll {
         margin-left: 0.5em; /* Optional spacing */
       }
 		
-		        
+	/***********************	
+	*  Survey select list
+	************************/
+	
+	#importSurveyBtn, #exportSurveyBtn {
+	  border: 1px solid #ddd;
+	  border-radius: 4px;
+	  padding: 0 1rem;
+	  transition: all 0.3s ease;
+	}
+
+	#importSurveyBtn:hover, #exportSurveyBtn:hover {
+	  background-color: rgba(0,0,0,0.1);
+	}	     
+
+
+	/* In the style section */
+	#surveyList .collection-item.teal {
+		border-left: 4px solid #009688;
+	}
+
+	#surveyList .collection-item i.right {
+		margin-left: 10px;
+	}
+
+	#exportSurveyBtn:disabled {
+		background-color: #dfdfdf !important;
+		color: #666 !important;
+		cursor: not-allowed;
+	}	
 
     </style>
   </head>
@@ -843,6 +872,11 @@ body.no-scroll {
         <i class="material-icons left">download</i><!-- Import Survey text will be updated via setLanguage -->
       </a>
     </div>
+	  <a href="#!" id="exportSurveyBtn" class="btn-flat" onclick="exportSurvey()">
+		<i class="material-icons left">upload</i>
+		<span id="export-survey-text"></span>
+	  </a>
+	
     <!-- Confirm Button on Right -->
     <div>
       <a href="#!" id="confirmSurveyBtn" class="btn"><!-- Confirm text will be updated via setLanguage --></a>
@@ -1290,7 +1324,10 @@ body.no-scroll {
             deletePasswordLabel: "Enter Password:",
             deletePasswordPlaceholder: "Your password",
             deleteAccountButton: "Delete Account",
-            deleteAccountButtonConfirm: "Confirm Delete Account" // after first click
+            deleteAccountButtonConfirm: "Confirm Delete Account", // after first click,
+			exportSurvey: "Export Survey",
+			exportFileName: "Survey Export - {date}",
+			exportSurveyMessage: "Survey exported successfully to",
 
         },
         "zh-TW": {
@@ -1421,7 +1458,10 @@ body.no-scroll {
             deletePasswordLabel: "輸入密碼：",
             deletePasswordPlaceholder: "您的密碼",
             deleteAccountButton: "刪除帳戶",
-            deleteAccountButtonConfirm: "確認刪除帳戶"
+            deleteAccountButtonConfirm: "確認刪除帳戶",
+			exportSurvey: "匯出問卷",
+			exportFileName: "問卷匯出 - {date}",
+			exportSurveyMessage: "問卷已成功匯出至",
 
         },
         "ja-JP": {
@@ -1552,7 +1592,10 @@ body.no-scroll {
             deletePasswordLabel: "パスワードを入力:",
             deletePasswordPlaceholder: "あなたのパスワード",
             deleteAccountButton: "アカウント削除",
-            deleteAccountButtonConfirm: "アカウント削除を確定"
+            deleteAccountButtonConfirm: "アカウント削除を確定",
+			exportSurvey: "アンケートをエクスポート",
+			exportFileName: "アンケートエクスポート - {date}",
+			exportSurveyMessage: "アンケートが正常にエクスポートされました",
 
         }
     };
@@ -2193,6 +2236,10 @@ body.no-scroll {
         if (importSurveyBtn) {
             importSurveyBtn.innerHTML = '<i class="material-icons left">download</i>' + i18n_local[lang].importSurvey;
         }
+		const exportSurveyBtn = document.getElementById("exportSurveyBtn");
+        if (exportSurveyBtn) {
+            exportSurveyBtn.innerHTML = '<i class="material-icons left">upload</i>' + i18n_local[lang].exportSurvey;
+        }		
         const confirmSurveyBtn = document.getElementById("confirmSurveyBtn");
         if (confirmSurveyBtn) {
             confirmSurveyBtn.textContent = i18n_local[lang].confirm;
@@ -3808,24 +3855,41 @@ body.no-scroll {
         }
     }
 
+	function toggleDisabled(el, shouldDisable) {
+	  if (typeof el == 'string') {
+		el = document.getElementById(el);
+	  }
+	  if (shouldDisable) el.setAttribute("disabled", "true");
+	  else           el.removeAttribute("disabled");
+	}
     function showSelectSurveyModal(surveys, dismissible = false) {
         return new Promise((resolve) => {
             // Populate the list
             const surveyList = document.getElementById("surveyList");
             surveyList.innerHTML = ""; // clear any previous items
             const importSurveyBtn = document.getElementById("importSurveyBtn");
+			
+			
+			toggleDisabled("exportSurveyBtn", true);
+			toggleDisabled("importSurveyBtn", true);
+			
             // Add existing surveys to the list
             surveys.forEach((survey) => {
                 const li = document.createElement("li");
                 li.className = "collection-item";
                 li.style.cursor = "pointer";
+				
+				const title = survey.surveyTitle
+				  ? `${survey.surveyTitle} (ID: ${survey._id})`
+				  : `${i18n_local[currentLang].surveyIdLabel} ${survey._id}`;
 
-                // Display survey title if available; otherwise fallback to survey ID
-                if (survey.surveyTitle) {
-                    li.textContent = `${survey.surveyTitle} (ID: ${survey._id})`;
-                } else {
-                    li.textContent = i18n_local[currentLang].surveyIdLabel + " " + survey._id;
-                }
+				if (survey._id === CurrentSurveySchemaId) {
+				  li.classList.add("teal", "white-text");
+				  li.innerHTML = `${title} <i class="material-icons left">check</i>`;
+				} else {
+				  li.textContent = title;
+				}
+				
                 li.dataset.surveyId = survey._id;
 
                 // Pre-select if this survey is the current one.
@@ -3834,17 +3898,24 @@ body.no-scroll {
                 }
                 // Highlight the clicked item
                 li.onclick = function () {
-                    document.querySelectorAll("#surveyList .collection-item").forEach((item) => {
-                        item.classList.remove("blue", "white-text");
-                    });
-                    li.classList.add("blue", "white-text");
+					 document.querySelectorAll("#surveyList .collection-item").forEach((item) => {
+						item.classList.remove("blue", "teal", "white-text");
+					});
 
-                    // Enable the import button only if the selected survey matches the current one.
-                    if (li.dataset.surveyId === localStorage.CurrentSurveySchemaId) {
-                        importSurveyBtn.removeAttribute("disabled");
-                    } else {
-                        importSurveyBtn.setAttribute("disabled", true);
-                    }
+					const isCurrentSurvey = li.dataset.surveyId === CurrentSurveySchemaId;
+					const isNewSurvey = li.dataset.surveyId === "create new";
+					
+					if (isCurrentSurvey) {
+						li.classList.add("teal", "white-text");
+					}
+					else {
+						li.classList.add("blue", "white-text");
+					}
+					
+					
+					// Enable/disable buttons
+					toggleDisabled("importSurveyBtn", !(isCurrentSurvey || isNewSurvey)); 
+					toggleDisabled("exportSurveyBtn", !isCurrentSurvey);
                 };
                 // ADD: Delete icon for survey deletion
                 const deleteIcon = document.createElement("i");
@@ -3892,18 +3963,34 @@ body.no-scroll {
             createNewItem.className = "collection-item";
             createNewItem.style.cursor = "pointer";
             createNewItem.style.fontWeight = "bold";
-            createNewItem.textContent = i18n_local[currentLang].newSurvey;
+            createNewItem.innerHTML = `${i18n_local[currentLang].newSurvey}`;	
+
+			const createIcon = document.createElement("i");
+			createIcon.className = "material-icons right";
+			createIcon.style.cursor = "pointer";
+			createIcon.textContent = "add";
+			createIcon.onclick = async(e) => {
+				// trigger click 
+				const confirmBtn = document.getElementById("confirmSurveyBtn");
+				if (confirmBtn) {
+					confirmBtn.click(); // 觸發 click
+				}
+				
+			};
+			createNewItem.appendChild(createIcon);
+			
             createNewItem.dataset.surveyId = "create new";
             createNewItem.onclick = function () {
                 document.querySelectorAll("#surveyList .collection-item").forEach((item) => {
-                    item.classList.remove("blue", "white-text");
+                    item.classList.remove("blue", "teal", "white-text");
                 });
-                createNewItem.classList.add("blue", "white-text");
+                createNewItem.classList.add("blue",  "white-text");
                 if (createNewItem.dataset.surveyId === localStorage.CurrentSurveySchemaId) {
-                    importSurveyBtn.removeAttribute("disabled");
+                    toggleDisabled(importSurveyBtn, false);
                 } else {
-                    importSurveyBtn.setAttribute("disabled", true);
+                    toggleDisabled(importSurveyBtn, true);
                 }
+				toggleDisabled(exportSurveyBtn, true);
             };
             surveyList.appendChild(createNewItem);
 
@@ -3919,9 +4006,11 @@ body.no-scroll {
             }
             const selectedItem = document.querySelector("#surveyList .collection-item.blue");
             if (selectedItem && selectedItem.dataset.surveyId === localStorage.CurrentSurveySchemaId) {
-                importSurveyBtn.removeAttribute("disabled");
+                toggleDisabled("importSurveyBtn", false);
+                toggleDisabled("exportSurveyBtn", false);		
             } else {
-                importSurveyBtn.setAttribute("disabled", true);
+				toggleDisabled("importSurveyBtn", true);
+                toggleDisabled("exportSurveyBtn", true);				
             }
             modalInstance.open();
 
@@ -4549,6 +4638,64 @@ body.no-scroll {
             content.appendChild(container);
         }
     }
+	
+	
+	
+	function exportSurvey() {
+	    if (!CurrentSurveySchemaId) {
+	        M.toast({
+	            html: "Please select current survey first",
+	            displayLength: 2000
+	        });
+	        return;
+	    }
+	    const surveyData = {
+	        surveyTitle: document.getElementById("survey-title-input").value,
+	        bannerImage: document.getElementById("survey-banner-input").value,
+	        channelId: document.getElementById("channel-select").value,
+	        surveyItems: surveyItems,
+	        _channelId: document.getElementById("channel-select").value,
+	        timestamp: new Date().toISOString()
+	    };
+
+	    // Create filename
+	    const filename = i18n_local[currentLang].exportFileName
+	        .replace('{date}', new Date().toISOString().split('T')[0]) +
+	        (surveyData.surveyTitle ? ` - ${surveyData.surveyTitle}` : '') + '.json';
+
+		try {
+			// Create blob and download
+			const blob = new Blob([JSON.stringify(surveyData, null, 2)], {
+				type: 'application/json'
+			});
+			const url = URL.createObjectURL(blob);
+
+			const a = document.createElement('a');
+			a.href = url;
+			a.download = filename;
+			document.body.appendChild(a);
+			a.click();
+			
+			// Show success toast with filename
+			M.toast({
+				html: `${i18n_local[currentLang].exportSurveyMessage}: <strong>${filename}</strong>`,
+				displayLength: 4000,
+				classes: 'green'
+			});		
+
+			setTimeout(() => {
+				document.body.removeChild(a);
+				URL.revokeObjectURL(url);
+			}, 0);
+		}
+		catch (error) {
+			M.toast({
+				html: `Export failed: ${error.message}`,
+				displayLength: 4000,
+				classes: 'red'
+			});
+		}
+	}
 
     // Functions to open and close the full-page overlay.
     function openSurveyDataPage() {
