@@ -351,7 +351,24 @@
 	let uploadedImageLinks = []; // store image data URLs
 	let surveyId;
 
+	window.addEventListener('message', event => {
+	    if (event.data?.type === 'previewSurvey') {
+	        // Override the loadedSurveyItems & currentSurvey
+	        loadedSurveyItems = event.data.survey.surveyItems;
+	        currentSurvey = event.data.survey;
+	        endpointUrl = event.data.survey.endpointUrl;
+	        // Render immediately (bypass the fetch logic)
+	        renderSurvey();
+	        // Hide any spinner or hero container if not needed
+	        document.querySelector('.hero-container').style.display = 'none';
+	    }
+	});
+
+
 	window.onload = async function () {
+		// If we've already rendered via preview, do nothing
+		if (Array.isArray(loadedSurveyItems) && loadedSurveyItems.length) return;
+	
 	    // Retrieve from localStorage, or server
 
 	    // Get the query string from the URL (e.g., "?id=123&name=John")
@@ -402,7 +419,7 @@
 	    // If none found, show a message
 	    if (!loadedSurveyItems || loadedSurveyItems.length === 0) {
 	        document.getElementById("survey-questions").innerHTML =
-`<p>${languageTable[currentLanguage].noQuestions}</p>`;
+				`<p>${languageTable[currentLanguage].noQuestions}</p>`;
 	    } else {
 	        renderSurvey();
 	    }

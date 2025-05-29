@@ -612,6 +612,7 @@ body.no-scroll {
       #add-group-text,
       #undo-text,
       #redo-text,
+	  #preview-text,
       #fetch-data-text,
       #event-trigger-text,
       #generate-text {
@@ -725,6 +726,50 @@ body.no-scroll {
 		color: #666 !important;
 		cursor: not-allowed;
 	}	
+	
+	
+	
+	/***********************	
+	*  Preview Frame
+	************************/
+	#preview-modal.modal {
+	  top: 0 !important;               /* pin to top of screen */
+	  right: 0 !important;             /* pin to right edge */
+	  left: 0 !important;              /* pin to left edge */
+	  width: 100% !important;          /* full width */
+	  height: 100% !important;         /* full height */
+	  max-height: none !important;     /* disable Materialize’s max-height cap */
+	  overflow: hidden !important;     /* hide any overflow on the container */
+	}
+
+	/* 2. Make the content area occupy all of the modal (minus the footer) */
+	#preview-modal .modal-content {
+	  position: absolute;
+	  top: 0;
+	  left: 0;
+	  right: 0;
+	  bottom: 56px;            /* adjust if your footer is taller/shorter */
+	  padding: 0 !important;   /* remove default padding */
+	  overflow: hidden;        /* hide scrollbars inside the content area */
+	}
+
+	/* 3. Ensure the footer stays pinned at the bottom */
+	#preview-modal .modal-footer {
+	  position: absolute;
+	  left: 0;
+	  right: 0;
+	  bottom: 0;
+	  z-index: 10;
+	  padding: 0.5rem 1rem;
+	}
+
+	/* 4. Have the iframe fill its parent exactly */
+	#preview-frame {
+	  width: 100%;
+	  height: 100%;
+	  border: none;
+	}
+
 
     </style>
   </head>
@@ -1007,6 +1052,19 @@ body.no-scroll {
 </div>
 
 
+<!-- preview  Modal -->
+<div id="preview-modal" class="modal">
+  <div class="modal-content" style="padding:0;">
+    <iframe id="preview-frame"
+            src="survey.html"
+            style="overflow: hidden; width:100%; border:none;">
+    </iframe>
+  </div>
+  <div class="modal-footer">
+    <a href="#!" class="modal-close btn">Close Preview</a>
+  </div>
+</div>
+
 
 <!-- Full Page Survey Data Summary -->
 <div id="surveyDataPage" class="full-page-overlay">
@@ -1090,7 +1148,19 @@ body.no-scroll {
                   <i class="material-icons left">redo</i>
                   <span id="redo-text"></span>
                 </button>
+				
+				
+				<button id="preview-btn" class="btn teal waves-effect"					
+					onclick="previewSurvey()">
+				  <i class="material-icons left">visibility</i>
+				  <span id="preview-text">Preview</span>
+			   </button>
+				
               </div>
+			  
+			  
+				
+			  
           
               <!-- Right side buttons for desktop: visible on medium and larger screens -->
               <div class="right-buttons hide-on-small-only">
@@ -1116,6 +1186,9 @@ body.no-scroll {
                   <i class="material-icons left">save</i>
                   <span id="generate-text"></span>
                 </button>
+				
+				
+				
               </div>
           
               <!-- Mobile: show a native select styled as an icon-only button -->
@@ -1201,6 +1274,7 @@ body.no-scroll {
             addGroup: "Add New Group",
             undo: "Undo",
             redo: "Redo",
+			preview: "Preview",
             generate: "Generate & Go to Survey",
             questionTextLabel: "Question Text",
             questionTypeLabel: "Question Type",
@@ -1337,6 +1411,7 @@ body.no-scroll {
             addGroup: "新增群組",
             undo: "復原",
             redo: "重做",
+			preview: "預覽",
             generate: "產生並前往問卷",
             questionTextLabel: "問題內容",
             questionTypeLabel: "問題類型",
@@ -1471,6 +1546,7 @@ body.no-scroll {
             addGroup: "新しいグループを追加",
             undo: "元に戻す",
             redo: "やり直す",
+			preview: "プレビュー",
             generate: "生成してアンケートへ進む",
             questionTextLabel: "質問文",
             questionTypeLabel: "質問タイプ",
@@ -2148,6 +2224,7 @@ body.no-scroll {
         document.getElementById("add-group-text").textContent = i18n_local[currentLang].addGroup;
         document.getElementById("undo-text").textContent = i18n_local[currentLang].undo;
         document.getElementById("redo-text").textContent = i18n_local[currentLang].redo;
+		document.getElementById("preview-text").textContent = i18n_local[currentLang].preview;
         document.getElementById("generate-text").textContent = i18n_local[currentLang].generate;
         document.getElementById("event-trigger-text").textContent = i18n_local[currentLang].eventTriggersTitle;
         document.getElementById("add-new-trigger-text").textContent = i18n_local[currentLang].addNewTrigger;
@@ -3683,7 +3760,8 @@ body.no-scroll {
     /***********************************************
      * GENERATE & GO
      ***********************************************/
-    async function generateSurvey() {
+	// if dryRun true, means the function will not write to the DB, and it will only generate the surveyOutput for preview 
+    async function generateSurvey(dryRun) {
         // Get the survey title input value
         const surveyTitleInput = document.getElementById("survey-title-input");
         const surveyTitle = surveyTitleInput ? surveyTitleInput.value.trim() : "";
@@ -3723,6 +3801,9 @@ body.no-scroll {
 
         // Save the complete structure to localStorage
         localStorage.setItem("surveyQuestions", JSON.stringify(surveyOutput));
+		
+		if (dryRun) return surveyOutput;
+		
         let result = await updateSurvey(CurrentSurveySchemaId, surveyOutput);
         if (!CurrentSurveySchemaId) {
             CurrentSurveySchemaId = result?._id;
@@ -3760,7 +3841,33 @@ body.no-scroll {
         }
         modalInstance.open();
     }
+	
+	
+	
+	async function previewSurvey() {
 
+	  const surveyOutput = await generateSurvey(true);
+
+	  // Open the modal (which contains the iframe)
+
+	  const modalElem = document.getElementById('preview-modal');
+	  let modalInstance = M.Modal.getInstance(modalElem);
+	  if (!modalInstance) {
+	      modalInstance = M.Modal.init(modalElem);
+	  }
+	  modalInstance.open();
+
+	  // Once the iframe has loaded, postMessage our survey data
+	  const iframe = document.getElementById('preview-frame');
+	  
+	  
+	  	iframe.contentWindow.postMessage({
+		  type: 'previewSurvey',
+		  survey: surveyOutput
+		}, '*');
+
+	  
+	}
     /***********************************************
      * fetch and update survey context
      ***********************************************/
