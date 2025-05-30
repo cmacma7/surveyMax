@@ -357,36 +357,15 @@
 	        loadedSurveyItems = event.data.survey.surveyItems;
 	        currentSurvey = event.data.survey;
 	        endpointUrl = event.data.survey.endpointUrl;
+			prepareSurvey(currentSurvey);
 	        // Render immediately (bypass the fetch logic)
 	        renderSurvey();
-	        // Hide any spinner or hero container if not needed
-	        document.querySelector('.hero-container').style.display = 'none';
+	       
 	    }
 	});
 
 
-	window.onload = async function () {
-		// If we've already rendered via preview, do nothing
-		if (Array.isArray(loadedSurveyItems) && loadedSurveyItems.length) return;
-	
-	    // Retrieve from localStorage, or server
-
-	    // Get the query string from the URL (e.g., "?id=123&name=John")
-	    const queryString = window.location.search;
-
-	    // Create a URLSearchParams instance
-	    const urlParams = new URLSearchParams(queryString);
-
-	    // Get the value of a specific parameter (e.g., "id")
-	    const id = urlParams.get("id");
-	    console.log("ID:", id);
-
-	    let survey;
-	    if (id) {
-			surveyId = id; // the global survey ID
-	        survey = await fetchSurvey(id);
-	    }
-
+	function prepareSurvey(survey, id) {
 	    if (survey) {
 	        let tmp = typeof survey == "string" ? JSON.parse(survey) : survey;
 	        if (Array.isArray(tmp)) {
@@ -411,10 +390,37 @@
 
 	        if (heroContainer) {
 	            heroContainer.style.background = `url("${currentSurvey.bannerImage}") center/cover no-repeat`;
+				heroContainer.style.height = "300px";
 	        }
 	    } else {
 	        heroContainer.style.height = 0;
 	    }
+
+	}
+
+	window.onload = async function () {
+		// If we've already rendered via preview, do nothing
+		if (Array.isArray(loadedSurveyItems) && loadedSurveyItems.length) return;
+	
+	    // Retrieve from localStorage, or server
+
+	    // Get the query string from the URL (e.g., "?id=123&name=John")
+	    const queryString = window.location.search;
+
+	    // Create a URLSearchParams instance
+	    const urlParams = new URLSearchParams(queryString);
+
+	    // Get the value of a specific parameter (e.g., "id")
+	    const id = urlParams.get("id");
+	    console.log("ID:", id);
+
+	    let survey;
+	    if (id) {
+			surveyId = id; // the global survey ID
+	        survey = await fetchSurvey(id);
+	    }
+
+		prepareSurvey(survey, id);
 
 	    // If none found, show a message
 	    if (!loadedSurveyItems || loadedSurveyItems.length === 0) {

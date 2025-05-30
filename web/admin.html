@@ -111,8 +111,8 @@ body.no-scroll {
 /* Card highlight effect */
 .question-card.highlighted,
 .group-card.highlighted {
-  box-shadow: 0 0 12px rgba(33, 150, 243, 0.6);
-  border: 2px solid #2196F3 !important;
+  box-shadow: 0 0 12px #ffa50087;
+  border: 4px solid orange !important;
   transform: scale(1.02);
   transition: all 0.3s ease;
 }
@@ -1061,7 +1061,7 @@ body.no-scroll {
     </iframe>
   </div>
   <div class="modal-footer">
-    <a href="#!" class="modal-close btn">Close Preview</a>
+    <a href="#!" class="modal-close btn translate">close++preview</a>
   </div>
 </div>
 
@@ -1757,6 +1757,9 @@ body.no-scroll {
             // We'll interpret them as "type=question" items if not present:
             const parsed = (typeof existingData == "string") ? JSON.parse(existingData) : existingData;
             let items = parsed.surveyItems;
+			
+			normalizeSurveyItems(items);  // make sure the format is correct
+			
             surveyItems = items.map((item) => {
                 if (!item.type) {
                     return {
@@ -2388,41 +2391,38 @@ body.no-scroll {
         document.getElementById("surveyDataCloseBtn").textContent = i18n_local[lang].close;
         document.getElementById("surveyDataTitle").textContent = i18n_local[lang].surveyDataSummaryTitle;
 
-        translateButtons(lang);
-        translateOptions(lang);
-        translateHeaders(lang)
+        translateUI(lang, ["button", ".translate", "h4", "option"]);
 
         // Re-render items if necessary
         renderAllItems();
     }
 
-    function translateButtons(lang) {
-        const currentTranslations = i18n_local[lang];
-        document.querySelectorAll("button").forEach((btn) => {
-            const key = btn.textContent.trim();
-            if (currentTranslations.hasOwnProperty(key)) {
-                btn.textContent = currentTranslations[key];
-            }
-        });
-    }
-    function translateHeaders(lang) {
-        const currentTranslations = i18n_local[lang];
-        document.querySelectorAll("H4").forEach((header) => {
-            const key = header.textContent.trim();
-            if (currentTranslations.hasOwnProperty(key)) {
-                header.textContent = currentTranslations[key];
-            }
-        });
-    }
-    function translateOptions(lang) {
-        const currentTranslations = i18n_local[lang];
-        document.querySelectorAll("option").forEach((option) => {
-            const key = option.textContent.trim();
-            if (currentTranslations.hasOwnProperty(key)) {
-                option.textContent = currentTranslations[key];
-            }
-        });
-    }
+	
+	function translateTextNode(node, dict) {
+	  const raw = node.textContent.trim();
+	  if (!raw) return;
+
+	  // 先直接比對
+	  if (dict.hasOwnProperty(raw)) {
+		node.textContent = dict[raw];
+		return;
+	  }
+
+	  // 再處理 A++B++C 串接
+	  if (raw.includes("++")) {
+		const parts = raw.split("++").map(p => p.trim());
+		node.textContent = parts.map(p => dict[p] ?? p).join(""); // 找不到就保留原字
+	  }
+	}
+
+	
+	function translateUI(lang, selectors) {
+	  const dict = i18n_local[lang];
+	  if (!dict) return;
+	  selectors.forEach(sel => {
+		document.querySelectorAll(sel).forEach(el => translateTextNode(el, dict));
+	  });
+	}
 
     /***********************************************
      * RENDER MASTER
@@ -4197,7 +4197,12 @@ body.no-scroll {
             const existingData = tmp;
             if (existingData) {
                 const parsed = typeof existingData === "string" ? JSON.parse(existingData) : existingData;
-                surveyItems = parsed.surveyItems.map(item => item.type ? item : {
+				
+				let items = parsed.surveyItems;
+			
+				normalizeSurveyItems(items);  // make sure the format is correct
+				
+                surveyItems = items.map(item => item.type ? item : {
                     type: "question",
                     ...item
                 });
@@ -4403,9 +4408,11 @@ body.no-scroll {
             }
 
             // Update survey items and UI
-            surveyItems = importedData.surveyItems;
+            let items = importedData.surveyItems;
 			
-			surveyItems = importedData.surveyItems.map(item => {
+			normalizeSurveyItems(items);  // make sure the format is correct
+			
+			surveyItems = items.map(item => {
 			    if (item.type === 'group') {
 			        item.subQuestions = item.subQuestions || []
 			    }
@@ -5674,6 +5681,42 @@ body.no-scroll {
         }
         // Continue with your generate logic here...
     });
+	
+	
+	
+	/**************************************
+	* Utilities
+	***************************************/
+	/**
+	 * 把 type ≠ 'question' / 'group' 的項目矯正成合法值，
+	 * 並遞迴處理 group.subQuestions。
+	 *  - arr  : surveyItems  或 group.subQuestions
+	 */
+	function normalizeSurveyItems(arr) {
+	  if (!Array.isArray(arr)) return;
+
+	  const ALLOWED = ['question', 'group'];
+
+	  arr.forEach(item => {
+		/* ---------- 修正最外層 type ---------- */
+		if (!ALLOWED.includes(item.type)) {
+		  // 推論：只要不是 group，就視為「單題」
+		  item.type = 'question';
+
+		  // 若 questionType 缺失，可用 heuristics 補上；此處示範 longText
+		  item.questionType = item.questionType || 'longText';
+		}
+
+		/* ---------- 遞迴修正群組內題目 ---------- */
+		if (item.type === 'group' && Array.isArray(item.subQuestions)) {
+		  normalizeSurveyItems(item.subQuestions);
+		}
+	  });
+	}
+
+	
+	
+	
 </script>
   </body>
 </html>
