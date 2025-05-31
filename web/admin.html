@@ -457,6 +457,13 @@ body.no-scroll {
   padding: 10px 0;
 }
 
+.highlight {
+  animation: fadeHighlight 2s ease-out;
+}
+@keyframes fadeHighlight {
+  from { background-color: #fff59d; }
+  to   { background-color: transparent; }
+}
 
 
    /*********************************************
@@ -1936,17 +1943,26 @@ body.no-scroll {
         const modalElem = document.getElementById('eventTriggersModal');
         M.Modal.init(modalElem, {
             onOpenStart: () => {
-                // When modal opens, initialize the select elements
-                M.FormSelect.init(document.querySelectorAll('select'));
+                // Reset select & config
+                const typeSelect = document.getElementById('triggerType');
+                if (typeSelect) {
+                    typeSelect.selectedIndex = 0;
+                    M.FormSelect.init(typeSelect);
+                }
+                // Now rebuild the config panels
                 loadTriggerConfig();
             },
             onOpenEnd: () => {
-                // Initialize select elements as before
-                M.FormSelect.init(document.querySelectorAll('select'));
+                // Same reset in case Materialize re-renders selects on end
+                const typeSelect = document.getElementById('triggerType');
+                if (typeSelect) {
+                    typeSelect.selectedIndex = 0;
+                    M.FormSelect.init(typeSelect);
+                }
                 loadTriggerConfig();
-
             }
         });
+
 
         document.getElementById('delete-account-btn').addEventListener('click', function () {
             const fields = document.getElementById('delete-account-fields');
@@ -4899,6 +4915,7 @@ body.no-scroll {
         container.innerHTML = "";
         currentTriggers.forEach(trigger => {
             const cardPanel = document.createElement("div");
+			cardPanel.id = `trigger-${trigger._id}`;
             cardPanel.className = "card-panel";
 
             // Create a header container that always shows Title and Type
@@ -5056,6 +5073,18 @@ body.no-scroll {
         });
     }
 
+	function scrollToTrigger(triggerId) {
+	  const el = document.getElementById(`trigger-${triggerId}`);
+	  if (!el) return;
+	  // Smooth scroll into center of viewport
+	  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+	  // Add a temporary highlight class
+	  el.classList.add('highlight');
+	  // Remove it after 2 seconds
+	  setTimeout(() => el.classList.remove('highlight'), 2000);
+	}
+
+
     async function deleteTrigger(triggerId) {
         const response = await fetch(`${BASE_URL}/api/survey/${CurrentSurveySchemaId}/triggers/${triggerId}`, {
             method: 'DELETE',
@@ -5177,6 +5206,9 @@ body.no-scroll {
         currentTriggers = await response.json();
         cancelNewTrigger();
         renderTriggersList();
+        // scroll & highlight the one we just added
+        const newTrigger = currentTriggers[currentTriggers.length - 1];
+        scrollToTrigger(newTrigger._id);
     }
 
     function showNewTriggerForm() {
@@ -5204,7 +5236,20 @@ body.no-scroll {
         const addTriggerBtn = document.querySelector("#eventTriggersModal .modal-footer .btn.blue");
         if (addTriggerBtn) {
             addTriggerBtn.style.display = "";
+
         }
+
+        // ← New: reset the select back to the placeholder
+        const typeSelect = document.getElementById('triggerType');
+        if (typeSelect) {
+            typeSelect.selectedIndex = 0; // go back to “selectTriggerType”
+            M.FormSelect.init(typeSelect); // re-initialize Materialize
+        }
+
+        // ← New: hide all config panels
+        document.querySelectorAll('.trigger-config').forEach(panel => {
+            panel.style.display = 'none';
+        });
     }
 
     function generateStarThresholdScript(params) {
