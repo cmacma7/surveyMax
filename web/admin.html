@@ -1708,7 +1708,7 @@ body.no-scroll {
     let surveyItems = [];
     let undoStack = [];
     let redoStack = [];
-    let CurrentSurveySchemaId;
+    let CurrentSurveySchemaId, CurrentSurveyTitle;
 
     // For mobile click-outside to close the sidebar
     let mobileClickOutsideHandler = null;
@@ -1718,6 +1718,43 @@ body.no-scroll {
         console.log("window loaded");
 
     }
+
+	window.originalGeneratedSurvey = null;
+
+
+	function isSurveyDataChanged(currentGenerated) {
+	  if (!currentGenerated) return false;
+	  if (!window.originalGeneratedSurvey) {
+		return true;
+	  }
+	  const orig = window.originalGeneratedSurvey;
+	  const curr = currentGenerated;
+
+	  // 逐 key 比對
+	  for (const key of Object.keys(curr)) {
+		// 如果原先沒這個 key，或值不一樣，就判定為「已改動」
+		if (!(key in orig)) return true;
+
+		// 如果是物件／陣列，要做深度比較 (可用 JSON.stringify)
+		const origVal = orig[key];
+		const currVal = curr[key];
+		const origJson = JSON.stringify(origVal);
+		const currJson = JSON.stringify(currVal);
+		if (origJson !== currJson) return true;
+	  }
+	  return false;
+	}
+
+	window.addEventListener("beforeunload", async function (e) {
+	  // 因為 generateSurvey(true) 是 async，要先 await 拿到 current 物件
+	  const currentGenerated = await generateSurvey(true);
+	  if (isSurveyDataChanged(currentGenerated)) {
+		const msg = "您有尚未儲存的變更，確定要離開或重新整理嗎？";
+		(e || window.event).returnValue = msg;
+		return msg;
+	  }
+	  // 否則回傳 undefined，允許正常關閉
+	});
 
     /***********************************************
      * INITIALIZATION
@@ -1733,7 +1770,7 @@ body.no-scroll {
         let existingData = null;
         if (!surveys || surveys.length === 0) {
             // No surveys exist—prompt the user to import one.
-            openImportSurveyModal();
+            await openImportSurveyModal();
         } else if (surveys && surveys.length > 0) {
             if (surveys.length === 1) {
                 CurrentSurveySchemaId = surveys[0]._id;
@@ -1748,8 +1785,7 @@ body.no-scroll {
 
             }
         }
-        updateNavTitle();
-
+ 
         await fetchChannelList();
 
         if (CurrentSurveySchemaId === "create_new") {
@@ -1779,6 +1815,7 @@ body.no-scroll {
             // *** Set the survey title input if one exists ***
             if (parsed.surveyTitle) {
                 document.getElementById("survey-title-input").value = parsed.surveyTitle;
+				CurrentSurveyTitle = parsed.surveyTitle || "";
             }
             // *** Set the banner image URL if exists ***
             if (parsed.bannerImage) {
@@ -1800,6 +1837,10 @@ body.no-scroll {
             surveyItems = [];
         }
 
+		       
+		updateNavTitle();
+
+
         // Set default language from localStorage or fallback
         const storedLang = localStorage.getItem("preferredLanguage");
         if (storedLang) {
@@ -1818,6 +1859,11 @@ body.no-scroll {
         setLanguage(currentLang);
         setupUndoRedoButtons();
         renderAllItems();
+		
+		
+		const baseline = await generateSurvey(true);
+		window.originalGeneratedSurvey = JSON.parse(JSON.stringify(baseline));
+		
 
         // openai call to llm user request
         document.getElementById("generate-survey-schema-btn").onclick = async() => {
@@ -2482,10 +2528,74 @@ body.no-scroll {
         const cardContent = document.createElement("div");
         cardContent.className = "card-content";
 
-        // QUESTION TEXT
-        const questionLabel = document.createElement("label");
-        questionLabel.textContent = i18n_local[currentLang].questionTextLabel;
-        cardContent.appendChild(questionLabel);
+
+
+  
+
+
+		// —— 修改開始：用一個 flex row 讓「問題內容」跟「問題編號」同一行 ——  
+		const headerRow = document.createElement("div");
+		headerRow.style.display = "flex";
+		headerRow.style.justifyContent = "space-between";
+		// align-items 用 flex-start 或 baseline 都可以，但建議用 flex-start 讓 Label 的頂端對齊
+		headerRow.style.alignItems = "baseline";
+		headerRow.style.marginBottom = "4px";    // headerRow 與下方 "問題文字" 之間留一些縱向間距
+		// 如果擔心換行，可以整行一次設定
+		headerRow.style.whiteSpace = "nowrap";
+
+		// 1) 左側：問題內容 Label
+		const questionLabel = document.createElement("label");
+		questionLabel.textContent = i18n_local[currentLang].questionTextLabel; // "問題內容"
+		// 確保不被放大撐滿：  
+		questionLabel.style.flex = "0 0 auto";
+		// （可加上字體大小或粗細，看你 UI 需求）
+		// questionLabel.style.fontWeight = "bold";
+		// questionLabel.style.fontSize = "1rem";
+
+		// 2) 右側：問題編號 (ID) + disabled input
+		const idContainer = document.createElement("div");
+		idContainer.style.display = "flex";
+		// 這裡用 baseline 會讓 label 和 input 的文字基線對齊，看起來更工整
+		idContainer.style.alignItems = "baseline";
+		idContainer.style.flex = "0 0 auto";
+		idContainer.style.gap = "4px";            // Label 與 input 之間留點間距
+		idContainer.style.whiteSpace = "nowrap";   // 不要自動換行
+
+		const idLabel = document.createElement("label");
+		idLabel.textContent = "問題編號 (ID):";
+		// 同樣避免自動撐滿
+		idLabel.style.flex = "0 0 auto";
+		// 你也可以微調文字顏色或大小
+		// idLabel.style.fontSize = "0.9rem";
+		// idLabel.style.color = "#777";
+
+		const idField = document.createElement("input");
+		idField.type = "text";
+		idField.className = "input-field";
+		idField.value = questionObj.id;   // 把 ID 填進去
+		idField.disabled = true;
+		// 重點：把 input 改成 inline-block，並限制寬度，絕對不要讓它撐滿 100%  
+		idField.style.display = "inline-block";
+		idField.style.width = "60px";   // 依照你的 ID 長度自由調整（例：60px、80px…）
+
+		idField.style.padding = "3px 4px"; // 上下改為 0px、左右保留 4px
+		idField.style.lineHeight = "1.2"; // 確保文字與底線之間間距更緊湊
+		idField.style.height = "auto"; // 取消 input 預設高度，讓 inner text 緊貼底線
+		// 將 margin 歸零，避免預設的上下 margin 造成額外換行
+		idField.style.margin = "0";
+
+		// 把 label + input 都放到 idContainer 裡
+		idContainer.appendChild(idLabel);
+		idContainer.appendChild(idField);
+
+		// 完成 headerRow：左放 questionLabel，右放 idContainer
+		headerRow.appendChild(questionLabel);
+		headerRow.appendChild(idContainer);
+
+		// 把整個 headerRow 加回 cardContent
+		cardContent.appendChild(headerRow);
+		// —— 修改結束 ——  
+
 
         const inputText = document.createElement("input");
         inputText.type = "text";
@@ -3821,6 +3931,13 @@ body.no-scroll {
 		if (dryRun) return surveyOutput;
 		
         let result = await updateSurvey(CurrentSurveySchemaId, surveyOutput);
+		
+		
+		window.originalGeneratedSurvey = JSON.parse(JSON.stringify(surveyOutput));
+		
+		
+		CurrentSurveyTitle = surveyTitle;
+		
         if (!CurrentSurveySchemaId) {
             CurrentSurveySchemaId = result?._id;
             localStorage.CurrentSurveySchemaId = CurrentSurveySchemaId;
@@ -4139,7 +4256,20 @@ body.no-scroll {
 
             // When user clicks "Confirm", get the selected survey ID
             const confirmBtn = document.getElementById("confirmSurveyBtn");
-            confirmBtn.onclick = function () {
+            confirmBtn.onclick = async function () {
+			
+			
+			
+				const currentGenerated = await generateSurvey(true);
+				if (isSurveyDataChanged(currentGenerated)) {
+					const ok = window.confirm("您有尚未儲存的變更，切換問卷將會捨棄目前修改，確定要切換嗎？");
+					if (!ok) {
+						return;
+					}
+				}
+		
+			
+			
                 const selectedItem = document.querySelector("#surveyList .collection-item.blue");
                 if (selectedItem) {
                     const selectedId = selectedItem.dataset.surveyId;
@@ -4199,6 +4329,9 @@ body.no-scroll {
     }
 
     async function switchSurveyById(surveyId) {
+	
+	
+	
         if (surveyId === "create new") {
             // Handle creating a new survey
             surveyItems = [];
@@ -4207,6 +4340,8 @@ body.no-scroll {
             CurrentSurveySchemaId = undefined;
             isSurveyModified = false;
             renderAllItems();
+			window.originalGeneratedSurvey = null;
+			
         } else {
             // Fetch the survey by its id
             let tmp = await fetchSurvey(surveyId);
@@ -4225,6 +4360,7 @@ body.no-scroll {
                 // Set the survey title input if one exists
                 if (parsed.surveyTitle) {
                     document.getElementById("survey-title-input").value = parsed.surveyTitle;
+					CurrentSurveyTitle = parsed.surveyTitle || "";
                 } else {
                     document.getElementById("survey-title-input").value = '';
                 }
@@ -4248,6 +4384,9 @@ body.no-scroll {
                 CurrentSurveySchemaId = surveyId;
                 isSurveyModified = false;
                 renderAllItems();
+				
+                const baseline = await generateSurvey(true);
+                window.originalGeneratedSurvey = JSON.parse(JSON.stringify(baseline));
             }
         }
         updateNavTitle();
@@ -4289,8 +4428,14 @@ body.no-scroll {
             titleText = i18n_local[currentLang].importSurvey;
         } else if (CurrentSurveySchemaId === "create new") {
             titleText = i18n_local[currentLang].newSurvey;
-        } else {
-            titleText = CurrentSurveySchemaId;
+        }
+        else {
+			// We think the title already show in the editor, so this title should show the id 
+            //if (CurrentSurveyTitle && CurrentSurveyTitle.trim() !== "") {
+            //    titleText = CurrentSurveyTitle;
+            //} else {
+                titleText = CurrentSurveySchemaId;
+            //}
         }
         navTitleEl.innerHTML = `<span class=''><i class="material-icons left">library_add</i>${i18n_local[currentLang].surveyIdPrefix} (${titleText})</span>`;
     }
@@ -4303,7 +4448,7 @@ body.no-scroll {
     var importedSurveyDataFromFile = null;
 
     // Opens the Import Survey popup modal and resets its fields.
-    function openImportSurveyModal() {
+    async function openImportSurveyModal() {
 
         // NEW: Check if there's an existing survey loaded
         if (CurrentSurveySchemaId) {
@@ -4312,6 +4457,8 @@ body.no-scroll {
                 return;
             }
         }
+		
+		
         const modalElem = document.getElementById('importSurveyModal');
         let modalInstance = M.Modal.getInstance(modalElem);
         if (!modalInstance) {
@@ -4443,6 +4590,8 @@ body.no-scroll {
             // Add effect for smoother UI
 
             renderAllItems(); // Render imported survey
+			
+
 
             window.scrollTo({
                 top: 0,
