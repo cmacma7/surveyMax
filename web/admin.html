@@ -1282,7 +1282,7 @@ body.no-scroll {
             undo: "Undo",
             redo: "Redo",
 			preview: "Preview",
-            generate: "Generate & Go to Survey",
+            generate: "Generate",
             questionTextLabel: "Question Text",
             questionTypeLabel: "Question Type",
             textInput: "Text Input",
@@ -1419,7 +1419,7 @@ body.no-scroll {
             undo: "復原",
             redo: "重做",
 			preview: "預覽",
-            generate: "產生並前往問卷",
+            generate: "產生問卷",
             questionTextLabel: "問題內容",
             questionTypeLabel: "問題類型",
             textInput: "文字輸入",
@@ -1496,7 +1496,7 @@ body.no-scroll {
             unpackToStandalone: "拆分為獨立問題",
             bannerImageUrl: "橫幅圖片網址:",
             bannerImagePlaceholder: "輸入橫幅圖片的網址",
-            extraText: "補充文字",
+            extraText: "選此選項可以新增備註",
             fetchDataText: "問卷分析",
             surveyDataSummaryTitle: "問卷資料摘要",
             textAnswerSummaryNote: "文字回答不進行統計摘要。",
@@ -1554,7 +1554,7 @@ body.no-scroll {
             undo: "元に戻す",
             redo: "やり直す",
 			preview: "プレビュー",
-            generate: "生成してアンケートへ進む",
+            generate: "生成",
             questionTextLabel: "質問文",
             questionTypeLabel: "質問タイプ",
             textInput: "テキスト入力",
@@ -2754,25 +2754,47 @@ body.no-scroll {
                 rowDiv.appendChild(colInputDiv);
 
                 // --- "Require Extra Text" Toggle Column ---
-                const colToggleDiv = document.createElement("div");
-                colToggleDiv.className = "col s2";
-                const extraLabel = document.createElement("label");
-                extraLabel.style.fontSize = "0.8em";
-                // Create the checkbox with proper Materialize markup.
-                const extraCheckbox = document.createElement("input");
-                extraCheckbox.type = "checkbox";
-                extraCheckbox.classList.add("filled-in");
-                extraCheckbox.checked = opt.hasTextInput;
-                extraCheckbox.onchange = (e) => {
-                    questionObj.options[optIndex].hasTextInput = e.target.checked;
-                };
-                extraLabel.appendChild(extraCheckbox);
-                // Materialize requires a sibling <span> to render the custom checkbox.
-                const extraSpan = document.createElement("span");
-                extraSpan.textContent = i18n_local[currentLang].extraText;
-                extraLabel.appendChild(extraSpan);
-                colToggleDiv.appendChild(extraLabel);
-                rowDiv.appendChild(colToggleDiv);
+                
+				
+// 原本範例位置（參考：renderQuestionCard 內針對 checkbox 額外文字的程式）
+// 【…】略
+const colToggleDiv = document.createElement("div");
+colToggleDiv.className = "col s2";  // 佔 2/12 寬度
+
+// 建立 label 容器
+const extraLabel = document.createElement("label");
+// 隱藏文字，只顯示 icon
+extraLabel.style.fontSize = "0";
+
+// 1) 建立勾選框
+const extraCheckbox = document.createElement("input");
+extraCheckbox.type = "checkbox";
+extraCheckbox.classList.add("filled-in");
+extraCheckbox.checked = opt.hasTextInput;
+extraCheckbox.onchange = (e) => {
+  questionObj.options[optIndex].hasTextInput = e.target.checked;
+};
+extraLabel.appendChild(extraCheckbox);
+
+// 2) 建立 icon，用於代表「補充文字」功能
+const extraIconSpan = document.createElement("span");
+extraIconSpan.classList.add("material-icons");
+// 這裡使用 text_fields 作為示意 icon，你也可以改為其他較直覺的圖示
+extraIconSpan.textContent = "notes";
+// 把本地化的「補充文字」放到 data-tooltip，供 Tooltip 顯示
+extraIconSpan.setAttribute("data-tooltip", i18n_local[currentLang].extraText);
+extraIconSpan.classList.add("tooltipped");
+extraIconSpan.style.paddingLeft = "1.6em";
+
+// 初始化 Materialize 的 Tooltip
+M.Tooltip.init(extraIconSpan, {enterDelay: 300});
+
+extraLabel.appendChild(extraIconSpan);
+colToggleDiv.appendChild(extraLabel);
+rowDiv.appendChild(colToggleDiv);
+
+				
+				
 
                 // --- Remove Option Button Column ---
                 const colButtonDiv = document.createElement("div");
