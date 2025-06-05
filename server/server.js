@@ -82,8 +82,12 @@ const generalDataSchema = new mongoose.Schema({
   _type: { type: String, required: true },
   _typeId:  { type: String, required: true },   // the _typeId is the corresponding
   _channelId: { type: String },
-  _storeId: { type: String }
+  _storeId: { type: String },
+  createdAt: { type: Date, default: Date.now }
 }, { strict: false });
+
+// 在 schema 上新增複合索引：(_typeId 先、createdAt 後)
+generalDataSchema.index({ _typeId: 1, createdAt: 1 });
 
 const GeneralData = mongoose.model("GeneralData", generalDataSchema);
 
@@ -1153,18 +1157,45 @@ app.post("/api/send-data", async (req, res) => {
         if (survey.eventTriggers?.length > 0) {
           for (const trigger of survey.eventTriggers) {
             const vm = new VM({
-              timeout: 1000,
-              sandbox: {
-                surveyData: payload,
-                fetchHistoricalData: async () => {
-                  return GeneralData.find({ _typeId: payload._typeId });
+                timeout: 1000,
+				console: "inherit", // 讓 sandbox 裡的 console.log 可以印到終端
+                sandbox: {
+					console: console,
+                    surveyData: payload,
+                    /**
+                    * fetchHistoricalData(startTime, endTime):
+                    *   - startTime: a Date‐parsable value (ms since epoch or ISO string)
+                    *   - endTime:   a Date‐parsable value
+                    *
+                    * If you only want “since X” you can pass endTime = null or omit it.
+                    */
+                    fetchHistoricalData: async(startTime, endTime) => {
+                        // always filter by _typeId first:
+                        const query = {
+                            _typeId: payload._typeId
+                        };
+
+                        // if a startTime is provided, ensure createdAt ≥ startTime
+                        if (startTime) {
+                            query.createdAt = query.createdAt || {};
+                            query.createdAt.$gte = new Date(startTime);
+                        }
+
+                        // if an endTime is provided, ensure createdAt ≤ endTime
+                        if (endTime) {
+                            query.createdAt = query.createdAt || {};
+                            query.createdAt.$lte = new Date(endTime);
+                        }
+						console.log("GeneralData.find", query);
+                        return GeneralData.find(query);
+                    }
                 }
-              }
             });
             
             try {
+			  //console.log("===",trigger.script,"---");
               const checkCondition = vm.run(trigger.script);
-              console.log('****', payload);
+              //console.log('****', payload);
               const result = await checkCondition(payload);
               if (result) {
                 // Trigger your event handling here

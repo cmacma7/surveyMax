@@ -1398,7 +1398,7 @@ body.no-scroll {
             validation_invalidTrigger: "Invalid trigger type selected.",
             triggerName_starThreshold: "Star Threshold: Threshold {threshold}, Count {count}",
             triggerName_answerMatch: "Answer Match: '{question}' matches [{answers}]",
-            triggerName_timeBased: "Time Based: {timeWindow}h window, Min {minimumCount} responses",
+			triggerName_timeBased_template: "In the past {timeWindow}{unit}, question (id:{questionId}) '{questionTitle}' {metric} {operator} {threshold}",
             deleteAccountTitle: "Delete Account",
             deleteEmailLabel: "Enter Email:",
             deleteEmailPlaceholder: "Your email",
@@ -1409,7 +1409,25 @@ body.no-scroll {
 			exportSurvey: "Export Survey",
 			exportFileName: "Survey Export - {date}",
 			exportSurveyMessage: "Survey exported successfully to",
-
+			timeWindowLabel: "Time Window Value",
+			timeWindowUnitLabel: "Time Unit",
+			hoursLabel: "Hours",
+			daysLabel: "Days",
+			targetQuestionLabel: "Select Question",
+			metricLabel: "Metric",
+			metricSumLabel: "Sum",
+			metricAvgLabel: "Average",
+			metricMedianLabel: "Median",
+			metricCountLabel: "Count",
+			metricMaxLabel: "Max",
+			metricMinLabel: "Min",
+			operatorLabel: "Operator",
+			operatorGreaterThan: "Greater Than",
+			operatorGreaterEqual: "Greater Than or Equal",
+			operatorLessThan: "Less Than",
+			operatorLessEqual: "Less Than or Equal",
+			operatorEqual: "Equal",
+			thresholdLabel: "Threshold"
         },
         "zh-TW": {
             navTitle: "問卷管理",
@@ -1533,7 +1551,7 @@ body.no-scroll {
             validation_invalidTrigger: "所選觸發器類型無效。",
             triggerName_starThreshold: "星級閾值：閾值 {threshold}，數量 {count}",
             triggerName_answerMatch: "特定答案：『{question}』包含 [{answers}]",
-            triggerName_timeBased: "基於時間：{timeWindow} 小時範圍，最少 {minimumCount} 筆回應",
+			triggerName_timeBased_template: "過去 {timeWindow}{unit}，題目 id:{questionId} 『{questionTitle}』 的 {metric} {operator} {threshold}",
             deleteAccountTitle: "刪除帳戶",
             deleteEmailLabel: "輸入電子郵件：",
             deleteEmailPlaceholder: "您的電子郵件",
@@ -1544,8 +1562,26 @@ body.no-scroll {
 			exportSurvey: "匯出問卷",
 			exportFileName: "問卷匯出 - {date}",
 			exportSurveyMessage: "問卷已成功匯出至",
-
-        },
+			timeWindowLabel: "回溯時間數值",
+			timeWindowUnitLabel: "時間單位",
+			hoursLabel: "小時",
+			daysLabel: "天",
+			targetQuestionLabel: "選擇題目",
+			metricLabel: "統計方法",
+			metricSumLabel: "總和 (Sum)",
+			metricAvgLabel: "平均 (Average)",
+			metricMedianLabel: "中位數 (Median)",
+			metricCountLabel: "筆數 (Count)",
+			metricMaxLabel: "最大值 (Max)",
+			metricMinLabel: "最小值 (Min)",
+			operatorLabel: "比較運算",
+			operatorGreaterThan: "大於",
+			operatorGreaterEqual: "大於等於",
+			operatorLessThan: "小於",
+			operatorLessEqual: "小於等於",
+			operatorEqual: "等於",
+			thresholdLabel: "閾值"
+			},
         "ja-JP": {
             navTitle: "アンケート管理",
             subtitle: "アンケートを作成または編集",
@@ -1667,8 +1703,8 @@ body.no-scroll {
             validation_timeBased: "有効な時間枠と最小数を入力してください。",
             validation_invalidTrigger: "無効なトリガータイプが選択されました。",
             triggerName_starThreshold: "星評価閾値: 閾値 {threshold}、数 {count}",
-            triggerName_answerMatch: "回答一致: 『{question}』が [{answers}] と一致",
-            triggerName_timeBased: "時間基準: {timeWindow}時間のウィンドウ、最小 {minimumCount} 件の回答",
+            triggerName_answerMatch: "過去{timeWindow}{unit}において、質問{questionId}の{metric}が{operator}{threshold}",
+            triggerName_timeBased_template: "過去 {timeWindow}{unit}、質問ID:{questionId}「{questionTitle}」の{metric}が{operator}{threshold}",
             deleteAccountTitle: "アカウントの削除",
             deleteEmailLabel: "メールアドレスを入力:",
             deleteEmailPlaceholder: "あなたのメールアドレス",
@@ -1679,7 +1715,25 @@ body.no-scroll {
 			exportSurvey: "アンケートをエクスポート",
 			exportFileName: "アンケートエクスポート - {date}",
 			exportSurveyMessage: "アンケートが正常にエクスポートされました",
-
+			timeWindowLabel: "遡る時間の値",
+			timeWindowUnitLabel: "時間単位",
+			hoursLabel: "時間",
+			daysLabel: "日",
+			targetQuestionLabel: "質問を選択",
+			metricLabel: "統計方法",
+			metricSumLabel: "合計",
+			metricAvgLabel: "平均",
+			metricMedianLabel: "中央値",
+			metricCountLabel: "件数",
+			metricMaxLabel: "最大値",
+			metricMinLabel: "最小値",
+			operatorLabel: "比較演算子",
+			operatorGreaterThan: "より大きい",
+			operatorGreaterEqual: "以上",
+			operatorLessThan: "より小さい",
+			operatorLessEqual: "以下",
+			operatorEqual: "等しい",
+			thresholdLabel: "しきい値"
         }
     };
     let currentLang = "en-US";
@@ -1812,6 +1866,9 @@ body.no-scroll {
                 }
                 return item;
             });
+			
+			initNextId();
+			
             // *** Set the survey title input if one exists ***
             if (parsed.surveyTitle) {
                 document.getElementById("survey-title-input").value = parsed.surveyTitle;
@@ -1835,6 +1892,7 @@ body.no-scroll {
 
         } else {
             surveyItems = [];
+			initNextId();
         }
 
 		       
@@ -3155,7 +3213,7 @@ rowDiv.appendChild(colToggleDiv);
         addSubQuestionBtn.onclick = () => {
             const newQ = {
                 type: "question",
-                id: Date.now(),
+                id: getUniqueId(),
                 questionText: "",
                 questionType: "text",
                 required: false,
@@ -3605,7 +3663,7 @@ rowDiv.appendChild(colToggleDiv);
     function addQuestion() {
         const newQuestion = {
             type: "question",
-            id: Date.now(),
+            id: getUniqueId(),
             questionText: "",
             questionType: "text",
             options: [],
@@ -3628,7 +3686,7 @@ rowDiv.appendChild(colToggleDiv);
 	function createEmptyQuestion() {
 		return {
 			type: "question",
-			id: Date.now(),
+			id: getUniqueId(),
 			questionText: "",
 			questionType: "text",
 			options: [],
@@ -3639,7 +3697,7 @@ rowDiv.appendChild(colToggleDiv);
     function addGroup() {
         const newGroup = {
             type: "group",
-            id: Date.now(),
+            id: getUniqueId(),
             groupTitle: "",
             anchorQuestionId: null,
             anchorValuesToShow: [],
@@ -4357,6 +4415,9 @@ rowDiv.appendChild(colToggleDiv);
         if (surveyId === "create new") {
             // Handle creating a new survey
             surveyItems = [];
+			initNextId();
+			
+			
             document.getElementById("survey-title-input").value = "";
             document.getElementById("survey-banner-input").value = "";
             CurrentSurveySchemaId = undefined;
@@ -4379,6 +4440,8 @@ rowDiv.appendChild(colToggleDiv);
                     type: "question",
                     ...item
                 });
+				initNextId();
+				
                 // Set the survey title input if one exists
                 if (parsed.surveyTitle) {
                     document.getElementById("survey-title-input").value = parsed.surveyTitle;
@@ -4603,7 +4666,7 @@ rowDiv.appendChild(colToggleDiv);
 			    }
 			    return item
 			})
-			
+			initNextId();
 			
             document.getElementById("survey-title-input").value = importedData.surveyTitle || "";
             // Update banner image if available
@@ -5177,6 +5240,7 @@ rowDiv.appendChild(colToggleDiv);
                     const updatedScript = editor.getValue();
                     // Create an updated trigger object that includes the full data
                     const updatedTrigger = {
+						_id: trigger._id,  
                         name: trigger.name,
                         conditionType: trigger.conditionType, // "starThreshold", "answerMatch", or "timeBased"
                         parameters: trigger.parameters, // retain existing parameters
@@ -5330,27 +5394,79 @@ rowDiv.appendChild(colToggleDiv);
             triggerName = i18n_local[currentLang].triggerName_answerMatch
                 .replace("{question}", selectedQuestionText)
                 .replace("{answers}", selectedAnswers.join(", "));
-        } else if (type === 'timeBased') {
-            const timeWindowValue = document.getElementById('timeWindow').value;
-            const minimumCountValue = document.getElementById('minimumCount').value;
+
+        }
+        else if (type === 'timeBased') {
+            // 1. 讀取回溯時間數值
+            const timeWindowValue = document.getElementById('timeWindowValue').value;
+            // 2. 讀取回溯時間單位（hours 或 days）
+            const timeWindowUnit = document.getElementById('timeWindowUnit').value;
+            // 3. 讀取要計算統計的題目 ID
+            const questionId = document.getElementById('targetQuestionTimeBased').value;
+			const questionTitle = document.getElementById('targetQuestionTimeBased').options[questionId].text;
+            // 4. 讀取統計方法
+            const metric = document.getElementById('metricSelect').value;
+            // 5. 讀取比較運算符
+            const operator = document.getElementById('operatorSelect').value;
+            // 6. 讀取閾值
+            const thresholdValue = document.getElementById('thresholdValue').value;
+
+            // 驗證：回溯數值與閾值都須非空、數字、且大於 0；題目、統計方法、運算符需有選定
             const timeWindow = parseInt(timeWindowValue, 10);
-            const minimumCount = parseInt(minimumCountValue, 10);
-            if (!timeWindowValue || isNaN(timeWindow) || timeWindow <= 0 ||
-                !minimumCountValue || isNaN(minimumCount) || minimumCount <= 0) {
+            const threshold = parseFloat(thresholdValue);
+            if (
+                !timeWindowValue || isNaN(timeWindow) || timeWindow <= 0 ||
+                !questionId ||
+                !metric ||
+                !operator ||
+                !thresholdValue || isNaN(threshold)) {
                 M.toast({
-                    html: i18n_local[currentLang].validation_timeBased,
+                    html: i18n_local[currentLang].validation_timeBased_detailed,
                     displayLength: 3000
                 });
                 return;
             }
+
+            // 將「回溯時間」轉成毫秒
+            let timeWindowMs = 0;
+            if (timeWindowUnit === 'hours') {
+                timeWindowMs = timeWindow * 3600 * 1000;
+            } else {
+                // days
+                timeWindowMs = timeWindow * 24 * 3600 * 1000;
+            }
+
+            // 組成 params 並呼叫 generateTimeBasedScript
             params = {
-                timeWindow,
-                minimumCount
+                timeWindowMs,
+                questionId,
+                metric,
+                operator,
+                threshold
             };
             script = generateTimeBasedScript(params);
-            triggerName = i18n_local[currentLang].triggerName_timeBased
-                .replace("{timeWindow}", timeWindow)
-                .replace("{minimumCount}", minimumCount);
+
+            // 依據 i18n 產生一個可讀的 trigger 名稱
+            // 假設 i18n_local 裡有 triggerName_timeBased_template 例如：
+            // "過去 {timeWindow}{unit}，題目 {questionId} 的 {metric} {operator} {threshold}"
+			
+			const opKeyMap = {
+			    ">": "operatorGreaterThan",
+			    ">=": "operatorGreaterEqual",
+			    "<": "operatorLessThan",
+			    "<=": "operatorLessEqual",
+			    "==": "operatorEqual"
+			};
+			const operatorLabel = i18n_local[currentLang][ opKeyMap[operator] ];
+			
+            triggerName = i18n_local[currentLang].triggerName_timeBased_template
+                .replace('{timeWindow}', timeWindow)
+                .replace('{unit}', i18n_local[currentLang][timeWindowUnit + 'Label'])
+                .replace('{questionId}', questionId)				
+				.replace('{questionTitle}', questionTitle)			
+                .replace('{metric}', i18n_local[currentLang]['metric' + metric.charAt(0).toUpperCase() + metric.slice(1) + 'Label'])
+                .replace("{operator}", operatorLabel)
+                .replace('{threshold}', threshold);
         } else {
             M.toast({
                 html: i18n_local[currentLang].validation_invalidTrigger,
@@ -5555,6 +5671,113 @@ rowDiv.appendChild(colToggleDiv);
   `;
         }
     }
+	
+	
+	function generateTimeBasedScript({
+	  timeWindowMs,
+	  questionId,
+	  metric,
+	  operator,
+	  threshold
+	}) {
+	  return `
+		const TIME_WINDOW = ${timeWindowMs};
+		const TARGET_QUESTION_ID = "${questionId}";
+		const METRIC = "${metric}";
+		const OPERATOR = "${operator}";
+		const THRESHOLD = ${threshold};
+
+		(function() {
+		  return async function checkCondition(surveyData) {
+			// 1. 計算 endTime 與 startTime（以毫秒為單位）
+			const endTime = Date.now();
+			const startTime = endTime - TIME_WINDOW;
+
+			// 2. 只取回「這個時間範圍內」的歷史填答
+			const history = await fetchHistoricalData(startTime, endTime);
+			//    （注意：後端 fetchHistoricalData 應對應 signature: fetchHistoricalData(startTime, endTime)）
+
+			// 3. 提取「指定題目」的回答值（只取可轉數字者）
+			const values = [];
+			let questionTitle = "";
+			history.forEach(item => {
+			  if (Array.isArray(item.data)) {
+				const q = item.data.find(x => x.questionId === Number(TARGET_QUESTION_ID));
+				if (q && q.answer != null) {
+				  const val = Number(q.answer);
+				  questionTitle = q.question;
+				  if (!isNaN(val)) {
+					values.push(val);
+				  }
+				}
+			  }
+			});
+
+			// 4. 如果沒有符合的，就不觸發
+			if (values.length === 0) {
+			  return null;
+			}
+
+			// 5. 根據 METRIC 計算指標
+			let computed;
+			switch (METRIC) {
+			  case "sum":
+				computed = values.reduce((acc, v) => acc + v, 0);
+				break;
+			  case "avg":
+				computed = values.reduce((acc, v) => acc + v, 0) / values.length;
+				break;
+			  case "median":
+				values.sort((a, b) => a - b);
+				const mid = Math.floor(values.length / 2);
+				computed = (values.length % 2 === 0)
+				  ? (values[mid - 1] + values[mid]) / 2
+				  : values[mid];
+				break;
+			  case "count":
+				computed = values.length;
+				break;
+			  case "max":
+				computed = Math.max(...values);
+				break;
+			  case "min":
+				computed = Math.min(...values);
+				break;
+			  default:
+				return null;
+			}
+
+			// 6. 比較 computed 與 THRESHOLD
+			let conditionMet = false;
+			switch (OPERATOR) {
+			  case ">":
+				conditionMet = computed > THRESHOLD;
+				break;
+			  case ">=":
+				conditionMet = computed >= THRESHOLD;
+				break;
+			  case "<":
+				conditionMet = computed < THRESHOLD;
+				break;
+			  case "<=":
+				conditionMet = computed <= THRESHOLD;
+				break;
+			  case "==":
+				conditionMet = computed == THRESHOLD;
+				break;
+			}
+
+			// 7. 如果滿足，就回傳提示文字；否則回傳 null
+			if (conditionMet) {
+			  // 這裡的字串可依需求改成详细描述
+			  return \`觸發條件達成：過去 \${TIME_WINDOW / 3600000} 小時內，題目 「\${questionTitle}」 的 \${METRIC} 為 \${computed}， \${METRIC} \${OPERATOR} \${THRESHOLD}。\`;
+			}
+			return null;
+		  };
+		})();
+	  `;
+	}
+		
 
     function loadTriggerConfig() {
         // Clear previous config
@@ -5609,13 +5832,59 @@ rowDiv.appendChild(colToggleDiv);
             ${i18n_local[currentLang].triggerDescription_timeBased}
           </p>
         </div>
-        <div class="input-field col s6">
-          <input type="number" id="timeWindow" min="1">
-          <label>${i18n_local[currentLang].timeWindowLabel}</label>
+
+        <!-- 1. 回溯時間數值 -->
+        <div class="input-field col s4">
+          <input type="number" id="timeWindowValue" min="1">
+          <label for="timeWindowValue">${i18n_local[currentLang].timeWindowLabel}</label>
         </div>
-        <div class="input-field col s6">
-          <input type="number" id="minimumCount" min="1">
-          <label>${i18n_local[currentLang].minimumCountLabel}</label>
+
+        <!-- 2. 回溯時間單位（小時／天）-->
+        <div class="input-field col s4">
+          <select id="timeWindowUnit">
+            <option value="hours" selected>${i18n_local[currentLang].hoursLabel}</option>
+            <option value="days">${i18n_local[currentLang].daysLabel}</option>
+          </select>
+          <label>${i18n_local[currentLang].timeWindowUnitLabel}</label>
+        </div>
+
+        <!-- 3. 選擇要計算統計的題目 -->
+        <div class="input-field col s4">
+          <select id="targetQuestionTimeBased">
+            <!-- 這裡的選項需由 JS 以 surveyItems 填入所有 questionId -->
+          </select>
+          <label>${i18n_local[currentLang].targetQuestionLabel}</label>
+        </div>
+
+        <!-- 4. 統計方法 -->
+        <div class="input-field col s4">
+          <select id="metricSelect">
+            <option value="sum">${i18n_local[currentLang].metricSumLabel}</option>
+            <option value="avg" selected>${i18n_local[currentLang].metricAvgLabel}</option>
+            <option value="median">${i18n_local[currentLang].metricMedianLabel}</option>
+            <option value="count">${i18n_local[currentLang].metricCountLabel}</option>
+            <option value="max">${i18n_local[currentLang].metricMaxLabel}</option>
+            <option value="min">${i18n_local[currentLang].metricMinLabel}</option>
+          </select>
+          <label>${i18n_local[currentLang].metricLabel}</label>
+        </div>
+
+        <!-- 5. 比較運算符 -->
+        <div class="input-field col s4">
+          <select id="operatorSelect">
+            <option value=">" selected>&gt; ${i18n_local[currentLang].operatorGreaterThan}</option>
+            <option value=">=">&ge; ${i18n_local[currentLang].operatorGreaterEqual}</option>
+            <option value="<">&lt; ${i18n_local[currentLang].operatorLessThan}</option>
+            <option value="<=">&le; ${i18n_local[currentLang].operatorLessEqual}</option>
+            <option value="==">= ${i18n_local[currentLang].operatorEqual}</option>
+          </select>
+          <label>${i18n_local[currentLang].operatorLabel}</label>
+        </div>
+
+        <!-- 6. 閾值輸入 -->
+        <div class="input-field col s4">
+          <input type="number" id="thresholdValue" step="any">
+          <label for="thresholdValue">${i18n_local[currentLang].thresholdLabel}</label>
         </div>
       </div>
     `
@@ -5644,39 +5913,60 @@ rowDiv.appendChild(colToggleDiv);
             panel.style.display = panel.dataset.type === selectedType ? 'block' : 'none';
         });
         if (selectedType === 'answerMatch') {
-            populateQuestionSelect();
+            populateQuestionSelect('targetQuestion');
             // Add listener so that when the selected question changes, the answers get updated
             document.getElementById('targetQuestion').addEventListener('change', populateExpectedAnswerSelect);
         }
+		else if (selectedType === 'timeBased') {
+			 populateQuestionSelect('targetQuestionTimeBased');
+		}
+
     });
 
-    async function populateQuestionSelect() {
-        const select = document.getElementById('targetQuestion');
+    async function populateQuestionSelect(id) {
+        const select = document.getElementById(id);
         select.innerHTML = `<option value="" disabled selected>${i18n_local[currentLang].selectQuestion}</option>`;
-        if (CurrentSurveySchemaId) {
-            try {
-                const response = await fetch(`${BASE_URL}/api/survey/${CurrentSurveySchemaId}`);
-                const survey = await response.json();
-                survey.surveyItems.forEach(item => {
-                    if (item.type === 'question') {
-                        const option = document.createElement('option');
-                        option.value = item.id;
-                        option.textContent = item.questionText || `Question ${item.id}`;
-                        select.appendChild(option);
-                    }
-                });
-                M.FormSelect.init(select);
-            } catch (error) {
-                console.error('Error loading questions:', error);
-                M.toast({
-                    html: 'Failed to load questions',
-                    classes: 'red'
-                });
-            }
+
+        if (!CurrentSurveySchemaId)
+            return;
+
+        try {
+            const response = await fetch(`${BASE_URL}/api/survey/${CurrentSurveySchemaId}`);
+            const survey = await response.json();
+
+            survey.surveyItems.forEach(item => {
+                if (item.type === 'question') {
+                    // 單獨的題目
+                    const option = document.createElement('option');
+                    option.value = item.id;
+                    option.textContent = item.questionText || `Question ${item.id}`;
+                    select.appendChild(option);
+                } else if (item.type === 'group' && Array.isArray(item.subQuestions)) {
+                    // group 本身不做為選項，但把它底下的 subQuestions 加入
+                    item.subQuestions.forEach(sub => {
+                        if (sub.type === 'question') {
+                            const option = document.createElement('option');
+                            option.value = sub.id;
+                            option.textContent = sub.questionText || `Question ${sub.id}`;
+                            select.appendChild(option);
+                        }
+                    });
+                }
+            });
+
+            M.FormSelect.init(select);
+        } catch (error) {
+            console.error('Error loading questions:', error);
+            M.toast({
+                html: 'Failed to load questions',
+                classes: 'red'
+            });
         }
-        // When the question is changed, update the expected answers
+
+        // 當使用者改變題目選擇時，再去更新 expected answers
         select.addEventListener('change', populateExpectedAnswerSelect);
     }
+
 
     function populateExpectedAnswerSelectElement(options) {
         const selectElem = document.getElementById('targetAnswer');
@@ -5728,6 +6018,7 @@ rowDiv.appendChild(colToggleDiv);
             console.error("Error populating expected answer select:", error);
         }
     }
+
 
     /***********************************************
      * VOICE recognition
@@ -5930,8 +6221,32 @@ rowDiv.appendChild(colToggleDiv);
 	  });
 	}
 
-	
-	
+
+	/* initNextId initial the nextId basing on surveyItems
+	*/
+	let nextId = 1;
+	function initNextId() {
+	  let maxId = 0;
+
+	  surveyItems.forEach(item => {
+		if (item.type === 'question' && typeof item.id === 'number') {
+		  maxId = Math.max(maxId, item.id);
+		}
+		if (item.type === 'group' && Array.isArray(item.subQuestions)) {
+		  item.subQuestions.forEach(sub => {
+			if (sub.type === 'question' && typeof sub.id === 'number') {
+			  maxId = Math.max(maxId, sub.id);
+			}
+		  });
+		}
+	  });
+
+	  // 下一個可用的 ID，就從 maxId + 1 開始
+	  nextId = maxId + 1;
+	}	
+	function getUniqueId() {
+	  return nextId++;
+	}
 	
 </script>
   </body>
