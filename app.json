@@ -5,7 +5,7 @@
     "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "surveyMax",
+    "scheme": ["surveymax"],
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
