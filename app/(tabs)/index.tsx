@@ -728,17 +728,32 @@ const deduplicateMessages = (msgs: IMessage[]): IMessage[] => {
   // Then define a custom renderer:
   const renderMessage = (props: any) => {
     if (props.currentMessage.isDivider) {
+      const isSelected = selectedMessage?._id === props.currentMessage._id;
+      if (isSelected) { alert("已選擇未讀訊息，請點擊取消選擇");  }
       return (
-        <ThemedView style={styles.unreadDivider}>
-          <Text style={styles.unreadDividerText}>{props.currentMessage.text}</Text>
+        <ThemedView
+          style={[
+            { flexDirection: 'column' },
+            isSelected && styles.selectedMessage
+          ]}
+        >
+        <Text style={styles.unreadDividerText}>{props.currentMessage.text}</Text>
         </ThemedView>
       );
     }
     // Otherwise, render the normal message with resend/giveup UI as before:
     const isCurrentUser = props.currentMessage?.user?._id === props?.user?._id;
+    const isSelected = selectedMessage?._id === props.currentMessage._id;
     return (
-      <ThemedView style={{ flexDirection: 'column' }}>
-        <Message {...props} />
+      <ThemedView style={[
+        { flexDirection: 'column' },
+        isSelected && styles.selectedMessage
+      ]}>
+        <Message {
+          ...props} {...props}
+          onLongPress={(context, message) =>
+            handleLongPress(context, message)
+          }/>
         {(props.currentMessage.sendStatus === "failed" || props.currentMessage.sendStatus === "pending") && (
           <ThemedView
             style={[
@@ -830,6 +845,7 @@ const deduplicateMessages = (msgs: IMessage[]): IMessage[] => {
     });
     // hide the modal & optimistically remove
     setMenuVisible(false);
+    setSelectedMessage(null);
     setMessages((prev) =>
       prev.filter((m) => m._id !== selectedMessage._id)
     );
@@ -842,6 +858,7 @@ const deduplicateMessages = (msgs: IMessage[]): IMessage[] => {
     const uid = selectedMessage.user._id;
     // … your block logic here …
     setMenuVisible(false);
+    setSelectedMessage(null);
   };
 
 
@@ -911,7 +928,10 @@ return (
         <TouchableOpacity
           style={styles.backdrop}
           activeOpacity={1}
-          onPressOut={() => setMenuVisible(false)}
+          onPressOut={() => {
+            setMenuVisible(false);
+            setSelectedMessage(null);
+          }}
         >
           <View style={styles.menu}>
             <TouchableOpacity style={styles.iconBtn} onPress={reportMessage}>
@@ -926,7 +946,10 @@ return (
 
             <TouchableOpacity
               style={styles.iconBtn}
-              onPress={() => setMenuVisible(false)}
+              onPress={() => {
+                setMenuVisible(false);
+                setSelectedMessage(null);
+              }}
             >
               <Ionicons name="close-circle-outline" size={28} />
               <Text style={styles.label}>Cancel</Text>
@@ -1961,17 +1984,29 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
   },
   backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'transparent',
+        justifyContent: 'center',
+        alignItems: 'center',
   },
   menu: {
-    flexDirection: 'row',
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 12,
-    elevation: 4,
+        position: 'absolute',
+        flexDirection: 'row',
+        backgroundColor: '#fff',        // solid white so it stands out
+        borderRadius: 12,               // softer corner
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderWidth: 1,
+        borderColor: '#ddd',            // subtle outline
+        shadowColor: '#000',            // iOS shadow
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+        elevation: 6,                   // Android shadow
   },
   iconBtn: {
     alignItems: 'center',
@@ -1981,4 +2016,8 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontSize: 12,
   },  
+  selectedMessage: {
+    backgroundColor: 'rgba(0,122,255,0.1)',     
+    borderRadius: 8,
+  },
 });
