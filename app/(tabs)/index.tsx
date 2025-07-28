@@ -25,7 +25,10 @@ import {
   useWindowDimensions,
   useColorScheme,
   Linking, 
+  GestureResponderEvent,
 } from "react-native";
+
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { ThemedText } from "@/components/ThemedText";
@@ -808,6 +811,40 @@ const deduplicateMessages = (msgs: IMessage[]): IMessage[] => {
     );
   };
 
+  const [menuVisible, setMenuVisible] = useState(false);
+  const [selectedMessage, setSelectedMessage] = useState<IMessage | null>(null);
+  // 1) Called when user long‑presses a message
+  const handleLongPress = (context: any, msg: IMessage) => {
+    setSelectedMessage(msg);
+    setMenuVisible(true);
+  };
+
+  // 2) The handler for the “Report” icon
+  const reportMessage = async () => {
+    if (!selectedMessage) return;
+    // call your report API:
+    await fetch(`${SERVER_URL}/api/report-content`, {
+      method: 'POST',
+      headers: HttpAuthHeader,
+      body: JSON.stringify({ messageId: selectedMessage._id }),
+    });
+    // hide the modal & optimistically remove
+    setMenuVisible(false);
+    setMessages((prev) =>
+      prev.filter((m) => m._id !== selectedMessage._id)
+    );
+    alert('已回報，將於24小時內處理');
+  };
+
+  // 3) (Optional) Block user icon handler
+  const blockUser = async () => {
+    if (!selectedMessage) return;
+    const uid = selectedMessage.user._id;
+    // … your block logic here …
+    setMenuVisible(false);
+  };
+
+
 // console.log("modalVisible --", modalVisible) 
 // Add the Modal component (e.g., at the bottom of ChatScreen's return statement)
 return (
@@ -861,7 +898,43 @@ return (
           keyboardShouldPersistTaps: 'handled',
         }}
         renderMessageImage={renderCustomImage}
+        onLongPress={handleLongPress}
       />
+
+      {/* 4) Context menu as a Modal */}
+      <Modal
+        transparent
+        visible={menuVisible}
+        animationType="fade"
+        onRequestClose={() => setMenuVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.backdrop}
+          activeOpacity={1}
+          onPressOut={() => setMenuVisible(false)}
+        >
+          <View style={styles.menu}>
+            <TouchableOpacity style={styles.iconBtn} onPress={reportMessage}>
+              <Ionicons name="flag-outline" size={28} />
+              <Text style={styles.label}>Report</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.iconBtn} onPress={blockUser}>
+              <Ionicons name="person-remove-outline" size={28} />
+              <Text style={styles.label}>Block</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.iconBtn}
+              onPress={() => setMenuVisible(false)}
+            >
+              <Ionicons name="close-circle-outline" size={28} />
+              <Text style={styles.label}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
       </KeyboardAvoidingView>
      
     </SafeAreaView>
@@ -1887,5 +1960,25 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     includeFontPadding: false,
   },
-  
+  backdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  menu: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 12,
+    elevation: 4,
+  },
+  iconBtn: {
+    alignItems: 'center',
+    marginHorizontal: 12,
+  },
+  label: {
+    marginTop: 4,
+    fontSize: 12,
+  },  
 });
