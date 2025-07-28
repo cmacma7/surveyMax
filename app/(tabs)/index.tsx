@@ -477,10 +477,10 @@ const deduplicateMessages = (msgs: IMessage[]): IMessage[] => {
 
     return () => {
       if (notificationListener.current) {
-        Notifications.removeNotificationSubscription(notificationListener.current);
+        notificationListener.current.remove(); // Clean up the listener when the component unmounts
       }
       if (responseListener.current) {
-        Notifications.removeNotificationSubscription(responseListener.current);
+        responseListener.current.remove(); // Clean up the listener when the component unmounts
       }
     };
   }, [userId]);
@@ -986,7 +986,25 @@ const ChatroomListScreen: React.FC<any> = ({ navigation, route }) => {
   };
 
 
-
+   // 1) Listen for incoming socket messages and increment unreadCount immediately
+   useEffect(() => {
+     function onNewMessage(message: { channelId: string; text: string }) {
+      //alert("hit onNewMessage");
+      const incomingRoomId = message.channelId;
+       setChatrooms((rooms) =>
+         rooms.map((r) =>
+           r.id === incomingRoomId
+             ? { ...r, unreadCount: (r.unreadCount || 0) + 1 }
+             : r
+         )
+       );
+     }
+  
+     socket.on("receiveMessage", onNewMessage);
+     return () => {
+       socket.off("receiveMessage", onNewMessage);
+     };
+   }, []);
 
 
   // Deep link listener; if chatrooms are not yet ready, store the URL in deepLinkUrlRef.
@@ -995,7 +1013,7 @@ const ChatroomListScreen: React.FC<any> = ({ navigation, route }) => {
 
     async function checkInitialDeepLink() {    
       let url = await Linking.getInitialURL();
-      if (!url && Platform.OS === "android" && !hasProcessedInitDeepLink) {
+      if (!url  && !hasProcessedInitDeepLink) {
         // If Linking did not return a URL, check if the app was launched via a push notification.
         const response = await Notifications.getLastNotificationResponseAsync();
         if (response && response.notification) {
@@ -1047,7 +1065,7 @@ const ChatroomListScreen: React.FC<any> = ({ navigation, route }) => {
     );
   
     return () => {
-      Notifications.removeNotificationSubscription(responseListener);
+      responseListener.remove(); // Clean up the listener when the component unmounts
     };
   }, [router]);
 
@@ -1824,8 +1842,9 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 12,
     fontWeight: '600',
-    lineHeight: BADGE_SIZE,       // 垂直置中
+    //lineHeight: BADGE_SIZE,       // 垂直置中
     textAlign: 'center',
+    includeFontPadding: false,
   },
   
 });
