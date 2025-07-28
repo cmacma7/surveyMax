@@ -565,6 +565,19 @@ const deduplicateMessages = (msgs: IMessage[]): IMessage[] => {
   }, [chatroomId]);
 
   const onSend = (newMessages: IMessage[] = []) => {
+
+    const text = newMessages[0].text || '';
+
+
+    const BANNED_WORDS = ['fuck'];
+    const containsBad = (text: string) =>
+    BANNED_WORDS.some(w => text.toLowerCase().includes(w));
+
+    if (containsBad(text)) {
+      Alert.alert('訊息含不當字詞，請修改後再發送');
+      return;
+    }
+
     // Attach channelId and set initial sendStatus to pending.
     const messageWithChannel = { 
       ...newMessages[0], 
