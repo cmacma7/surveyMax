@@ -161,6 +161,7 @@ export default function TabTwoScreen() {
                     }
                     await AsyncStorage.removeItem("userToken");
                     await AsyncStorage.removeItem("userId");
+                    await AsyncStorage.removeItem('acceptedEULA');
                     if (Platform.OS === 'web') {
                       window.location.reload();
                     } else {

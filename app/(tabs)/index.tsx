@@ -28,9 +28,9 @@ import {
 } from "react-native";
 
 import { useThemeColor } from '@/hooks/useThemeColor';
-import { ThemedText } from "../../components/ThemedText";
-import { ThemedView } from "../../components/ThemedView";
-import { ThemedTextInput } from "../../components/ThemedTextInput";
+import { ThemedText } from "@/components/ThemedText";
+import { ThemedView } from "@/components/ThemedView";
+import { ThemedTextInput } from "@/components/ThemedTextInput";
 
 const SERVER_URL = 'https://b200.tagfans.com:5301';
 // const SERVER_URL = 'http://192.168.100.125:5300';
@@ -43,6 +43,10 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import { useRouter } from "expo-router";
 import { useNavigation, useLocalSearchParams } from 'expo-router';
 
+
+
+// Screens
+import TermsOfServiceScreen from '../screens/TermsOfServiceScreen';
 
 // UI components
 import CachedImage from '../components/CachedImage';
@@ -1677,9 +1681,23 @@ const App: React.FC = () => {
   // Check AsyncStorage to determine initial route so user stays logged in.
   const [initialRoute, setInitialRoute] = useState<string | null>(null);
   const [storedUserId, setStoredUserId] = useState<string | null>(null);
-  
+  const [eulaAccepted, setEulaAccepted] = useState<boolean>(false);
+
   useEffect(() => {
     const checkLogin = async () => {
+
+
+      const accepted = await AsyncStorage.getItem('acceptedEULA');
+
+      setEulaAccepted(accepted === 'true');
+      //alert("EULA accepted: " + accepted);
+      if (!accepted) {
+        //alert("You must accept the EULA to use this app.");
+        setInitialRoute('TermsOfService');
+        return;
+      }
+
+
       const token = await AsyncStorage.getItem("userToken");
       const userId = await AsyncStorage.getItem("userId");
       if (token && userId) {
@@ -1703,6 +1721,16 @@ const App: React.FC = () => {
 
   return (
       <Stack.Navigator initialRouteName={initialRoute}>
+        {/* EULA screen if not accepted */}
+        {!eulaAccepted && (
+          <Stack.Screen
+            name="TermsOfService"
+            component={TermsOfServiceScreen}
+            options={{ title: t('termsOfService') }}
+          />
+        )}
+
+        {/* Main app screens */}
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen
           name="ChatroomList"
