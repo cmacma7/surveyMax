@@ -43,7 +43,11 @@ const messageSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
   image: { type: String },
   _id: { type: String, default: () => uuidv4() },
-});
+  // ➕ Add new flags
+  report: { type: Boolean, default: false },
+  keep: { type: Boolean, default: false },
+  important: { type: Boolean, default: false },
+});  
 messageSchema.index({ channelId: 1, createdAt: 1 });
 const Message = mongoose.model("Message", messageSchema);
 
@@ -1024,6 +1028,25 @@ app.get("/api/channel-mute", authenticateToken, async (req, res) => {
 });
 
 
+// Update message flag (Protected)
+app.post("/api/messages/update-flag", authenticateToken, async (req, res) => {
+  const { messageId, flag, value } = req.body;
+
+  if (!['report', 'keep', 'important'].includes(flag)) {
+    return res.status(400).json({ error: "Invalid flag name." });
+  }
+
+  try {
+    const update = {};
+    update[flag] = !!value;
+
+    await Message.findByIdAndUpdate(messageId, update);
+    return res.status(200).json({ success: true });
+  } catch (err) {
+    console.error("Failed to update message flag:", err);
+    return res.status(500).json({ error: "Internal server error." });
+  }
+});
 
 
 // POST /api/send-message endpoint. (Protected)
