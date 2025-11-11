@@ -4017,11 +4017,14 @@ rowDiv.appendChild(colToggleDiv);
 		
 		
 		CurrentSurveyTitle = surveyTitle;
-		
-        if (!CurrentSurveySchemaId) {
-            CurrentSurveySchemaId = result?._id;
-            localStorage.CurrentSurveySchemaId = CurrentSurveySchemaId;
-        }
+
+		// 若是首次建立或目前為 "create new"，都更新為後端回傳的新問卷 ID
+		if (!CurrentSurveySchemaId || CurrentSurveySchemaId === "create new") {
+		    CurrentSurveySchemaId = result?._id;
+		    localStorage.CurrentSurveySchemaId = CurrentSurveySchemaId;
+		}
+		// 立即更新導覽列標題，顯示實際問卷號碼
+		updateNavTitle();
 
         // Create the URL string
         const finalURL = window.location.origin +
@@ -4910,6 +4913,20 @@ rowDiv.appendChild(colToggleDiv);
                 note.style.fontStyle = "italic";
                 note.style.color = "#666";
                 container.appendChild(note);
+
+                // Render all text answers as a Materialize collection list
+                const list = document.createElement("ul");
+                list.className = "collection";
+                const answers = (summary.answers || []).filter(a => a != null && String(a).trim() !== "");
+                answers.forEach(ans => {
+                    const li = document.createElement("li");
+                    li.className = "collection-item";
+                    li.textContent = String(ans);
+                    list.appendChild(li);
+                });
+                if (answers.length)
+                    container.appendChild(list);
+
                 content.appendChild(container);
                 return;
             }
