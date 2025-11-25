@@ -227,6 +227,7 @@ const ChatScreen: React.FC<any> = ({ route, navigation }) => {
   const lastVisibleMessageRef = useRef<string | null>(null);   // Track the last visible message, the last message user is focus on
   const lastReadMessageRef = useRef<string | null>(null);  // Track the last read message, the last message of last enter the chat room
   const lastFechedMessageRef = useRef<string | null>(null);  // Track the last fetched message, the last message user has fetched from server
+  const messagesRef = useRef<IMessage[]>([]);
 
   // initial scroll done
   const initialScrollDone = useRef(false);
@@ -297,11 +298,16 @@ const deduplicateMessages = (msgs: IMessage[]): IMessage[] => {
     }
   });
   // Return messages sorted by createdAt descending
-  return Object.values(messageMap);
+  return Object.values(messageMap).sort((a, b) =>
+    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
 };
 
   const loadAndFetchMessages = useCallback(async () => {
+    HttpAuthHeader = await getAuthHeaders();
+
     let localMessages: IMessage[] = [];
+    const lastReadTimestamp = await AsyncStorage.getItem(`chat_${chatroomId}_lastReadTimestamp`);
     try {
       const saved = await AsyncStorage.getItem(`chat_${chatroomId}_messages`);
       if (saved) {
@@ -327,20 +333,18 @@ const deduplicateMessages = (msgs: IMessage[]): IMessage[] => {
     let lastFetchedTimestamp;
     if (localMessages.length > 0) {
       lastFetchedTimestamp = localMessages[0]?.createdAt; // keep the last fetched timestamp in the local messages
+    } else if (lastReadTimestamp) {
+      // When there is no local cache, fall back to the last read timestamp so we reload history
+      lastFetchedTimestamp = lastReadTimestamp;
     } else {
       // If there are no messages locally, try to get the last fetched timestamp
       lastFetchedTimestamp = await AsyncStorage.getItem(`chat_${chatroomId}_lastFetchedTimestamp`);
-      // Optionally, you can default to the current time to avoid loading older messages
-      if (!lastFetchedTimestamp) {
-        const now = new Date();
-        const threeMonthsAgo = new Date(now);
-        threeMonthsAgo.setMonth(now.getMonth() - 3);
-        console.log("first time fetch, fetch 3 month's data",threeMonthsAgo.toISOString());
-        lastFetchedTimestamp = threeMonthsAgo.toISOString();
-      }
     }
-    
-    let url = `${SERVER_URL}/api/messages/${chatroomId}?after=${encodeURIComponent(lastFetchedTimestamp)}`;
+
+    // Only filter by timestamp when we actually have a pointer; otherwise fetch the default history
+    const url = lastFetchedTimestamp
+      ? `${SERVER_URL}/api/messages/${chatroomId}?after=${encodeURIComponent(lastFetchedTimestamp)}`
+      : `${SERVER_URL}/api/messages/${chatroomId}`;
  
 
 
@@ -358,7 +362,6 @@ const deduplicateMessages = (msgs: IMessage[]): IMessage[] => {
 
       if (lastFetchedTimestamp) {
         AsyncStorage.setItem(`chat_${chatroomId}_lastFetchedTimestamp`, lastFetchedTimestamp);
-        AsyncStorage.setItem(`chat_${chatroomId}_lastReadTimestamp`, lastFetchedTimestamp);
       }
     } catch (err) {
       console.error("Error fetching new messages", err);
@@ -497,16 +500,30 @@ const deduplicateMessages = (msgs: IMessage[]): IMessage[] => {
   // leave the chat room when the component is unmounted
   useEffect(() => {
     return () => {
-      if (lastVisibleMessageRef.current) {
-        AsyncStorage.setItem(`chat_${chatroomId}_lastVisableMessageId`, lastVisibleMessageRef.current)
+      const visibleMsgs = messagesRef.current.filter((msg) => !msg.isDivider);
+      const lastVisibleId = lastVisibleMessageRef.current;
+      const lastVisibleMessage = lastVisibleId
+        ? visibleMsgs.find((msg) => msg._id === lastVisibleId)
+        : undefined;
+
+      const fallbackMessage = visibleMsgs[0];
+      const lastReadMessage = lastVisibleMessage || fallbackMessage;
+
+      if (lastReadMessage?._id) {
+        AsyncStorage.setItem(`chat_${chatroomId}_lastVisableMessageId`, lastReadMessage._id)
           .catch((err) => console.error("Error saving last visible id", err));
-      }
-      if (lastFechedMessageRef.current) {
-        AsyncStorage.setItem(`chat_${chatroomId}_lastReadMessageId`, lastFechedMessageRef.current)
+        AsyncStorage.setItem(`chat_${chatroomId}_lastReadMessageId`, lastReadMessage._id)
           .catch((err) => console.error("Error saving last read id", err));
-      }      
+      }
+
+      const readTimestamp = lastReadMessage?.createdAt
+        ? new Date(lastReadMessage.createdAt).toISOString()
+        : new Date().toISOString();
+
+      AsyncStorage.setItem(`chat_${chatroomId}_lastReadTimestamp`, readTimestamp)
+        .catch((err) => console.error("Error saving last read timestamp", err));
     };
-  }, [chatroomId]);  
+  }, [chatroomId]);
 
   // Use onViewableItemsChanged to track the bottom-most (read) message
   const onViewableItemsChanged = useCallback(({ viewableItems }) => {
@@ -789,10 +806,11 @@ const deduplicateMessages = (msgs: IMessage[]): IMessage[] => {
   useEffect(() => {
     if (messages.length > 0) {
       const visibleMsgs = messages.filter(item => !item.isDivider); // remove all dividers
-      AsyncStorage.setItem(`chat_${chatroomId}_messages`, JSON.stringify(visibleMsgs));  
-      lastFechedMessageRef.current = messages[0]?._id; 
+      AsyncStorage.setItem(`chat_${chatroomId}_messages`, JSON.stringify(visibleMsgs));
+      lastFechedMessageRef.current = messages[0]?._id;
     }
-  }, [messages]);  
+    messagesRef.current = messages;
+  }, [messages]);
   
   useEffect(() => {
     if (flatListRef.current && !initialScrollDone.current) {      
@@ -1192,8 +1210,12 @@ const ChatroomListScreen: React.FC<any> = ({ navigation, route }) => {
     const currentUserId = await AsyncStorage.getItem("userId");
     // Build the queries array from existingChatrooms
     const queries = await Promise.all(existingChatrooms.map(async (chatroom) => {
-      // Retrieve last-read timestamp from AsyncStorage; default to epoch if not available.
+      // Retrieve last-read timestamp from AsyncStorage; fall back to the last fetched timestamp
+      // so we don't reset to epoch after a read chatroom with no messages.
       let lastRead = await AsyncStorage.getItem(`chat_${chatroom.id}_lastReadTimestamp`);
+      if (!lastRead) {
+        lastRead = await AsyncStorage.getItem(`chat_${chatroom.id}_lastFetchedTimestamp`);
+      }
       if (!lastRead) {
         lastRead = new Date(0).toISOString();
       }
